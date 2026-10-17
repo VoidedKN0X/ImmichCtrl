@@ -1,6 +1,8 @@
 # Changelog
 
-All notable changes to ImmichCtrl. Version numbers are `major.minor.build`, where the build number comes from the GitHub Actions run, so each section below covers every build of that version.
+All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by GitHub Actions run, so the 0.2 section covers all of them.
+
+To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
 ## 0.2
 
