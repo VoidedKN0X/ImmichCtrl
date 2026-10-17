@@ -76,7 +76,7 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
     val scope = rememberCoroutineScope()
     var address by rememberSaveable { mutableStateOf("") }
     var probe by remember { mutableStateOf<ServerProbe?>(null) }
-    var headerText by rememberSaveable { mutableStateOf("") }
+    var headerText by remember { mutableStateOf("") } // may hold proxy secrets: not kept in saved state
     var showAdvanced by rememberSaveable { mutableStateOf(false) }
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

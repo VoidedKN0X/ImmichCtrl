@@ -44,6 +44,8 @@ data class AppSettings(
     val loopVideos: Boolean = true,
     val confirmDelete: Boolean = true,
     val shareSize: ShareSize = ShareSize.ASK,
+    /** Remove GPS location from photos sent to other apps. */
+    val shareStripLocation: Boolean = true,
     /** MB of thumbnails and previews kept on disk; takes effect after a restart. */
     val cacheMb: Int = 1024,
     val albumSort: AlbumSort = AlbumSort.ACTIVITY,
@@ -70,6 +72,8 @@ data class AppSettings(
 
     // Backup
     val backupEnabled: Boolean = false,
+    /** The account automatic backup was turned on for; it never uploads to any other account. */
+    val backupAccount: String? = null,
     /** Back up every album on the phone, including ones added later. */
     val backupEverything: Boolean = false,
     val backupAlbums: Set<String> = emptySet(),
@@ -96,6 +100,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val loop = booleanPreferencesKey("loop_videos")
         val confirmDelete = booleanPreferencesKey("confirm_delete")
         val shareSize = stringPreferencesKey("share_size")
+        val shareStripLocation = booleanPreferencesKey("share_strip_location")
         val cache = intPreferencesKey("cache_mb")
         val albumSort = stringPreferencesKey("album_sort")
         val albumGrid = booleanPreferencesKey("album_grid")
@@ -109,6 +114,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val adminAlerts = booleanPreferencesKey("admin_alerts")
         val adminDisk = intPreferencesKey("admin_disk_percent")
         val backup = booleanPreferencesKey("backup_enabled")
+        val backupAccount = stringPreferencesKey("backup_account")
         val backupAll = booleanPreferencesKey("backup_everything")
         val backupAlbums = stringSetPreferencesKey("backup_albums")
         val excluded = stringSetPreferencesKey("excluded_albums")
@@ -136,6 +142,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         loopVideos = this[K.loop] ?: true,
         confirmDelete = this[K.confirmDelete] ?: true,
         shareSize = enumOr(this[K.shareSize], ShareSize.ASK),
+        shareStripLocation = this[K.shareStripLocation] ?: true,
         cacheMb = this[K.cache] ?: 1024,
         albumSort = enumOr(this[K.albumSort], AlbumSort.ACTIVITY),
         albumGrid = this[K.albumGrid] ?: true,
@@ -149,6 +156,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         adminAlerts = this[K.adminAlerts] ?: true,
         adminDiskPercent = this[K.adminDisk] ?: 90,
         backupEnabled = this[K.backup] ?: false,
+        backupAccount = this[K.backupAccount],
         backupEverything = this[K.backupAll] ?: false,
         backupAlbums = this[K.backupAlbums] ?: emptySet(),
         excludedAlbums = this[K.excluded] ?: emptySet(),
@@ -177,6 +185,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.loop] = s.loopVideos
             p[K.confirmDelete] = s.confirmDelete
             p[K.shareSize] = s.shareSize.name
+            p[K.shareStripLocation] = s.shareStripLocation
             p[K.cache] = s.cacheMb
             p[K.albumSort] = s.albumSort.name
             p[K.albumGrid] = s.albumGrid
@@ -190,6 +199,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.adminAlerts] = s.adminAlerts
             p[K.adminDisk] = s.adminDiskPercent
             p[K.backup] = s.backupEnabled
+            if (s.backupAccount != null) p[K.backupAccount] = s.backupAccount else p.remove(K.backupAccount)
             p[K.backupAll] = s.backupEverything
             p[K.backupAlbums] = s.backupAlbums
             p[K.excluded] = s.excludedAlbums

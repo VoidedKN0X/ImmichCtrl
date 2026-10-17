@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -13,6 +14,7 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.core.content.IntentCompat
 import androidx.fragment.app.FragmentActivity
@@ -21,6 +23,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.vknxworks.immichctrl.data.backup.DeviceActions
+import com.vknxworks.immichctrl.data.security.ScreenPrivacy
+import com.vknxworks.immichctrl.data.security.isForeignContentUri
 import com.vknxworks.immichctrl.data.settings.ThemeChoice
 import com.vknxworks.immichctrl.ui.nav.AppRoot
 import com.vknxworks.immichctrl.ui.theme.ImmichCtrlTheme
@@ -38,9 +42,17 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Recents shows a blank card instead of a snapshot of your photos.
+        setRecentsScreenshotEnabled(false)
         enableEdgeToEdge()
         val c = container
         setContent {
+            // FLAG_SECURE while the locked folder or the app-lock cover is showing.
+            val secure = ScreenPrivacy.secure
+            LaunchedEffect(secure) {
+                if (secure) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            }
             val settings by c.settings.settings.collectAsStateWithLifecycle()
             val dark = when (settings.theme) {
                 ThemeChoice.SYSTEM -> isSystemInDarkTheme()
@@ -84,18 +96,29 @@ class MainActivity : FragmentActivity() {
             // Back from the browser after an OAuth sign-in.
             intent.action == Intent.ACTION_VIEW && data?.scheme == "app.immich" -> c.sessions.completeOAuth(data)
             // "Open with ImmichCtrl": look at it first, then upload if wanted.
-            intent.action == Intent.ACTION_VIEW && data != null -> c.externalUris.value = listOf(data)
+            intent.action == Intent.ACTION_VIEW && data != null -> {
+                if (isForeignContentUri(this, data)) c.externalUris.value = listOf(data)
+            }
+            // "Share to ImmichCtrl": ask before uploading, so another app can't upload photos on its own.
             intent.action == Intent.ACTION_SEND -> {
-                IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { uploadShared(listOf(it)) }
+                IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { askUpload(listOf(it)) }
             }
             intent.action == Intent.ACTION_SEND_MULTIPLE -> {
-                IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { uploadShared(it) }
+                IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)?.let { askUpload(it) }
             }
         }
     }
 
+    private fun askUpload(uris: List<Uri>) {
+        val safe = uris.filter { isForeignContentUri(this, it) }.distinct()
+        if (safe.isEmpty()) return
+        container.pendingUploads.value = safe
+    }
+
     /** Photos shared to ImmichCtrl from another app are uploaded to the signed-in account. */
     fun uploadShared(uris: List<Uri>, albumId: String? = null) {
+        @Suppress("NAME_SHADOWING")
+        val uris = uris.filter { isForeignContentUri(this, it) }
         if (uris.isEmpty()) return
         val c = container
         lifecycleScope.launch {

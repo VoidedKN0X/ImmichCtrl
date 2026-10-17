@@ -36,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.ui.unit.dp
 import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.data.api.PlaceDto
@@ -181,6 +183,7 @@ fun SharedLinkDialog(
     onConfirm: (LinkOptions) -> Unit,
 ) {
     var o by remember { mutableStateOf(initial) }
+    var showPassword by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -197,6 +200,17 @@ fun SharedLinkDialog(
                     o.password, { o = o.copy(password = it) },
                     label = { Text("Password (optional)") },
                     singleLine = true,
+                    visualTransformation = if (showPassword) androidx.compose.ui.text.input.VisualTransformation.None
+                    else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
+                    trailingIcon = {
+                        androidx.compose.material3.IconButton(onClick = { showPassword = !showPassword }) {
+                            androidx.compose.material3.Icon(
+                                if (showPassword) androidx.compose.material.icons.Icons.Outlined.VisibilityOff else androidx.compose.material.icons.Icons.Outlined.Visibility,
+                                if (showPassword) "Hide password" else "Show password",
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 ToggleRow("Allow downloads", o.allowDownload) { o = o.copy(allowDownload = it) }

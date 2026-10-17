@@ -207,8 +207,16 @@ fun BackupScreen() {
             }
 
             Group("Automatic backup", footer = "New photos are uploaded in the background when the conditions below are met. Photos already on the server are skipped.") {
-                GroupSwitch("Back up automatically", "When new photos are taken and every few hours", settings.backupEnabled, Icons.Outlined.CloudSync) { on ->
-                    update { it.copy(backupEnabled = on) }
+                val me = c.sessions.active.value?.account?.key
+                val otherAccount = settings.backupEnabled && settings.backupAccount != null && settings.backupAccount != me
+                GroupSwitch(
+                    "Back up automatically",
+                    if (otherAccount) "On for another account. Turn it off and on again to back up to this one." else "When new photos are taken and every few hours",
+                    settings.backupEnabled && !otherAccount,
+                    Icons.Outlined.CloudSync,
+                ) { on ->
+                    // Backups only ever go to the account they were turned on for.
+                    update { it.copy(backupEnabled = on, backupAccount = if (on) me else null) }
                     if (on) askPermissions()
                 }
                 GroupSwitch("Only on Wi-Fi", null, settings.backupWifiOnly, Icons.Outlined.Wifi) { on -> update { it.copy(backupWifiOnly = on) } }

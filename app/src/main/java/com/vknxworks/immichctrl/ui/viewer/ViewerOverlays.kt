@@ -120,7 +120,6 @@ private fun OverlayBox(
 @Composable
 fun OcrOverlay(asset: Asset, lines: List<OcrDto>, onClose: () -> Unit) {
     val c = LocalContext.current.container
-    val clipboard = LocalClipboardManager.current
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val density = LocalDensity.current
         val img = fitRect(with(density) { maxWidth.toPx() }, with(density) { maxHeight.toPx() }, asset.ratio)
@@ -134,7 +133,7 @@ fun OcrOverlay(asset: Asset, lines: List<OcrDto>, onClose: () -> Unit) {
                 MaterialTheme.colorScheme.primary,
                 null,
             ) {
-                clipboard.setText(AnnotatedString(o.text))
+                com.vknxworks.immichctrl.data.security.copySensitive(c.context, o.text, "Text from photo")
                 c.toast("Copied \"${o.text.take(40)}\"")
             }
         }
@@ -143,7 +142,7 @@ fun OcrOverlay(asset: Asset, lines: List<OcrDto>, onClose: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TextButton(onClick = {
-                clipboard.setText(AnnotatedString(lines.joinToString("\n") { it.text }))
+                com.vknxworks.immichctrl.data.security.copySensitive(c.context, lines.joinToString("\n") { it.text }, "Text from photo")
                 c.toast("Copied all text")
             }) { Text(if (lines.isEmpty()) "No text found" else "Copy all text", color = Color.White) }
             TextButton(onClick = onClose) { Text("Done", color = Color.White) }

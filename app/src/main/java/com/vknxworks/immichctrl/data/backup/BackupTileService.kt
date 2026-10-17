@@ -34,6 +34,16 @@ class BackupTileService : TileService() {
             }
             return
         }
+        // From the lock screen, the phone has to be unlocked first.
+        if (isLocked) {
+            unlockAndRun { toggleBackup() }
+            return
+        }
+        toggleBackup()
+    }
+
+    private fun toggleBackup() {
+        val c = applicationContext.container
         val running = qsTile?.state == Tile.STATE_ACTIVE
         if (running) c.backup.cancel() else c.backup.backupNow()
         qsTile?.apply {

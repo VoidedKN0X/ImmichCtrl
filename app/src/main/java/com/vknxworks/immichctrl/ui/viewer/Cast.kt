@@ -30,6 +30,8 @@ import com.google.android.gms.cast.framework.SessionProvider
 import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.data.api.Asset
 import com.vknxworks.immichctrl.data.api.createSession
+import com.vknxworks.immichctrl.data.api.deleteSession
+import kotlinx.coroutines.launch
 import com.vknxworks.immichctrl.data.log.AppLog
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.time.Instant
@@ -49,6 +51,9 @@ class CastOptionsProvider : OptionsProvider {
  */
 object CastController {
     private var token: String? = null
+    private var sessionId: String? = null
+    /** The account the session key belongs to: never reused for another account. */
+    private var tokenAccount: String? = null
     private var expires: Instant = Instant.EPOCH
 
     fun context(ctx: Context): CastContext? = runCatching { CastContext.getSharedInstance(ctx) }.getOrNull()
@@ -60,9 +65,13 @@ object CastController {
         val session = context(ctx)?.sessionManager?.currentCastSession ?: return
         if (!session.isConnected || !asset.isRemote) return
         val client = c.api
-        if (token == null || Instant.now().isAfter(expires.minusSeconds(60))) {
+        val account = c.sessions.active.value?.account?.key
+        if (token == null || tokenAccount != account || Instant.now().isAfter(expires.minusSeconds(60))) {
+            revoke(ctx)
             val s = client.createSession(15 * 60)
             token = s.token
+            sessionId = s.id.ifBlank { null }
+            tokenAccount = account
             expires = s.expiresAt?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: Instant.now().plusSeconds(15 * 60)
         }
         val base = if (asset.isImage) client.thumbnailUrl(asset.id, "preview") else client.videoUrl(asset.id)
@@ -90,6 +99,22 @@ object CastController {
 
     fun stop(ctx: Context) {
         context(ctx)?.sessionManager?.endCurrentSession(true)
+        revoke(ctx)
+    }
+
+    /** Ends the short-lived session the TV was given, so its key stops working right away. */
+    fun revoke(ctx: Context) {
+        val id = sessionId
+        val owner = tokenAccount
+        token = null
+        sessionId = null
+        tokenAccount = null
+        expires = Instant.EPOCH
+        if (id == null) return
+        val c = ctx.applicationContext.container
+        val session = c.sessions.active.value ?: return
+        if (session.account.key != owner) return
+        c.appScope.launch { runCatching { session.client.deleteSession(id) } }
     }
 }
 
@@ -104,7 +129,7 @@ fun CastButton(current: Asset?, tint: Color) {
         val listener = object : SessionManagerListener<CastSession> {
             override fun onSessionStarted(session: CastSession, sessionId: String) { connected = true }
             override fun onSessionResumed(session: CastSession, wasSuspended: Boolean) { connected = true }
-            override fun onSessionEnded(session: CastSession, error: Int) { connected = false }
+            override fun onSessionEnded(session: CastSession, error: Int) { connected = false; CastController.revoke(ctx) }
             override fun onSessionStarting(session: CastSession) = Unit
             override fun onSessionStartFailed(session: CastSession, error: Int) { connected = false }
             override fun onSessionEnding(session: CastSession) = Unit

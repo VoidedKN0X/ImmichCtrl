@@ -82,6 +82,18 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val c = applicationContext.container
         val settings = c.settings.current()
         if (mode != MODE_MANUAL && mode != MODE_ITEMS && !settings.backupEnabled) return Result.success()
+        // Automatic backup belongs to the account it was turned on for: switching to (or signing in
+        // to) another account or server must never start uploading the phone's photos there.
+        if (mode == MODE_AUTO || mode == MODE_TRIGGER) {
+            val owner = settings.backupAccount
+            if (owner == null) {
+                // Set up before backups remembered their account: it was the account in use then.
+                c.settings.update { it.copy(backupAccount = accountKey) }
+            } else if (owner != accountKey) {
+                AppLog.w("Backup", "Automatic backup is set up for another account; skipped")
+                return Result.success()
+            }
+        }
         if (!LocalMedia.hasPermission(applicationContext)) return Result.failure(workDataOf(KEY_ERROR to "Photo access is off"))
 
         val items = withContext(Dispatchers.IO) {
@@ -226,8 +238,11 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         startForeground(0, paths.size, null)
         val ids = ArrayList<String>()
         var failed = 0
+        val incoming = File(applicationContext.cacheDir, "incoming").canonicalFile
         paths.forEachIndexed { i, path ->
             val f = File(path)
+            // Only copies this app made of shared files, never any other file.
+            if (!f.canonicalPath.startsWith(incoming.path + File.separator)) return@forEachIndexed
             if (!f.exists()) return@forEachIndexed
             notifyProgress(i + 1, paths.size, f.name)
             try {
@@ -239,6 +254,10 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 f.delete()
                 f.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
             } catch (e: ApiException) {
+                // Won't be retried: don't leave the copy of the photo behind in the app's cache.
+                AppLog.e("Backup", "Couldn't upload a shared item", e)
+                f.delete()
+                f.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
                 failed++
             } catch (e: IOException) {
                 return Result.retry()
@@ -316,6 +335,16 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setSilent(true)
+            // On the lock screen: progress only, no file names.
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(
+                NotificationCompat.Builder(applicationContext, CHANNEL)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle("Backing up photos")
+                    .setProgress(total, done, total == 0)
+                    .setSilent(true)
+                    .build(),
+            )
             .build()
 
     private fun foregroundInfo(done: Int, total: Int, name: String?) =

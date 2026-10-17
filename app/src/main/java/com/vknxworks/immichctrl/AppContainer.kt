@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -95,6 +96,8 @@ class AppContainer(val context: Context) {
         }
         // Plain HTTP only to the user's own server (after they chose it), never via a redirect from HTTPS.
         .addNetworkInterceptor(CleartextPolicy.interceptor)
+        // Credentials and proxy headers never follow a redirect to another host.
+        .addNetworkInterceptor(router.credentialScope)
         .build()
 
     val sessions = SessionManager(context, http, appScope)
@@ -116,11 +119,31 @@ class AppContainer(val context: Context) {
     /** Something to open, from a notification, widget or another app ("memory:<id>", "asset:<id>", "admin"). */
     val openRequests = MutableStateFlow<String?>(null)
 
+    /** Photos another app shared to us, waiting for the user to confirm the upload. */
+    val pendingUploads = MutableStateFlow<List<Uri>?>(null)
+
     /** Photos another app asked us to open ("Open with ImmichCtrl"). */
     val externalUris = MutableStateFlow<List<Uri>?>(null)
 
     init {
         createChannels()
+        // Share and upload copies of photos never stay in the app's cache for long.
+        appScope.launch(Dispatchers.IO) { runCatching { com.vknxworks.immichctrl.data.share.Exporter.cleanUp(context) } }
+        // Signing out leaves nothing of that account's photos on the phone.
+        sessions.onSignedOut = { acc ->
+            withContext(Dispatchers.IO) {
+                offline.deleteAccount(acc.key)
+                runCatching { backupDb.reset(acc.key) }
+                appLock.forgetPin(acc.key)
+                java.io.File(context.cacheDir, "shared").deleteRecursively()
+                runCatching {
+                    val loader = coil3.SingletonImageLoader.get(context)
+                    loader.memoryCache?.clear()
+                    loader.diskCache?.clear()
+                }
+                AppLog.i("Account", "Signed out of ${acc.serverName}; removed its offline albums and cached photos")
+            }
+        }
         router.watchNetwork()
         local.watchGallery()
         appScope.launch {

@@ -227,13 +227,18 @@ fun AppContainer.share(assets: Collection<Asset>, large: Boolean) {
     val remote = assets.filter { it.isRemote }.map { it.id }
     val phone = phoneUris(assets.filter { it.isLocalOnly })
     if (remote.isNotEmpty()) toast(if (assets.size == 1) "Preparing to share…" else "Preparing ${assets.size} items to share…")
-    runTask { Exporter.shareFiles(context, api, remote, large, phone) }
+    val strip = settings.settings.value.shareStripLocation
+    runTask { Exporter.shareFiles(context, api, remote, large, phone, stripLocation = strip) }
 }
 
 fun AppContainer.download(assets: Collection<Asset>) {
     val remote = assets.filter { it.isRemote }
     if (remote.isEmpty()) return
-    runTask { val n = Exporter.download(context, api, remote.map { it.id }); toast("Saving ${countLabel(n, "item")} to Pictures/ImmichCtrl") }
+    toast("Saving ${countLabel(remote.size, "item")} to Pictures/ImmichCtrl…")
+    runTask {
+        val n = Exporter.download(context, api, remote.map { it.id })
+        toast(if (n == 0) "Couldn't save to the phone" else "Saved ${countLabel(n, "item")} to Pictures/ImmichCtrl")
+    }
 }
 
 fun AppContainer.shareLink(assets: Collection<Asset>, options: LinkOptions = LinkOptions()) {

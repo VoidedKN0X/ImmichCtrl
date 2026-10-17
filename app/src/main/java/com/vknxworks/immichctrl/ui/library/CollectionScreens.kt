@@ -207,9 +207,19 @@ private fun TrashScreen() {
 class LockedFolderGuard : androidx.lifecycle.ViewModel() {
     var unlocked by mutableStateOf(false)
     var lock: (() -> Unit)? = null
+    /** Drops locked photos from the in-memory image cache once the folder is left. */
+    var forgetImages: (() -> Unit)? = null
+
+    init {
+        // No screenshots, screen recordings or screen casting while the locked folder (or a photo opened from it) is up.
+        // (Posted: this runs while the screen is being composed, which mustn't change state it reads.)
+        android.os.Handler(android.os.Looper.getMainLooper()).post { com.vknxworks.immichctrl.data.security.ScreenPrivacy.acquire() }
+    }
 
     override fun onCleared() {
+        com.vknxworks.immichctrl.data.security.ScreenPrivacy.release()
         if (unlocked) lock?.invoke()
+        forgetImages?.invoke()
     }
 }
 
@@ -219,6 +229,8 @@ fun LockedScreen() {
     val status = rememberLoader("auth-status") { c.api.authStatus() }
     val guard: LockedFolderGuard = androidx.lifecycle.viewmodel.compose.viewModel()
     guard.lock = { c.appScope.launch { runCatching { c.api.lockSession() } } }
+    val appContext = LocalContext.current.applicationContext
+    guard.forgetImages = { runCatching { coil3.SingletonImageLoader.get(appContext).memoryCache?.clear() } }
     var unlocked by guard::unlocked
     var error by remember { mutableStateOf<String?>(null) }
     var settingUp by remember { mutableStateOf(false) }
@@ -226,7 +238,7 @@ fun LockedScreen() {
     val activity = LocalContext.current.findActivity()
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     val accountKey = c.sessions.active.collectAsStateWithLifecycle().value?.account?.key
-    val bio = settings.lockedFolderBiometric && c.appLock.canLock()
+    val bio = settings.lockedFolderBiometric && c.appLock.canUseBiometricPin()
     fun rememberPin(pin: String) { if (bio && accountKey != null) c.appScope.launch { c.appLock.savePin(accountKey, pin) } }
 
     if (unlocked) {
@@ -255,8 +267,8 @@ fun LockedScreen() {
                         if (!s.value.pinCode) settingUp = true
                         else if (bio && activity != null && accountKey != null) c.appScope.launch(kotlinx.coroutines.Dispatchers.Main) {
                             // Fingerprint first when a PIN has been remembered; fall back to typing it.
-                            val saved = c.appLock.savedPin(accountKey)
-                            if (saved == null || !c.appLock.promptAsync(activity, "Unlock the locked folder")) { entering = true; return@launch }
+                            val saved = if (c.appLock.hasSavedPin(accountKey)) c.appLock.unlockSavedPin(activity, accountKey, "Unlock the locked folder") else null
+                            if (saved == null) { entering = true; return@launch }
                             runCatching { c.api.unlockSession(saved) }
                                 .onSuccess { error = null; unlocked = true }
                                 .onFailure { c.appLock.forgetPin(accountKey); error = it.friendlyMessage(); entering = true }
@@ -302,7 +314,6 @@ fun LockedScreen() {
 fun SharedLinksScreen() {
     val c = LocalContext.current.container
     val nav = LocalNavigator.current
-    val clipboard = LocalClipboardManager.current
     val links = rememberLoader("shared-links") { c.api.sharedLinks().sortedByDescending { it.createdAt } }
     var open by remember { mutableStateOf<SharedLinkDto?>(null) }
     var editing by remember { mutableStateOf<SharedLinkDto?>(null) }
@@ -347,7 +358,8 @@ fun SharedLinksScreen() {
             Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(l.album?.albumName ?: countLabel(l.assets.size, "photo"), url)
                 ActionItem(Icons.Outlined.ContentCopy, "Copy link") {
-                    clipboard.setText(AnnotatedString(url))
+                    // Anyone with the link can see the photos: keep it out of clipboard previews and history.
+                    com.vknxworks.immichctrl.data.security.copySensitive(c.context, url, "Shared link")
                     c.toast("Link copied")
                     open = null
                 }
