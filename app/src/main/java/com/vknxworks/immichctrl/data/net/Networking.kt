@@ -98,7 +98,8 @@ class NetworkRouter(private val context: Context, private val scope: CoroutineSc
                     .port(c.local.port)
                     .encodedPath(path)
                     .build()
-                req = req.newBuilder().url(url).build()
+                // The call started at the public address; tell the cleartext check where it really starts.
+                req = req.newBuilder().url(url).tag(CleartextPolicy.RoutedTo::class.java, CleartextPolicy.RoutedTo(url)).build()
             }
             if (c.headers.isNotEmpty() && isServer(req.url)) {
                 val b = req.newBuilder()

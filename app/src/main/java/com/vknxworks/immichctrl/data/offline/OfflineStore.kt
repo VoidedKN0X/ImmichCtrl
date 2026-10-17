@@ -182,12 +182,18 @@ class OfflineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                     notify(i + 1, assets.size, album.albumName)
                     val url = if (a.isImage) client.thumbnailUrl(a.id, "preview") else client.videoUrl(a.id)
                     val req = client.request(url.toHttpUrl()).build()
-                    withContext(Dispatchers.IO) {
-                        client.execute(req).use { resp ->
-                            val tmp = File(dir, "$file.part")
-                            tmp.sink().buffer().use { it.writeAll(resp.body!!.source()) }
-                            tmp.renameTo(target)
+                    try {
+                        withContext(Dispatchers.IO) {
+                            client.execute(req).use { resp ->
+                                val tmp = File(dir, "$file.part")
+                                tmp.sink().buffer().use { it.writeAll(resp.body!!.source()) }
+                                tmp.renameTo(target)
+                            }
                         }
+                    } catch (e: com.vknxworks.immichctrl.data.api.ApiException) {
+                        // One item the server can't give (e.g. a video not transcoded yet) shouldn't stop the album.
+                        AppLog.w("Offline", "Skipped ${a.id}: ${e.message}")
+                        return@forEachIndexed
                     }
                 }
                 kept += OfflineAsset(a.id, a.isImage, a.ratio, a.takenAtMs, a.localOffsetHours, a.durationMs, a.thumbhash, a.isFavorite, a.ownerId, file)

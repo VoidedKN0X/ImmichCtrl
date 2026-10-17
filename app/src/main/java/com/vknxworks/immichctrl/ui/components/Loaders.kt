@@ -144,6 +144,11 @@ class PagedLoader<T>(
 
 class LoaderStore : ViewModel() {
     val map = mutableMapOf<String, Any>()
+
+    // The screen is gone for good: stop offering its sources to the viewer and to refreshAll().
+    override fun onCleared() {
+        map.values.forEach { if (it is com.vknxworks.immichctrl.data.timeline.AssetSource) com.vknxworks.immichctrl.data.timeline.Sources.unregister(it) }
+    }
 }
 
 @Composable

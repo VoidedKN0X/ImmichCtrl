@@ -116,13 +116,16 @@ class BackupManager(
     /** Uploads specific photos from this phone (picked in the app), whatever the backup settings. */
     fun uploadLocal(ids: Collection<Long>) {
         if (ids.isEmpty()) return
-        val req = OneTimeWorkRequestBuilder<BackupWorker>()
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .setInputData(workDataOf(BackupWorker.KEY_MODE to BackupWorker.MODE_ITEMS, BackupWorker.KEY_IDS to ids.toLongArray()))
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .addTag(TAG)
-            .build()
-        wm.enqueue(req)
+        // WorkManager input is capped at 10 KB, so big selections go as several jobs.
+        ids.chunked(500).forEach { chunk ->
+            val req = OneTimeWorkRequestBuilder<BackupWorker>()
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .setInputData(workDataOf(BackupWorker.KEY_MODE to BackupWorker.MODE_ITEMS, BackupWorker.KEY_IDS to chunk.toLongArray()))
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .addTag(TAG)
+                .build()
+            wm.enqueue(req)
+        }
     }
 
     /** Files everything backed up from this phone into server albums named like the phone's albums. */
@@ -155,19 +158,22 @@ class BackupManager(
             }.getOrNull()
         }
         if (paths.isEmpty()) return@withContext 0
-        val req = OneTimeWorkRequestBuilder<BackupWorker>()
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .setInputData(
-                workDataOf(
-                    BackupWorker.KEY_MODE to BackupWorker.MODE_SHARED,
-                    BackupWorker.KEY_FILES to paths.toTypedArray(),
-                    BackupWorker.KEY_ALBUM to albumId,
-                ),
-            )
-            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-            .addTag(TAG)
-            .build()
-        wm.enqueue(req)
+        // WorkManager input is capped at 10 KB, so many files go as several jobs.
+        paths.chunked(40).forEach { chunk ->
+            val req = OneTimeWorkRequestBuilder<BackupWorker>()
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .setInputData(
+                    workDataOf(
+                        BackupWorker.KEY_MODE to BackupWorker.MODE_SHARED,
+                        BackupWorker.KEY_FILES to chunk.toTypedArray(),
+                        BackupWorker.KEY_ALBUM to albumId,
+                    ),
+                )
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .addTag(TAG)
+                .build()
+            wm.enqueue(req)
+        }
         paths.size
     }
 

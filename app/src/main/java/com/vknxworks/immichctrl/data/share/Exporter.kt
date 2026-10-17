@@ -34,6 +34,8 @@ object Exporter {
             val (h, v) = client.authHeader
             val req = DownloadManager.Request(Uri.parse(client.originalUrl(id)))
                 .addRequestHeader(h, v)
+                // The download manager doesn't go through the app's client, so add the proxy headers here.
+                .apply { client.extraHeaders.forEach { (k, value) -> addRequestHeader(k, value) } }
                 .setTitle(file)
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 .setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES, "ImmichCtrl/$file")

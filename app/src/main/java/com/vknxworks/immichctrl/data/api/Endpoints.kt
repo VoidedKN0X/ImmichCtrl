@@ -340,10 +340,20 @@ data class PeopleFullDto(val people: List<PersonFullDto> = emptyList())
 suspend fun ImmichClient.duplicates(): List<DuplicateGroupDto> = get("/duplicates")
 
 suspend fun ImmichClient.resolveDuplicates(groups: List<Triple<String, List<String>, List<String>>>): List<BulkIdResultDto> =
-    send(
-        "POST", "/duplicates/resolve",
-        obj("groups" to groups.map { (id, keep, trash) -> mapOf("duplicateId" to id, "keepAssetIds" to keep, "trashAssetIds" to trash) }),
-    )
+    try {
+        send(
+            "POST", "/duplicates/resolve",
+            obj("groups" to groups.map { (id, keep, trash) -> mapOf("duplicateId" to id, "keepAssetIds" to keep, "trashAssetIds" to trash) }),
+        )
+    } catch (e: ApiException) {
+        // Immich before 2.6 has no resolve endpoint: trash the others and clear the group on the kept ones.
+        if (e.code != 404) throw e
+        val trash = groups.flatMap { it.third }
+        if (trash.isNotEmpty()) deleteAssets(trash)
+        val keep = groups.flatMap { it.second }
+        if (keep.isNotEmpty()) updateAssets(keep, "duplicateId" to Null)
+        emptyList()
+    }
 
 suspend fun ImmichClient.dismissDuplicate(id: String) = sendUnit("DELETE", "/duplicates/$id")
 

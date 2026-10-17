@@ -91,6 +91,8 @@ class LocalLibrary(
                 val rem = if (db.isDone(done, item)) remote[item.id] else null
                 if (rem != null) item.toAsset().copy(id = rem, isLocalOnly = false, onDevice = true) else item.toAsset()
             }
+            // Identical copies on the phone all point at one server photo; show it once (grid keys must be unique).
+            .distinctBy { it.id }
     }
 
     companion object {
