@@ -3,7 +3,16 @@ name: Build APK
 on:
   push:
     branches: [main]
-    paths-ignore: ["**.md"]
+    # Only changes to the app itself make a new release. README, licence, badges
+    # and CI edits don't, so Obtainium and the F-Droid repo only see real updates.
+    paths:
+      - "app/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - "gradle.properties"
+      - "gradlew"
+      - "gradlew.bat"
+      - "VERSION"
   workflow_dispatch:
 
 permissions:
@@ -107,26 +116,19 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-          sparse-checkout: |
-            CHANGELOG.md
-            VERSION
-          sparse-checkout-cone-mode: false
+          fetch-depth: 0   # full history and tags, for the release notes
+
+      - name: Write release notes
+        env:
+          TAG: v${{ needs.build.outputs.version }}
+        run: |
+          bash .github/scripts/release-notes.sh "$TAG" "$GITHUB_SHA" > "$RUNNER_TEMP/notes.md"
+          cat "$RUNNER_TEMP/notes.md"
 
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: ImmichCtrl-v${{ needs.build.outputs.version }}
           path: out
-
-      - name: Release notes from the changelog
-        run: |
-          # The section for this major.minor ("## 0.2 ..."), up to the next "## " heading.
-          base="$(tr -d '[:space:]' < VERSION)"
-          awk -v base="$base" '
-            /^## / { if (found) exit; if (index($0, "## " base " ") == 1 || $0 == "## " base) { found = 1; next } }
-            found { print }
-          ' CHANGELOG.md > notes.md
-          if [ ! -s notes.md ]; then echo "See CHANGELOG.md." > notes.md; fi
-          cat notes.md
 
       - name: Publish release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
@@ -135,5 +137,4 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: ImmichCtrl v${{ needs.build.outputs.version }}
           files: out/*.apk
-          body_path: notes.md
-          generate_release_notes: true
+          body_path: ${{ runner.temp }}/notes.md
