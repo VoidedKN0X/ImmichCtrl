@@ -12,9 +12,6 @@ val releaseKeystorePath: String? = System.getenv("SIGNING_KEYSTORE_PATH")?.takeI
 val isCi: Boolean = System.getenv("CI") == "true" || System.getenv("GITHUB_ACTIONS") == "true"
 val releaseSigningComplete: Boolean = releaseKeystorePath != null &&
     listOf("KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD").all { !System.getenv(it).isNullOrBlank() }
-val ciRunNumber: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
-// Major.minor lives in the VERSION file at the repo root; the CI run number is the patch.
-val baseVersion: String = rootProject.file("VERSION").readText().trim()
 
 android {
     namespace = "com.vknxworks.immichctrl"
@@ -24,8 +21,9 @@ android {
         applicationId = "com.vknxworks.immichctrl"
         minSdk = 33
         targetSdk = 36
-        versionCode = ciRunNumber
-        versionName = "$baseVersion.$ciRunNumber"
+        // Bump both to publish a new release (see CHANGELOG.md).
+        versionCode = 5
+        versionName = "0.2.5"
     }
 
     signingConfigs {
