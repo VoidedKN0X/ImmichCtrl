@@ -51,9 +51,11 @@ fun <S : AssetSource> rememberSource(key: String, create: (CoroutineScope) -> S)
 }
 
 @Composable
-fun rememberTimeline(key: String, query: TimelineQuery): TimelineSource {
+fun rememberTimeline(key: String, query: TimelineQuery, withLocal: Boolean = false): TimelineSource {
     val c = LocalContext.current.container
-    return rememberSource(key) { scope -> TimelineSource(key, c.api, query, scope) }
+    return rememberSource(key) { scope ->
+        TimelineSource(key, c.api, query, scope, local = if (withLocal) suspend { c.local.snapshot() } else null)
+    }
 }
 
 @Composable
@@ -108,7 +110,9 @@ fun SourceGrid(
                 groupBy = groupBy ?: settings.groupBy,
                 state = state,
                 topPadding = topPadding,
-                selectable = selectable,
+                // Read-only mode: look, don't touch.
+                selectable = selectable && !settings.readOnly,
+                indicator = settings.storageIndicator,
                 empty = empty,
                 header = header,
             )

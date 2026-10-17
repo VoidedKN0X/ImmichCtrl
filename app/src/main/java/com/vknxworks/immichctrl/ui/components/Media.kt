@@ -57,7 +57,7 @@ import java.time.temporal.ChronoUnit
 
 // ---------- Images ----------
 
-/** A server thumbnail with its ThumbHash blur showing until it arrives. */
+/** A thumbnail with its ThumbHash blur showing until it arrives. */
 @Composable
 fun AssetThumb(
     assetId: String,
@@ -65,9 +65,11 @@ fun AssetThumb(
     modifier: Modifier = Modifier,
     size: String = "thumbnail",
     contentScale: ContentScale = ContentScale.Crop,
+    /** A copy on the phone or saved offline; shown instead of downloading. */
+    localUri: String? = null,
 ) {
     val c = LocalContext.current.container
-    val url = remember(assetId, size) { c.api.thumbnailUrl(assetId, size, thumbhash?.take(12)) }
+    val url = remember(assetId, size, localUri) { localUri ?: c.api.thumbnailUrl(assetId, size, thumbhash?.take(12)) }
     val blur = remember(thumbhash) { ThumbHash.bitmap(thumbhash)?.asImageBitmap() }
     Box(modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
         if (blur != null) Image(blur, null, Modifier.fillMaxSize(), contentScale = contentScale)
@@ -289,4 +291,19 @@ fun Badge(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null
             Text(text, style = MaterialTheme.typography.labelSmall, color = Color.White)
         }
     }
+}
+
+/** The thumbnail for any [com.vknxworks.immichctrl.data.api.Asset], wherever it lives. */
+@Composable
+fun AssetThumb(asset: com.vknxworks.immichctrl.data.api.Asset, modifier: Modifier = Modifier, size: String = "thumbnail") =
+    AssetThumb(asset.id, asset.thumbhash, modifier, size, localUri = if (asset.isLocalOnly || asset.localUri?.startsWith("file:") == true) asset.localUri else null)
+
+/** The activity behind a Compose context (needed for fingerprint prompts). */
+fun android.content.Context.findActivity(): androidx.fragment.app.FragmentActivity? {
+    var ctx: android.content.Context? = this
+    while (ctx is android.content.ContextWrapper) {
+        if (ctx is androidx.fragment.app.FragmentActivity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }

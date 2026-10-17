@@ -11,6 +11,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.ChildCare
+import androidx.compose.material.icons.outlined.CloudDone
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.PhoneAndroid
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Shuffle
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Wifi
+import com.vknxworks.immichctrl.data.settings.ShareSize
+import com.vknxworks.immichctrl.ui.components.findActivity
+import com.vknxworks.immichctrl.ui.nav.LogsRoute
+import com.vknxworks.immichctrl.ui.nav.NetworkingRoute
 import androidx.compose.material.icons.outlined.CalendarViewDay
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DeleteOutline
@@ -55,6 +70,10 @@ fun SettingsScreen() {
     val scope = rememberCoroutineScope()
     val s by c.settings.settings.collectAsStateWithLifecycle()
     fun update(t: (AppSettings) -> AppSettings) { scope.launch { c.settings.update(t) } }
+    val context = LocalContext.current
+    val nav = LocalNavigator.current
+    val session by c.sessions.active.collectAsStateWithLifecycle()
+    val canLock = remember { c.appLock.canLock() }
 
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar("Settings")
@@ -86,6 +105,67 @@ fun SettingsScreen() {
                 }
                 GroupSwitch("Play videos automatically", null, s.autoPlayVideos, Icons.Outlined.PlayCircle) { v -> update { it.copy(autoPlayVideos = v) } }
                 GroupSwitch("Loop videos", null, s.loopVideos, Icons.Outlined.Repeat) { v -> update { it.copy(loopVideos = v) } }
+            }
+            Group("On this phone") {
+                GroupSwitch("Show photos from this phone", "Photos not backed up yet appear in the timeline", s.showLocal, Icons.Outlined.PhoneAndroid) { v ->
+                    update { it.copy(showLocal = v) }
+                    Sources.refreshAll()
+                }
+                GroupSwitch("Backup status on thumbnails", "A cloud badge on photos that are only on the phone, or on both", s.storageIndicator, Icons.Outlined.CloudDone) { v ->
+                    update { it.copy(storageIndicator = v) }
+                }
+                GroupChoice("Share size", ShareSize.entries.map { it to it.label }, s.shareSize, Icons.Outlined.Share) { v -> update { it.copy(shareSize = v) } }
+            }
+            Group("Slideshow") {
+                GroupChoice("Each photo shows for", listOf(3, 5, 8, 12, 20).map { it to "$it seconds" }, s.slideSeconds, Icons.Outlined.Timer) { v ->
+                    update { it.copy(slideSeconds = v) }
+                }
+                GroupSwitch("Shuffle", null, s.slideShuffle, Icons.Outlined.Shuffle) { v -> update { it.copy(slideShuffle = v) } }
+                GroupSwitch("Start again at the end", null, s.slideLoop, Icons.Outlined.Repeat) { v -> update { it.copy(slideLoop = v) } }
+            }
+            Group("Privacy", footer = if (canLock) "App lock uses your phone's fingerprint, face or screen lock." else "Set up a screen lock on the phone to use app lock.") {
+                GroupSwitch("App lock", "Ask for your fingerprint or screen lock to open the app", s.appLock && canLock, Icons.Outlined.Lock) { v ->
+                    if (!canLock) return@GroupSwitch
+                    val activity = context.findActivity() ?: return@GroupSwitch
+                    c.appLock.prompt(activity, if (v) "Turn on app lock" else "Turn off app lock", allowCredential = true) { ok ->
+                        if (ok) {
+                            c.appLock.markUnlocked()
+                            update { it.copy(appLock = v) }
+                        }
+                    }
+                }
+                if (s.appLock) {
+                    GroupChoice(
+                        "Lock again after",
+                        listOf(0 to "Immediately", 30 to "30 seconds", 60 to "1 minute", 300 to "5 minutes", 900 to "15 minutes"),
+                        s.appLockTimeout,
+                        Icons.Outlined.Timer,
+                    ) { v -> update { it.copy(appLockTimeout = v) } }
+                }
+                GroupSwitch("Fingerprint for the locked folder", "Remembers your locked-folder PIN on this phone, protected by the fingerprint", s.lockedFolderBiometric && canLock, Icons.Outlined.Fingerprint) { v ->
+                    if (!canLock) return@GroupSwitch
+                    update { it.copy(lockedFolderBiometric = v) }
+                    if (!v) scope.launch { session?.account?.key?.let { c.appLock.forgetPin(it) } }
+                }
+                GroupSwitch("Read-only mode", "Only the timeline, nothing can be changed. Good for handing the phone to a child.", s.readOnly, Icons.Outlined.ChildCare) { v ->
+                    update { it.copy(readOnly = v) }
+                }
+            }
+            if (session?.account?.isAdmin == true) {
+                Group("Admin alerts", footer = "Checked about once an hour. Only shown on admin accounts.") {
+                    GroupSwitch("Notify me about the server", "Failed jobs, low disk space and new Immich releases", s.adminAlerts, Icons.Outlined.NotificationsActive) { v ->
+                        update { it.copy(adminAlerts = v) }
+                    }
+                    if (s.adminAlerts) {
+                        GroupChoice("Warn when the disk is", listOf(75, 80, 85, 90, 95).map { it to "$it% full" }, s.adminDiskPercent, Icons.Outlined.SdStorage) { v ->
+                            update { it.copy(adminDiskPercent = v) }
+                        }
+                    }
+                }
+            }
+            Group("Connection and help") {
+                GroupRow("Networking", "Local address, custom headers, client certificate", icon = Icons.Outlined.Wifi, showChevron = true, onClick = { nav.navigate(NetworkingRoute) })
+                GroupRow("Logs", "What the app has been doing, to help track down problems", icon = Icons.Outlined.BugReport, showChevron = true, onClick = { nav.navigate(LogsRoute) })
             }
             Group("Storage on this phone", footer = "Thumbnails and previews are kept so the grid scrolls fast offline. Takes effect next time the app starts.") {
                 GroupChoice(

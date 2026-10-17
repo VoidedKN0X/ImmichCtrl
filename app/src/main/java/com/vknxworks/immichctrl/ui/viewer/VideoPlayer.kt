@@ -6,12 +6,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -25,6 +28,7 @@ import com.vknxworks.immichctrl.container
  */
 @Composable
 fun VideoPlayer(
+    /** Server asset id of the video, or a content:// / file:// address when [isUri]. */
     videoAssetId: String,
     active: Boolean,
     autoPlay: Boolean,
@@ -32,18 +36,31 @@ fun VideoPlayer(
     showControls: Boolean,
     modifier: Modifier = Modifier,
     muted: Boolean = false,
+    isUri: Boolean = false,
     onTap: (() -> Unit)? = null,
+    onEnded: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val c = context.container
     val player = remember(videoAssetId) {
         ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(OkHttpDataSource.Factory(c.http)))
+            // Server videos go through the app's HTTP client (credentials); phone and offline files are read directly.
+            .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(context, OkHttpDataSource.Factory(c.http))))
             .build()
             .apply {
-                setMediaItem(MediaItem.fromUri(c.api.videoUrl(videoAssetId)))
+                setMediaItem(MediaItem.fromUri(if (isUri) videoAssetId else c.api.videoUrl(videoAssetId)))
                 prepare()
             }
+    }
+    val ended by rememberUpdatedState(onEnded)
+    DisposableEffect(player) {
+        val listener = object : Player.Listener {
+            override fun onPlaybackStateChanged(state: Int) {
+                if (state == Player.STATE_ENDED) ended?.invoke()
+            }
+        }
+        player.addListener(listener)
+        onDispose { player.removeListener(listener) }
     }
     DisposableEffect(player) {
         onDispose { player.release() }

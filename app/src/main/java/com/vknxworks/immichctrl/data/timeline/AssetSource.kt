@@ -8,6 +8,8 @@ import com.vknxworks.immichctrl.data.api.ImmichClient
 import com.vknxworks.immichctrl.data.api.TimelineQuery
 import com.vknxworks.immichctrl.data.api.timeBucket
 import com.vknxworks.immichctrl.data.api.timeBuckets
+import com.vknxworks.immichctrl.data.backup.LocalSnapshot
+import java.time.YearMonth
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -29,6 +31,8 @@ data class Bucket(
     /** Count from the server; the real size once [assets] has loaded. */
     val count: Int,
     val assets: List<Asset>?,
+    /** The server has this month; false for months that only have photos on this phone. */
+    val remote: Boolean = true,
 ) {
     val size: Int get() = assets?.size ?: count
 }
@@ -113,13 +117,19 @@ abstract class AssetSource(val key: String, protected val scope: CoroutineScope)
     protected fun Throwable.readable(): String = message ?: this::class.simpleName ?: "Couldn't load"
 }
 
-/** The server's timeline for a filter (all photos, an album, a person, favourites, archive, trash...). */
+/**
+ * The server's timeline for a filter (all photos, an album, a person, favourites, archive, trash...).
+ * With [local], photos on this phone that aren't backed up yet are merged into their months, and
+ * server photos that came from this phone are marked as such.
+ */
 class TimelineSource(
     key: String,
     private val client: ImmichClient,
     private val query: TimelineQuery,
     scope: CoroutineScope,
+    private val local: (suspend () -> LocalSnapshot)? = null,
 ) : AssetSource(key, scope) {
+    private var snapshot = LocalSnapshot()
     private val loading = ConcurrentHashMap.newKeySet<String>()
     private val failedAt = ConcurrentHashMap<String, Long>()
     private val gate = Semaphore(3)
@@ -136,10 +146,24 @@ class TimelineSource(
         listJob = scope.launch {
             try {
                 val fresh = client.timeBuckets(query)
+                snapshot = local?.invoke() ?: LocalSnapshot()
                 val old = buckets.associateBy { it.key }
+                val remoteMonths = HashSet<YearMonth>()
                 val next = fresh.filter { it.count > 0 }.map { dto ->
                     val prev = old[dto.timeBucket]
-                    Bucket(dto.timeBucket, monthLabel(dto.timeBucket), dto.count, if (silent) prev?.assets else null)
+                    val month = monthOf(dto.timeBucket)
+                    month?.let { remoteMonths += it }
+                    val localCount = month?.let { snapshot.localOnly[it]?.size } ?: 0
+                    Bucket(dto.timeBucket, monthLabel(dto.timeBucket), dto.count + localCount, if (silent) prev?.assets else null)
+                }.toMutableList()
+                // Months with photos only on this phone.
+                snapshot.localOnly.filterKeys { it !in remoteMonths }.forEach { (month, items) ->
+                    val key = "local-$month"
+                    next += Bucket(key, monthLabel("$month-01"), items.size, items, remote = false)
+                }
+                if (snapshot.localOnly.isNotEmpty()) {
+                    val desc = query.order != "asc"
+                    next.sortWith(compareBy<Bucket> { monthOf(it.key.removePrefix("local-")) ?: YearMonth.of(1970, 1) }.let { if (desc) it.reversed() else it })
                 }
                 loading.clear()
                 failedAt.clear()
@@ -172,9 +196,13 @@ class TimelineSource(
             loading.remove(b.key)
             return
         }
+        if (!b.remote) {
+            loading.remove(b.key)
+            return
+        }
         scope.launch {
             try {
-                val assets = gate.withPermit { client.timeBucket(query, b.key) }
+                val assets = merge(b.key, gate.withPermit { client.timeBucket(query, b.key) })
                 buckets = buckets.map { if (it.key == b.key) it.copy(count = assets.size, assets = assets) else it }
                 failedAt.remove(b.key)
             } catch (e: CancellationException) {
@@ -187,8 +215,23 @@ class TimelineSource(
         }
     }
 
+    /** Marks server photos that are also on this phone, and mixes in this month's phone-only photos. */
+    private fun merge(bucketKey: String, remote: List<Asset>): List<Asset> {
+        val snap = snapshot
+        if (snap.onDevice.isEmpty() && snap.localOnly.isEmpty()) return remote
+        val marked = if (snap.onDevice.isEmpty()) remote else remote.map { a ->
+            snap.onDevice[a.id]?.let { a.copy(onDevice = true, localId = it) } ?: a
+        }
+        val extra = monthOf(bucketKey)?.let { snap.localOnly[it] }.orEmpty()
+        if (extra.isEmpty()) return marked
+        val desc = query.order != "asc"
+        return (marked + extra).sortedWith(compareBy<Asset> { it.takenAtMs }.let { if (desc) it.reversed() else it })
+    }
+
     companion object {
         private val monthFmt = DateTimeFormatter.ofPattern("MMMM yyyy")
+
+        fun monthOf(timeBucket: String): YearMonth? = runCatching { YearMonth.parse(timeBucket.take(7)) }.getOrNull()
         private val thisYearFmt = DateTimeFormatter.ofPattern("MMMM")
 
         fun monthLabel(timeBucket: String): String {

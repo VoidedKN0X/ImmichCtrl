@@ -42,8 +42,11 @@ object Exporter {
         names.size
     }
 
-    /** Fetches originals into the app's cache and opens the share sheet with them. */
-    suspend fun shareFiles(context: Context, client: ImmichClient, ids: Collection<String>) {
+    /**
+     * Fetches server photos into the app's cache (originals, or [large] previews for smaller files)
+     * and opens the share sheet with them plus any [phoneUris] (photos only on this phone).
+     */
+    suspend fun shareFiles(context: Context, client: ImmichClient, ids: Collection<String>, large: Boolean = false, phoneUris: List<Uri> = emptyList()) {
         val dir = File(context.cacheDir, "shared").apply {
             // Old shares are no longer needed once a new one starts.
             listFiles()?.forEach { it.deleteRecursively() }
@@ -55,21 +58,26 @@ object Exporter {
                 async(Dispatchers.IO) {
                     gate.withPermit {
                         val dto = client.asset(id)
-                        val name = dto.originalFileName.ifBlank { "$id.jpg" }.replace('/', '_')
+                        val original = dto.originalFileName.ifBlank { "$id.jpg" }.replace('/', '_')
+                        // Videos are always sent as they are; "large" photos are Immich's JPEG preview.
+                        val preview = large && dto.isImage
+                        val name = if (preview) original.substringBeforeLast('.') + ".jpg" else original
                         val target = File(File(dir, id).apply { mkdirs() }, name)
-                        val req = client.request(client.url("/assets/$id/original")).build()
+                        val url = if (preview) client.url("/assets/$id/thumbnail", "size" to "preview") else client.url("/assets/$id/original")
+                        val req = client.request(url).build()
                         client.execute(req).use { resp ->
                             val body = resp.body ?: throw IOException("Empty response")
                             target.sink().buffer().use { it.writeAll(body.source()) }
                         }
-                        target to (dto.originalMimeType ?: if (dto.isImage) "image/*" else "video/*")
+                        target to (if (preview) "image/jpeg" else dto.originalMimeType ?: if (dto.isImage) "image/*" else "video/*")
                     }
                 }
             }.awaitAll()
         }
-        if (files.isEmpty()) return
-        val uris = files.map { FileProvider.getUriForFile(context, "${context.packageName}.files", it.first) }
-        val type = files.map { it.second }.distinct().singleOrNull() ?: "*/*"
+        if (files.isEmpty() && phoneUris.isEmpty()) return
+        val uris = files.map { FileProvider.getUriForFile(context, "${context.packageName}.files", it.first) } + phoneUris
+        val types = files.map { it.second } + phoneUris.map { context.contentResolver.getType(it) ?: "*/*" }
+        val type = types.distinct().singleOrNull() ?: if (types.all { it.startsWith("image/") }) "image/*" else "*/*"
         val intent = if (uris.size == 1) {
             Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_STREAM, uris.first())
         } else {

@@ -31,6 +31,22 @@ class BackupDb(context: Context) : SQLiteOpenHelper(context, "backup.db", null, 
         return out
     }
 
+    /** local id -> server asset id, for what was backed up from this phone to [account]. */
+    @Synchronized
+    fun remoteIds(account: String): Map<Long, String> {
+        val out = HashMap<Long, String>()
+        readableDatabase.rawQuery("SELECT local_id, remote_id FROM uploaded WHERE account = ? AND remote_id IS NOT NULL", arrayOf(account)).use { c ->
+            while (c.moveToNext()) out[c.getLong(0)] = c.getString(1)
+        }
+        return out
+    }
+
+    @Synchronized
+    fun forget(account: String, localIds: Collection<Long>) {
+        val db = writableDatabase
+        localIds.forEach { db.delete("uploaded", "account = ? AND local_id = ?", arrayOf(account, it.toString())) }
+    }
+
     fun isDone(uploaded: Map<Long, Pair<Long, Long>>, item: LocalItem): Boolean =
         uploaded[item.id]?.let { it.first == item.size && it.second == item.modifiedMs } == true
 

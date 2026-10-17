@@ -59,6 +59,9 @@ class ImmichClient(
     /** Origin the auth interceptor attaches credentials to. */
     val origin: HttpUrl = this.baseUrl.toHttpUrl()
 
+    /** Headers for requests made before an account exists (signing in to a server behind a proxy). */
+    var extraHeaders: Map<String, String> = emptyMap()
+
     /** Set once the server version is known; some request fields changed between 2.x and 3.x. */
     @Volatile var serverMajor: Int = 3
 
@@ -79,6 +82,7 @@ class ImmichClient(
 
     fun request(url: HttpUrl): Request.Builder {
         val b = Request.Builder().url(url).header("Accept", "application/json")
+        extraHeaders.forEach { (k, v) -> b.header(k, v) }
         if (secret.isNotBlank()) b.header(authHeader.first, authHeader.second)
         else b.tag(NoAuth::class.java, NoAuth) // signing in: don't let the interceptor add the active account's credentials
         return b

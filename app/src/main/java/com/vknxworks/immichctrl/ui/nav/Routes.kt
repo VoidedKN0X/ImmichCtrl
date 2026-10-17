@@ -36,3 +36,22 @@ import kotlinx.serialization.Serializable
 @Serializable data object AccountsRoute
 @Serializable data object AddAccountRoute
 @Serializable data object AdminRoute
+
+// Photos on this phone
+@Serializable data object LocalAlbumsRoute
+@Serializable data class LocalAlbumRoute(val bucketId: String, val name: String)
+@Serializable data object FreeUpSpaceRoute
+/** A photo or video another app opened with ImmichCtrl. */
+@Serializable data object ExternalViewRoute
+
+// Viewer extras
+@Serializable data class EditorRoute(val assetId: String)
+@Serializable data class SlideshowRoute(val source: String, val index: Int)
+
+// Library extras
+@Serializable data object DuplicatesRoute
+@Serializable data class OfflineAlbumRoute(val albumId: String)
+
+// Settings
+@Serializable data object NetworkingRoute
+@Serializable data object LogsRoute

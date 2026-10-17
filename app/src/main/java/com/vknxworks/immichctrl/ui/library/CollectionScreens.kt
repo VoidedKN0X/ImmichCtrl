@@ -1,5 +1,7 @@
 package com.vknxworks.immichctrl.ui.library
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.vknxworks.immichctrl.ui.components.findActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,6 +22,10 @@ import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DeleteForever
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Edit
+import com.vknxworks.immichctrl.data.api.updateSharedLink
+import com.vknxworks.immichctrl.ui.photos.LinkOptions
+import com.vknxworks.immichctrl.ui.photos.SharedLinkDialog
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.Lock
@@ -57,7 +63,6 @@ import com.vknxworks.immichctrl.data.api.emptyTrash
 import com.vknxworks.immichctrl.data.api.folderAssets
 import com.vknxworks.immichctrl.data.api.folderPaths
 import com.vknxworks.immichctrl.data.api.lockSession
-import com.vknxworks.immichctrl.data.api.memory
 import com.vknxworks.immichctrl.data.api.metadataSearch
 import com.vknxworks.immichctrl.data.api.partners
 import com.vknxworks.immichctrl.data.api.removePartner
@@ -89,7 +94,6 @@ import com.vknxworks.immichctrl.ui.components.rememberLoader
 import com.vknxworks.immichctrl.ui.components.runTask
 import com.vknxworks.immichctrl.ui.components.shortDate
 import com.vknxworks.immichctrl.ui.components.toast
-import com.vknxworks.immichctrl.ui.components.yearsAgo
 import com.vknxworks.immichctrl.ui.nav.FoldersRoute
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import com.vknxworks.immichctrl.ui.nav.PartnerRoute
@@ -134,15 +138,19 @@ fun CollectionScreen(kind: String) {
             topBar = { ScreenTopBar("Videos") },
         )
         else -> SourceGrid(
-            rememberPaged("recent") { page ->
+            // Immich 3 can sort the timeline by import date; older servers get the last 30 days of uploads.
+            if (c.api.serverMajor >= 3) rememberTimeline(
+                "recent-v3",
+                TimelineQuery(visibility = "timeline", orderBy = "createdAt", order = "desc"),
+            ) else rememberPaged("recent") { page ->
                 val since = Instant.now().minus(30, ChronoUnit.DAYS).toString()
                 val r = c.api.metadataSearch(page, 200, mapOf("createdAfter" to since, "order" to "desc", "visibility" to "timeline"))
                 r.assets.items.map { it.toAsset() } to (r.assets.nextPage != null)
             },
             SelectionContext.TIMELINE,
             topBar = { ScreenTopBar("Recently added") },
-            groupBy = GroupBy.DAY,
-            empty = { MessageView(Icons.Outlined.Folder, "Nothing added in the last 30 days") },
+            groupBy = if (c.api.serverMajor >= 3) null else GroupBy.DAY,
+            empty = { MessageView(Icons.Outlined.Folder, "Nothing added recently") },
         )
     }
 }
@@ -200,6 +208,11 @@ fun LockedScreen() {
     var error by remember { mutableStateOf<String?>(null) }
     var settingUp by remember { mutableStateOf(false) }
     var entering by remember { mutableStateOf(false) }
+    val activity = LocalContext.current.findActivity()
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
+    val accountKey = c.sessions.active.collectAsStateWithLifecycle().value?.account?.key
+    val bio = settings.lockedFolderBiometric && c.appLock.canLock()
+    fun rememberPin(pin: String) { if (bio && accountKey != null) c.appScope.launch { c.appLock.savePin(accountKey, pin) } }
 
     // Lock again when leaving.
     DisposableEffect(Unit) {
@@ -228,7 +241,17 @@ fun LockedScreen() {
                     if (s.value.pinCode) "Enter your PIN" else "Set up a PIN",
                     error ?: if (s.value.pinCode) "Photos in the locked folder need your PIN to see." else "Choose a PIN to protect your locked folder. It's the same PIN as on the Immich website.",
                     actionLabel = if (s.value.pinCode) "Unlock" else "Set PIN",
-                    onAction = { if (s.value.pinCode) entering = true else settingUp = true },
+                    onAction = {
+                        if (!s.value.pinCode) settingUp = true
+                        else if (bio && activity != null && accountKey != null) c.appScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                            // Fingerprint first when a PIN has been remembered; fall back to typing it.
+                            val saved = c.appLock.savedPin(accountKey)
+                            if (saved == null || !c.appLock.promptAsync(activity, "Unlock the locked folder")) { entering = true; return@launch }
+                            runCatching { c.api.unlockSession(saved) }
+                                .onSuccess { error = null; unlocked = true }
+                                .onFailure { c.appLock.forgetPin(accountKey); error = it.friendlyMessage(); entering = true }
+                        } else entering = true
+                    },
                 )
             }
         }
@@ -238,7 +261,7 @@ fun LockedScreen() {
             entering = false
             c.appScope.launch(kotlinx.coroutines.Dispatchers.Main) {
                 runCatching { c.api.unlockSession(pin) }
-                    .onSuccess { error = null; unlocked = true }
+                    .onSuccess { error = null; unlocked = true; rememberPin(pin) }
                     .onFailure { error = it.friendlyMessage() }
             }
         }
@@ -254,7 +277,7 @@ fun LockedScreen() {
                 runCatching {
                     c.api.setupPin(pin)
                     c.api.unlockSession(pin)
-                }.onSuccess { error = null; unlocked = true }
+                }.onSuccess { error = null; unlocked = true; rememberPin(pin) }
                     .onFailure { error = it.friendlyMessage() }
             }
         }
@@ -272,6 +295,7 @@ fun SharedLinksScreen() {
     val clipboard = LocalClipboardManager.current
     val links = rememberLoader("shared-links") { c.api.sharedLinks().sortedByDescending { it.createdAt } }
     var open by remember { mutableStateOf<SharedLinkDto?>(null) }
+    var editing by remember { mutableStateOf<SharedLinkDto?>(null) }
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar("Shared links")
         when (val s = links.state) {
@@ -318,12 +342,49 @@ fun SharedLinksScreen() {
                     open = null
                 }
                 ActionItem(Icons.Outlined.Share, "Share") { Exporter.shareText(c.context, url); open = null }
+                ActionItem(Icons.Outlined.Edit, "Change options") { editing = l; open = null }
                 l.album?.let { a -> ActionItem(Icons.Outlined.SmartDisplay, "Open album") { open = null; nav.album(a.id) } }
                 ActionItem(Icons.Outlined.Delete, "Delete link", tint = MaterialTheme.colorScheme.error) {
                     open = null
                     c.runTask("Link deleted") { c.api.deleteSharedLink(l.id); links.reload(silent = true) }
                 }
             }
+        }
+    }
+    editing?.let { l -> EditLinkDialog(l) { editing = null; links.reload(silent = true) } }
+}
+
+@Composable
+private fun EditLinkDialog(l: SharedLinkDto, onDone: () -> Unit) {
+    val c = LocalContext.current.container
+    val days = daysUntil(l.expiresAt)?.let { d -> listOf(1, 7, 30).minByOrNull { kotlin.math.abs(it - d) } }
+    SharedLinkDialog(
+        "Link options",
+        initial = LinkOptions(
+            description = l.description.orEmpty(),
+            expiresInDays = if (l.expiresAt == null) null else days,
+            password = l.password.orEmpty(),
+            allowDownload = l.allowDownload,
+            allowUpload = l.allowUpload,
+            showMetadata = l.showMetadata,
+        ),
+        allowUploadOption = l.album != null,
+        confirm = "Save",
+        onDismiss = onDone,
+    ) { o ->
+        onDone()
+        c.runTask("Link updated") {
+            val legacy = if (c.api.serverMajor < 3) arrayOf<Pair<String, Any?>>("changeExpiryTime" to true) else emptyArray()
+            c.api.updateSharedLink(
+                l.id,
+                *legacy,
+                "description" to o.description,
+                "expiresAt" to (o.expiresAt() ?: com.vknxworks.immichctrl.data.api.Null),
+                "password" to o.password,
+                "allowDownload" to o.allowDownload,
+                "allowUpload" to o.allowUpload,
+                "showMetadata" to o.showMetadata,
+            )
         }
     }
 }
@@ -534,27 +595,4 @@ fun FoldersScreen(path: String) {
             }
         }
     }
-}
-
-// ---------------------------------------------------------------------------------------------
-// Memories
-// ---------------------------------------------------------------------------------------------
-
-@Composable
-fun MemoryScreen(id: String) {
-    val c = LocalContext.current.container
-    val nav = LocalNavigator.current
-    val memory = rememberLoader("memory:$id") { c.api.memory(id) }
-    val source = rememberList("memory:$id") { c.api.memory(id).assets.map { it.toAsset() } }
-    val m = memory.value
-    SourceGrid(
-        source,
-        SelectionContext.TIMELINE,
-        groupBy = GroupBy.MONTH,
-        topBar = {
-            ScreenTopBar(m?.let { if (it.type == "on_this_day") yearsAgo(it.data.year) else it.data.personName ?: "Memory" } ?: "Memory") {
-                IconButton(onClick = { source.assetAt(0)?.let { nav.viewer(source.key, 0, it.id) } }) { Icon(Icons.Outlined.SmartDisplay, "Play") }
-            }
-        },
-    )
 }

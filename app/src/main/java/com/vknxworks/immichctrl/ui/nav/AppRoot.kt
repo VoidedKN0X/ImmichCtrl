@@ -66,7 +66,6 @@ import com.vknxworks.immichctrl.ui.library.FoldersScreen
 import com.vknxworks.immichctrl.ui.library.LibraryScreen
 import com.vknxworks.immichctrl.ui.library.LockedScreen
 import com.vknxworks.immichctrl.ui.library.MapScreen
-import com.vknxworks.immichctrl.ui.library.MemoryScreen
 import com.vknxworks.immichctrl.ui.library.PartnerScreen
 import com.vknxworks.immichctrl.ui.library.PartnersScreen
 import com.vknxworks.immichctrl.ui.library.PeopleScreen
@@ -78,6 +77,27 @@ import com.vknxworks.immichctrl.ui.library.SharedLinksScreen
 import com.vknxworks.immichctrl.ui.library.TagScreen
 import com.vknxworks.immichctrl.ui.library.TagsScreen
 import com.vknxworks.immichctrl.ui.photos.PhotosScreen
+import com.vknxworks.immichctrl.ui.library.DuplicatesScreen
+import com.vknxworks.immichctrl.ui.library.OfflineAlbumScreen
+import com.vknxworks.immichctrl.ui.local.FreeUpSpaceScreen
+import com.vknxworks.immichctrl.ui.local.LocalAlbumScreen
+import com.vknxworks.immichctrl.ui.local.LocalAlbumsScreen
+import com.vknxworks.immichctrl.ui.settings.LogsScreen
+import com.vknxworks.immichctrl.ui.settings.NetworkingScreen
+import com.vknxworks.immichctrl.ui.viewer.EditorScreen
+import com.vknxworks.immichctrl.ui.viewer.ExternalViewScreen
+import com.vknxworks.immichctrl.ui.viewer.MemoryScreen
+import com.vknxworks.immichctrl.ui.viewer.SlideshowScreen
+import com.vknxworks.immichctrl.ui.components.findActivity
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.runtime.LaunchedEffect
+import com.vknxworks.immichctrl.ui.components.PillButton
 import com.vknxworks.immichctrl.ui.search.SearchScreen
 import com.vknxworks.immichctrl.ui.settings.AccountsScreen
 import com.vknxworks.immichctrl.ui.settings.AdminScreen
@@ -97,6 +117,33 @@ fun AppRoot() {
             !ready -> LoadingView()
             active == null -> SignInScreen(onDone = {}, onCancel = null)
             else -> key(active!!.account.key) { MainScaffold() }
+        }
+        val settings by c.settings.settings.collectAsStateWithLifecycle()
+        val locked by c.appLock.locked.collectAsStateWithLifecycle()
+        if (ready && active != null && settings.appLock && locked) LockScreen()
+    }
+}
+
+/** Covers the app until the phone's fingerprint, face or screen lock is given. */
+@Composable
+private fun LockScreen() {
+    val context = LocalContext.current
+    val c = context.container
+    fun unlock() { context.findActivity()?.let { c.appLock.unlockWith(it) } }
+    LaunchedEffect(Unit) { unlock() }
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            // Swallow touches so nothing underneath can be used.
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Icon(Icons.Outlined.Lock, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
+            Text("ImmichCtrl is locked", style = MaterialTheme.typography.headlineSmall)
+            Spacer(Modifier.height(4.dp))
+            PillButton("Unlock", onClick = ::unlock)
         }
     }
 }
@@ -120,6 +167,29 @@ private fun MainScaffold() {
     val inViewer = dest?.hasRoute(ViewerRoute::class) == true
     val hideTabs = remember { mutableStateOf(false) }
 
+    val c = LocalContext.current.container
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
+    val readOnly = settings.readOnly
+
+    // Widgets, notifications and other apps ask for something to be opened.
+    val openRequest by c.openRequests.collectAsStateWithLifecycle()
+    LaunchedEffect(openRequest) {
+        val req = openRequest ?: return@LaunchedEffect
+        c.openRequests.value = null
+        when {
+            req.startsWith("memory:") -> navigator.navigate(MemoryRoute(req.removePrefix("memory:")))
+            req.startsWith("asset:") -> req.removePrefix("asset:").let { id -> navigator.navigate(ViewerRoute("open:$id", 0, id)) }
+            req == "admin" -> if (c.sessions.active.value?.account?.isAdmin == true && !readOnly) navigator.navigate(AdminRoute)
+            req == "backup" -> if (!readOnly) navigator.navigate(BackupRoute)
+        }
+    }
+    val external by c.externalUris.collectAsStateWithLifecycle()
+    LaunchedEffect(external) {
+        if (!external.isNullOrEmpty() && dest?.hasRoute(ExternalViewRoute::class) != true) navigator.navigate(ExternalViewRoute)
+    }
+    // Read-only mode keeps to the Photos tab.
+    LaunchedEffect(readOnly, selectedIndex) { if (readOnly && selectedIndex > 0) navController.navigate(PhotosRoute) { popUpTo(0) } }
+
     fun selectTab(i: Int) {
         navController.navigate(topDestinations[i].route) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -130,7 +200,7 @@ private fun MainScaffold() {
 
     CompositionLocalProvider(LocalNavigator provides navigator, LocalHideTabs provides hideTabs) {
         BoxWithConstraints(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-            if (maxWidth >= 600.dp && !inViewer) {
+            if (maxWidth >= 600.dp && !inViewer && !readOnly) {
                 // Tablets and unfolded foldables: a side rail.
                 Row(Modifier.fillMaxSize()) {
                     NavigationRail(
@@ -154,7 +224,7 @@ private fun MainScaffold() {
             } else {
                 PhoneLayout(
                     navController = navController,
-                    showTabs = selectedIndex >= 0 && !hideTabs.value,
+                    showTabs = selectedIndex >= 0 && !hideTabs.value && !readOnly,
                     selectedIndex = selectedIndex,
                     onSelect = ::selectTab,
                 )
@@ -245,6 +315,22 @@ private fun AppNavHost(navController: NavHostController) {
         composable<SettingsRoute> { SettingsScreen() }
         composable<AccountsRoute> { AccountsScreen() }
         composable<AdminRoute> { AdminScreen() }
+        composable<LocalAlbumsRoute> { LocalAlbumsScreen() }
+        composable<LocalAlbumRoute> {
+            val r = it.toRoute<LocalAlbumRoute>()
+            LocalAlbumScreen(r.bucketId, r.name)
+        }
+        composable<FreeUpSpaceRoute> { FreeUpSpaceScreen() }
+        composable<ExternalViewRoute> { ExternalViewScreen() }
+        composable<EditorRoute> { EditorScreen(it.toRoute<EditorRoute>().assetId) }
+        composable<SlideshowRoute> {
+            val r = it.toRoute<SlideshowRoute>()
+            SlideshowScreen(r.source, r.index)
+        }
+        composable<DuplicatesRoute> { DuplicatesScreen() }
+        composable<OfflineAlbumRoute> { OfflineAlbumScreen(it.toRoute<OfflineAlbumRoute>().albumId) }
+        composable<NetworkingRoute> { NetworkingScreen() }
+        composable<LogsRoute> { LogsScreen() }
         composable<AddAccountRoute> {
             SignInScreen(onDone = { navController.popBackStack(PhotosRoute, false) }, onCancel = { navController.popBackStack() })
         }

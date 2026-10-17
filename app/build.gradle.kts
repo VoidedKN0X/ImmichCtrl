@@ -13,6 +13,8 @@ val isCi: Boolean = System.getenv("CI") == "true" || System.getenv("GITHUB_ACTIO
 val releaseSigningComplete: Boolean = releaseKeystorePath != null &&
     listOf("KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD").all { !System.getenv(it).isNullOrBlank() }
 val ciRunNumber: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+// Major.minor lives in the VERSION file at the repo root; the CI run number is the patch.
+val baseVersion: String = rootProject.file("VERSION").readText().trim()
 
 android {
     namespace = "com.vknxworks.immichctrl"
@@ -23,7 +25,7 @@ android {
         minSdk = 33
         targetSdk = 36
         versionCode = ciRunNumber
-        versionName = "0.1.$ciRunNumber"
+        versionName = "$baseVersion.$ciRunNumber"
     }
 
     signingConfigs {
@@ -119,10 +121,15 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network)
     implementation(libs.coil.gif)
+    implementation(libs.coil.video)
 
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.datasource.okhttp)
     implementation(libs.media3.ui)
     implementation(libs.haze)
     implementation(libs.maplibre)
+    implementation(libs.androidx.biometric)
+    implementation(libs.cast.framework)
+    implementation(libs.androidx.mediarouter)
+    implementation(libs.androidx.appcompat)
 }

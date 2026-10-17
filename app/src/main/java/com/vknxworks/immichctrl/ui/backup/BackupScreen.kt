@@ -20,6 +20,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BatteryAlert
+import androidx.compose.material.icons.outlined.CleaningServices
+import androidx.compose.material.icons.outlined.DriveFileMove
+import androidx.compose.material.icons.outlined.NotificationsOff
+import androidx.compose.material.icons.outlined.PhoneAndroid
+import androidx.compose.material.icons.outlined.PhotoAlbum
+import com.vknxworks.immichctrl.ui.nav.FreeUpSpaceRoute
+import com.vknxworks.immichctrl.ui.nav.LocalAlbumsRoute
+import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.PhotoLibrary
@@ -91,7 +100,8 @@ fun BackupScreen() {
 
     val albums = rememberLoader("local-albums:$permissionTick") { withContext(Dispatchers.IO) { if (hasAccess) LocalMedia.albums(context) else emptyList() } }
     val running = work.firstOrNull { it.state == WorkInfo.State.RUNNING }
-    val counts = rememberLoader("backup-counts:$permissionTick:${settings.backupAlbums.hashCode()}:${settings.backupVideos}") { c.backup.counts() }
+    val counts = rememberLoader("backup-counts:$permissionTick:${settings.backupAlbums.hashCode()}:${settings.backupVideos}:${settings.backupEverything}") { c.backup.counts() }
+    val nav = LocalNavigator.current
     // Refresh the counts when a run finishes.
     LaunchedEffect(running != null) { if (running == null) counts.reload(silent = true) }
 
@@ -136,14 +146,14 @@ fun BackupScreen() {
                     } else {
                         Text(
                             when {
-                                settings.backupAlbums.isEmpty() -> "Choose what to back up"
+                                settings.backupAlbums.isEmpty() && !settings.backupEverything -> "Choose what to back up"
                                 cnt == null -> "Counting…"
                                 cnt.remaining == 0 -> "Everything is backed up"
                                 else -> "${countLabel(cnt.remaining, "item")} to back up"
                             },
                             style = MaterialTheme.typography.titleLarge,
                         )
-                        if (cnt != null && settings.backupAlbums.isNotEmpty()) {
+                        if (cnt != null && (settings.backupAlbums.isNotEmpty() || settings.backupEverything)) {
                             Text(
                                 "${"%,d".format(cnt.done)} of ${"%,d".format(cnt.total)} on the server",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -154,8 +164,43 @@ fun BackupScreen() {
                         PillButton(
                             "Back up now",
                             onClick = { c.backup.backupNow() },
-                            enabled = settings.backupAlbums.isNotEmpty(),
+                            enabled = settings.backupAlbums.isNotEmpty() || settings.backupEverything,
                             modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+
+            // Things that quietly stop background backups.
+            val pm = context.getSystemService(android.os.PowerManager::class.java)
+            val batteryOk = remember(permissionTick, settings.backupEnabled) { pm?.isIgnoringBatteryOptimizations(context.packageName) == true }
+            val notifyOk = remember(permissionTick) {
+                androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            }
+            if (settings.backupEnabled && (!batteryOk || !notifyOk)) {
+                Group("Backups may stop in the background") {
+                    if (!batteryOk) {
+                        GroupRow(
+                            "Battery optimisation is on",
+                            "Android (and ColorOS, MIUI, One UI) may stop background backups. Set ImmichCtrl to \"Unrestricted\" or \"Allow background activity\".",
+                            icon = Icons.Outlined.BatteryAlert,
+                            iconTint = MaterialTheme.colorScheme.error,
+                            showChevron = true,
+                            onClick = {
+                                runCatching {
+                                    context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")))
+                                }
+                            },
+                        )
+                    }
+                    if (!notifyOk) {
+                        GroupRow(
+                            "Notifications are off",
+                            "Long backups need to show their progress to keep running.",
+                            icon = Icons.Outlined.NotificationsOff,
+                            iconTint = MaterialTheme.colorScheme.error,
+                            showChevron = true,
+                            onClick = { askPermissions() },
                         )
                     }
                 }
@@ -171,7 +216,31 @@ fun BackupScreen() {
                 GroupSwitch("Include videos", null, settings.backupVideos, Icons.Outlined.Videocam) { on -> update { it.copy(backupVideos = on) } }
             }
 
-            Group("Albums on this phone", footer = "Tick the albums to back up. Camera is usually the one you want.") {
+            Group("Albums", footer = "Album sync puts backed-up photos into Immich albums named like the phone albums they're in, making the albums if needed. It only adds; deleting or moving on the phone doesn't change the server.") {
+                GroupSwitch("Sync albums", "Mirror phone albums to Immich albums", settings.albumSync, Icons.Outlined.PhotoAlbum) { on ->
+                    update { it.copy(albumSync = on) }
+                }
+                if (settings.albumSync) {
+                    GroupRow(
+                        "Reorganise into albums",
+                        "Also file everything already backed up from this phone",
+                        icon = Icons.Outlined.DriveFileMove,
+                        onClick = {
+                            c.backup.syncAlbumsNow()
+                            android.widget.Toast.makeText(context, "Filing backed-up photos into albums", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                }
+                GroupRow("Photos on this phone", "Browse the phone's albums and upload single photos", icon = Icons.Outlined.PhoneAndroid, showChevron = true, onClick = { nav.navigate(LocalAlbumsRoute) })
+                GroupRow("Free up space", "Remove phone copies of photos that are backed up", icon = Icons.Outlined.CleaningServices, showChevron = true, onClick = { nav.navigate(FreeUpSpaceRoute) })
+            }
+
+            Group("What to back up") {
+                GroupSwitch("Everything on this phone", "Every album, including ones added later", settings.backupEverything, Icons.Outlined.PhotoLibrary) { on ->
+                    update { it.copy(backupEverything = on) }
+                }
+            }
+            if (!settings.backupEverything) Group("Albums on this phone", footer = "Tick the albums to back up. Camera is usually the one you want.") {
                 val list = albums.value.orEmpty()
                 if (list.isEmpty()) GroupRow(if (albums.value == null) "Looking for albums…" else "No photos found on this phone")
                 list.forEach { a ->

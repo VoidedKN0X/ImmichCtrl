@@ -13,3 +13,6 @@
 -dontwarn org.openjsse.**
 -dontwarn org.maplibre.**
 -keep class org.maplibre.android.** { *; }
+
+# Named in the manifest for the Cast SDK and widgets/tiles; keep them by name.
+-keep class com.vknxworks.immichctrl.ui.viewer.CastOptionsProvider { *; }
