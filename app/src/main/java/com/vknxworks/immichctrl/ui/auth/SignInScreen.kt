@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.auth
 
+import com.vknxworks.immichctrl.data.net.parseHeaders
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.browser.customtabs.CustomTabsIntent
@@ -75,6 +76,8 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
     val scope = rememberCoroutineScope()
     var address by rememberSaveable { mutableStateOf("") }
     var probe by remember { mutableStateOf<ServerProbe?>(null) }
+    var headerText by rememberSaveable { mutableStateOf("") }
+    var showAdvanced by rememberSaveable { mutableStateOf(false) }
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var apiKey by remember { mutableStateOf("") }
@@ -109,7 +112,7 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
         error = null
         scope.launch {
             try {
-                val p = c.sessions.probe(target)
+                val p = c.sessions.probe(target, parseHeaders(headerText))
                 probe = p
                 address = p.baseUrl
                 if (!p.features.passwordLogin && !p.features.oauth) useApiKey = true
@@ -227,6 +230,31 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                     enabled = !busy,
                 )
                 HttpWarning(address)
+                TextButton(onClick = { showAdvanced = !showAdvanced }) {
+                    Text(if (showAdvanced) "Hide advanced" else if (headerText.isBlank()) "Advanced: custom headers" else "Advanced: ${parseHeaders(headerText).size} custom headers")
+                }
+                if (showAdvanced) {
+                    TextField(
+                        value = headerText,
+                        onValueChange = { headerText = it },
+                        label = { Text("Headers, one per line") },
+                        placeholder = { Text("CF-Access-Client-Id: …") },
+                        minLines = 2,
+                        enabled = !busy,
+                        shape = MaterialTheme.shapes.medium,
+                        colors = TextFieldDefaults.colors(
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Text(
+                        "Sent with every request, for servers behind Cloudflare Access, an auth proxy and the like. Change them later in Settings → Networking.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
                 if (busy) Spinner() else PillButton("Next", onClick = { findServer(address) }, enabled = address.isNotBlank(), modifier = Modifier.fillMaxWidth())
             } else {

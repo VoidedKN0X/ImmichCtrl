@@ -2,6 +2,7 @@ package com.vknxworks.immichctrl.ui.library
 
 import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,7 +52,7 @@ import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.data.api.MapMarkerDto
 import com.vknxworks.immichctrl.data.api.asset
 import com.vknxworks.immichctrl.data.api.explore
-import com.vknxworks.immichctrl.data.api.mapMarkers
+import com.vknxworks.immichctrl.data.api.mapMarkersBetween
 import com.vknxworks.immichctrl.data.api.metadataSearch
 import com.vknxworks.immichctrl.data.timeline.ListSource
 import com.vknxworks.immichctrl.data.timeline.Sources
@@ -156,8 +157,12 @@ fun MapScreen() {
     val config by c.serverConfig.collectAsStateWithLifecycle()
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     var favoritesOnly by rememberSaveable { mutableStateOf(false) }
-    val markers = rememberLoader("map:$favoritesOnly") {
-        c.api.mapMarkers(withPartners = settings.withPartners, withSharedAlbums = true, isFavorite = if (favoritesOnly) true else null)
+    var years by rememberSaveable { mutableStateOf<Int?>(null) }
+    var archived by rememberSaveable { mutableStateOf(false) }
+    var inView by remember { mutableStateOf<Int?>(null) }
+    val markers = rememberLoader("map:$favoritesOnly:$years:$archived") {
+        val after = years?.let { java.time.Instant.now().minusSeconds(it * 365L * 86_400L).toString() }
+        c.api.mapMarkersBetween(settings.withPartners, if (favoritesOnly) true else null, after, null, if (archived) null else false)
     }
     val dark = isSystemInDarkTheme()
     val styleUrl = (if (dark) config.mapDarkStyleUrl else config.mapLightStyleUrl).ifBlank {
@@ -178,10 +183,23 @@ fun MapScreen() {
 
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar("Map")
-        Row(Modifier.padding(horizontal = Gutter, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(!favoritesOnly, onClick = { favoritesOnly = false }, label = { Text("All photos") })
-            FilterChip(favoritesOnly, onClick = { favoritesOnly = true }, label = { Text("Favourites") })
-            markers.value?.let { Text(countLabel(it.size, "photo"), modifier = Modifier.align(Alignment.CenterVertically).padding(start = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        Row(
+            Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = Gutter, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(favoritesOnly, onClick = { favoritesOnly = !favoritesOnly }, label = { Text("Favourites") })
+            FilterChip(archived, onClick = { archived = !archived }, label = { Text("Include archived") })
+            listOf<Pair<Int?, String>>(null to "Any time", 1 to "Past year", 5 to "Past 5 years").forEach { (y, label) ->
+                FilterChip(years == y, onClick = { years = y }, label = { Text(label) })
+            }
+        }
+        markers.value?.let { all ->
+            Text(
+                inView?.let { "${countLabel(it, "photo")} in view of ${"%,d".format(all.size)}" } ?: countLabel(all.size, "photo"),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Gutter, vertical = 2.dp),
+            )
         }
         when (val s = markers.state) {
             is Load.Loading -> LoadingView()
@@ -190,7 +208,7 @@ fun MapScreen() {
                 if (s.value.isEmpty()) {
                     MessageView(Icons.Outlined.Map, "Nothing on the map", "Photos show up here once they have a location.")
                 } else {
-                    MapLibreView(s.value, styleUrl, accent, onAccent, onOpen = ::openAsset, modifier = Modifier.fillMaxSize().navigationBarsPadding())
+                    MapLibreView(s.value, styleUrl, accent, onAccent, onOpen = ::openAsset, onVisible = { inView = it }, modifier = Modifier.fillMaxSize().navigationBarsPadding())
                 }
             }
         }
@@ -204,9 +222,11 @@ private fun MapLibreView(
     accent: Int,
     onAccent: Int,
     onOpen: (String) -> Unit,
+    onVisible: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val visible by androidx.compose.runtime.rememberUpdatedState(onVisible)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val mapView = remember {
         MapLibre.getInstance(context)
@@ -319,6 +339,11 @@ private fun MapLibreView(
             }
             clickListener[0] = listener
             m.addOnMapClickListener(listener)
+            // How many photos are in the visible part of the map.
+            m.addOnCameraIdleListener {
+                val bounds = m.projection.visibleRegion.latLngBounds
+                visible(markers.count { bounds.contains(LatLng(it.lat, it.lon)) })
+            }
         }
     }
 

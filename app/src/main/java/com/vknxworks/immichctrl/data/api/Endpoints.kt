@@ -1,5 +1,7 @@
 package com.vknxworks.immichctrl.data.api
 
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonArray
@@ -92,6 +94,8 @@ data class TimelineQuery(
     val withPartners: Boolean? = null,
     val withStacked: Boolean? = null,
     val order: String? = null,
+    /** "createdAt" sorts by upload date (Immich 3.x only); null means date taken. */
+    val orderBy: String? = null,
 ) {
     fun params(): Array<Pair<String, Any?>> = arrayOf(
         "albumId" to albumId,
@@ -104,6 +108,7 @@ data class TimelineQuery(
         "withPartners" to withPartners,
         "withStacked" to withStacked,
         "order" to order,
+        "orderBy" to orderBy,
     )
 }
 
@@ -289,3 +294,99 @@ suspend fun ImmichClient.queueCommand(name: String, command: String, force: Bool
     sendUnit("PUT", "/jobs/$name", obj("command" to command, "force" to force))
 
 suspend fun ImmichClient.memory(id: String): MemoryDto = get("/memories/$id")
+
+// ---------- Editing (crop, rotate, mirror; Immich keeps the original) ----------
+
+suspend fun ImmichClient.edits(id: String): EditsDto = get("/assets/$id/edits")
+
+suspend fun ImmichClient.setEdits(id: String, edits: List<JsonObject>): EditsDto =
+    send("PUT", "/assets/$id/edits", obj("edits" to edits))
+
+suspend fun ImmichClient.revertEdits(id: String) = sendUnit("DELETE", "/assets/$id/edits")
+
+// ---------- OCR ----------
+
+suspend fun ImmichClient.ocr(id: String): List<OcrDto> = get("/assets/$id/ocr")
+
+// ---------- Stacks ----------
+
+suspend fun ImmichClient.stack(id: String): StackDto = get("/stacks/$id")
+suspend fun ImmichClient.createStack(assetIds: List<String>): StackDto = send("POST", "/stacks", obj("assetIds" to assetIds))
+suspend fun ImmichClient.setStackPrimary(id: String, assetId: String): StackDto =
+    send("PUT", "/stacks/$id", obj("primaryAssetId" to assetId))
+suspend fun ImmichClient.deleteStack(id: String) = sendUnit("DELETE", "/stacks/$id")
+suspend fun ImmichClient.removeFromStack(id: String, assetId: String) = sendUnit("DELETE", "/stacks/$id/assets/$assetId")
+
+// ---------- Faces ----------
+
+suspend fun ImmichClient.faces(assetId: String): List<FaceDto> = get("/faces", "id" to assetId)
+
+/** Moves one face to another person. */
+suspend fun ImmichClient.reassignFace(faceId: String, personId: String): PersonDto =
+    send("PUT", "/faces/$faceId", obj("id" to personId))
+
+suspend fun ImmichClient.deleteFace(faceId: String) = sendUnit("DELETE", "/faces/$faceId", obj("force" to false))
+
+suspend fun ImmichClient.createPerson(name: String): PersonDto = send("POST", "/people", obj("name" to name))
+
+suspend fun ImmichClient.peopleShared(withHidden: Boolean = true): List<PersonFullDto> =
+    get<PeopleFullDto>("/people", "withHidden" to withHidden, "page" to 1, "size" to 500).people
+
+@kotlinx.serialization.Serializable
+data class PeopleFullDto(val people: List<PersonFullDto> = emptyList())
+
+// ---------- Duplicates ----------
+
+suspend fun ImmichClient.duplicates(): List<DuplicateGroupDto> = get("/duplicates")
+
+suspend fun ImmichClient.resolveDuplicates(groups: List<Triple<String, List<String>, List<String>>>): List<BulkIdResultDto> =
+    send(
+        "POST", "/duplicates/resolve",
+        obj("groups" to groups.map { (id, keep, trash) -> mapOf("duplicateId" to id, "keepAssetIds" to keep, "trashAssetIds" to trash) }),
+    )
+
+suspend fun ImmichClient.dismissDuplicate(id: String) = sendUnit("DELETE", "/duplicates/$id")
+
+// ---------- Sessions, profile, version ----------
+
+/** A short-lived session token, used for URLs a cast device fetches without our headers. */
+suspend fun ImmichClient.createSession(seconds: Int): SessionTokenDto =
+    send("POST", "/sessions", obj("duration" to seconds, "deviceType" to "Chromecast", "deviceOS" to "Cast"))
+
+suspend fun ImmichClient.versionCheck(): VersionCheckDto = get("/server/version-check")
+
+suspend fun ImmichClient.deleteProfileImage() = sendUnit("DELETE", "/users/profile-image")
+
+suspend fun ImmichClient.randomAssets(count: Int, favoritesOnly: Boolean = false): List<AssetDto> =
+    send("POST", "/search/random", obj("size" to count, "type" to "IMAGE", "isFavorite" to if (favoritesOnly) true else null))
+
+suspend fun ImmichClient.updateSharedLink(id: String, vararg fields: Pair<String, Any?>): SharedLinkDto =
+    send("PATCH", "/shared-links/$id", obj(*fields))
+
+suspend fun ImmichClient.mapMarkersBetween(
+    withPartners: Boolean,
+    isFavorite: Boolean?,
+    after: String?,
+    before: String?,
+    archived: Boolean?,
+): List<MapMarkerDto> = get(
+    "/map/markers",
+    "withPartners" to withPartners,
+    "withSharedAlbums" to true,
+    "isFavorite" to isFavorite,
+    "fileCreatedAfter" to after,
+    "fileCreatedBefore" to before,
+    "isArchived" to archived,
+)
+
+/** Suggestions narrowed by other fields, e.g. cities in a country ("country" to "Norway"). */
+suspend fun ImmichClient.searchSuggestionsFor(type: String, vararg filters: Pair<String, Any?>): List<String> =
+    call("GET", "/search/suggestions", ListSerializer(String.serializer()), null, "type" to type, *filters)
+
+/** Replaces the signed-in user's profile picture. */
+suspend fun ImmichClient.setProfileImage(bytes: ByteArray, mime: String, fileName: String = "profile.jpg") {
+    val body = okhttp3.MultipartBody.Builder().setType(okhttp3.MultipartBody.FORM)
+        .addFormDataPart("file", fileName, bytes.toRequestBody(mime.toMediaTypeOrNull()))
+        .build()
+    execute(request(url("/users/profile-image")).post(body).build()).close()
+}

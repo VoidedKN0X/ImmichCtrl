@@ -151,13 +151,15 @@ fun ZoomableImage(
             },
     ) {
         if (blur != null) Image(blur, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+        // Photos on this phone (or saved offline) are shown from the file; the rest from the server.
+        val localFile = asset.localUri?.takeIf { asset.isLocalOnly || it.startsWith("file:") }
         AsyncImage(
-            model = c.api.thumbnailUrl(asset.id, "preview", asset.thumbhash?.take(12)),
+            model = localFile ?: c.api.thumbnailUrl(asset.id, "preview", asset.thumbhash?.take(12)),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Fit,
         )
-        if (wantOriginal) {
+        if (wantOriginal && localFile == null) {
             AsyncImage(
                 model = c.api.originalUrl(asset.id),
                 contentDescription = null,

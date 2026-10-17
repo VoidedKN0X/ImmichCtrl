@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.library
 
+import com.vknxworks.immichctrl.data.api.peopleShared
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,7 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Cake
-import androidx.compose.material.icons.outlined.CallMerge
+import androidx.compose.material.icons.automirrored.outlined.CallMerge
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.People
@@ -89,6 +90,12 @@ fun PeopleScreen() {
     val nav = LocalNavigator.current
     val people = rememberLoader("people") { c.api.people(withHidden = true) }
     var showHidden by rememberSaveable { mutableStateOf(false) }
+    // Immich 3 lets people be shared between users; mark the ones someone else shared with us.
+    val sharedBy = rememberLoader("people-shared") {
+        if (c.api.serverMajor < 3) emptyMap()
+        else runCatching { c.api.peopleShared().associate { p -> p.id to p.sharedBy.orEmpty().map { it.name } } }.getOrDefault(emptyMap())
+    }
+    val sharers = (sharedBy.state as? Load.Ok)?.value.orEmpty()
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar("People")
         when (val s = people.state) {
@@ -132,6 +139,16 @@ fun PeopleScreen() {
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.padding(top = 6.dp),
                                 )
+                                sharers[p.id]?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }?.let { names ->
+                                    Text(
+                                        "From " + names.joinToString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
                             }
                         }
                     }
@@ -212,7 +229,7 @@ fun PersonScreen(id: String) {
                     menu = false
                     c.runTask { c.api.updatePerson(p.id, "isHidden" to !p.isHidden); changed() }
                 }
-                ActionItem(Icons.Outlined.CallMerge, "Merge with another person") { menu = false; merging = true }
+                ActionItem(Icons.AutoMirrored.Outlined.CallMerge, "Merge with another person") { menu = false; merging = true }
             }
         }
     }

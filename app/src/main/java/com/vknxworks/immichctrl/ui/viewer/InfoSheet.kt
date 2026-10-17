@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -70,25 +72,51 @@ import java.util.Locale
 
 /** Everything Immich knows about a photo, with the description and rating editable by the owner. */
 @Composable
-fun InfoSheet(asset: Asset, onDismiss: () -> Unit) {
+fun InfoSheet(asset: Asset, onDismiss: () -> Unit, onEditDate: () -> Unit = {}, onEditLocation: () -> Unit = {}) {
     val c = LocalContext.current.container
-    val details = rememberLoader("info:${asset.id}") { c.api.asset(asset.id) }
-    val albums = rememberLoader("info-albums:${asset.id}") { c.api.albums(assetId = asset.id) }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
     ) {
+        if (asset.isLocalOnly || asset.id.startsWith("external:")) {
+            LocalInfo(asset)
+            return@ModalBottomSheet
+        }
+        val details = rememberLoader("info:${asset.id}") { c.api.asset(asset.id) }
+        val albums = rememberLoader("info-albums:${asset.id}") { c.api.albums(assetId = asset.id) }
         when (val s = details.state) {
             is Load.Loading -> Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             is Load.Err -> ErrorView(s.message) { details.reload() }
-            is Load.Ok -> InfoContent(asset, s.value, albums.value.orEmpty().map { it.id to it.albumName }, onDismiss)
+            is Load.Ok -> InfoContent(asset, s.value, albums.value.orEmpty().map { it.id to it.albumName }, onDismiss, onEditDate, onEditLocation)
         }
     }
 }
 
+/** What's known about a photo that's only on this phone. */
 @Composable
-private fun InfoContent(asset: Asset, d: AssetDto, albums: List<Pair<String, String>>, onDismiss: () -> Unit) {
+private fun LocalInfo(asset: Asset) {
+    Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
+        SheetTitle("Details", "Only on this phone, not backed up")
+        val local = asset.localDateTime
+        InfoRow(Icons.Outlined.CalendarToday, longDate(local.toLocalDate()), local.format(DateTimeFormatter.ofPattern("HH:mm")))
+        InfoRow(
+            Icons.Outlined.Image,
+            asset.fileName ?: "Photo",
+            listOfNotNull(asset.fileSize?.let { formatBytes(it) }, asset.durationMs?.let { com.vknxworks.immichctrl.ui.components.formatClock(it) }).joinToString("  ·  "),
+        )
+    }
+}
+
+@Composable
+private fun InfoContent(
+    asset: Asset,
+    d: AssetDto,
+    albums: List<Pair<String, String>>,
+    onDismiss: () -> Unit,
+    onEditDate: () -> Unit,
+    onEditLocation: () -> Unit,
+) {
     val context = LocalContext.current
     val c = context.container
     val nav = LocalNavigator.current
@@ -146,7 +174,8 @@ private fun InfoContent(asset: Asset, d: AssetDto, albums: List<Pair<String, Str
         InfoRow(
             Icons.Outlined.CalendarToday,
             longDate(local.toLocalDate()),
-            listOfNotNull(local.format(DateTimeFormatter.ofPattern("HH:mm")), exif?.timeZone).joinToString("  ·  "),
+            listOfNotNull(local.format(DateTimeFormatter.ofPattern("HH:mm")), exif?.timeZone, if (mine) "Tap to change" else null).joinToString("  ·  "),
+            onClick = if (mine) onEditDate else null,
         )
         InfoRow(
             Icons.Outlined.Image,
@@ -172,6 +201,20 @@ private fun InfoContent(asset: Asset, d: AssetDto, albums: List<Pair<String, Str
         }
         val lat = exif?.latitude
         val lon = exif?.longitude
+        if (mine && lat == null) {
+            InfoRow(Icons.Outlined.Place, "No location", "Tap to add one", onClick = onEditLocation)
+        }
+        if (lat != null && lon != null) {
+            MiniMap(lat, lon, Modifier.padding(horizontal = 24.dp, vertical = 8.dp).fillMaxWidth().height(160.dp).clip(MaterialTheme.shapes.medium))
+        }
+        if (mine && lat != null) {
+            Text(
+                "Change location",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp).clickable(onClick = onEditLocation),
+            )
+        }
         if (exif?.city != null || lat != null) {
             InfoRow(
                 Icons.Outlined.Place,
@@ -219,8 +262,8 @@ private fun InfoContent(asset: Asset, d: AssetDto, albums: List<Pair<String, Str
                 }
             }
         }
-        if (!mine && d.owner != null) {
-            InfoRow(Icons.Outlined.Person, d.owner.name, d.owner.email)
+        if (d.owner != null || !mine) {
+            InfoRow(Icons.Outlined.Person, if (mine) "You" else d.owner?.name ?: "Someone else", if (mine) "Owner" else listOfNotNull("Owner", d.owner?.email).joinToString("  ·  "))
         }
     }
 }

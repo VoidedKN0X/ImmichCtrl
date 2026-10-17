@@ -18,6 +18,9 @@ import com.vknxworks.immichctrl.data.api.ApiJson
 import com.vknxworks.immichctrl.data.api.ImmichClient
 import com.vknxworks.immichctrl.data.api.UploadResultDto
 import com.vknxworks.immichctrl.data.api.addToAlbum
+import com.vknxworks.immichctrl.data.api.albums
+import com.vknxworks.immichctrl.data.api.createAlbum
+import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.api.formatUploadDuration
 import com.vknxworks.immichctrl.data.api.majorVersion
 import com.vknxworks.immichctrl.data.api.serverVersion
@@ -61,6 +64,10 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 }
                 when (mode) {
                     MODE_SHARED -> uploadShared(session.client)
+                    MODE_SYNC_ALBUMS -> {
+                        syncAlbums(session.client, session.account.key, null)
+                        Result.success()
+                    }
                     else -> backup(session.client, session.account.key, mode)
                 }
             } finally {
@@ -74,17 +81,29 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
     private suspend fun backup(client: ImmichClient, accountKey: String, mode: String): Result {
         val c = applicationContext.container
         val settings = c.settings.current()
-        if (mode != MODE_MANUAL && !settings.backupEnabled) return Result.success()
+        if (mode != MODE_MANUAL && mode != MODE_ITEMS && !settings.backupEnabled) return Result.success()
         if (!LocalMedia.hasPermission(applicationContext)) return Result.failure(workDataOf(KEY_ERROR to "Photo access is off"))
 
         val items = withContext(Dispatchers.IO) {
-            LocalMedia.items(applicationContext, settings.backupAlbums, settings.excludedAlbums, settings.backupVideos)
+            if (mode == MODE_ITEMS) {
+                // Specific photos picked in the app ("Upload" on phone-only photos).
+                LocalMedia.itemsByIds(applicationContext, inputData.getLongArray(KEY_IDS)?.toList().orEmpty())
+            } else {
+                LocalMedia.items(
+                    applicationContext,
+                    if (settings.backupEverything) null else settings.backupAlbums,
+                    settings.excludedAlbums,
+                    settings.backupVideos,
+                )
+            }
         }
         val done = withContext(Dispatchers.IO) { c.backupDb.uploaded(accountKey) }
         val todo = items.filterNot { c.backupDb.isDone(done, it) }
         if (todo.isEmpty()) return Result.success(workDataOf(KEY_UPLOADED to 0))
 
         startForeground(0, todo.size, null)
+        AppLog.i("Backup", "Backing up ${todo.size} items")
+        val synced = HashMap<String, MutableList<String>>() // phone album name -> server ids, for album sync
         var uploaded = 0
         var skipped = 0
         var failed = 0
@@ -113,6 +132,7 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 if (r != null && r.action == "reject") {
                     // Already on the server (maybe in the trash); remember it so it isn't checked every run.
                     c.backupDb.markUploaded(accountKey, item, r.assetId)
+                    r.assetId?.let { synced.getOrPut(item.bucketName) { ArrayList() } += it }
                     skipped++
                     continue
                 }
@@ -122,22 +142,62 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                     val result = upload(client, item.name, item.mime, item.size, item.takenMs, item.modifiedMs, item.isFavorite,
                         item.durationMs, sha, deviceAssetId = "${item.id}-${item.size}") { LocalMedia.open(applicationContext, item.uri) }
                     c.backupDb.markUploaded(accountKey, item, result.id)
+                    synced.getOrPut(item.bucketName) { ArrayList() } += result.id
                     uploaded++
                 } catch (e: ApiException) {
+                    AppLog.e("Backup", "Couldn't upload ${item.name}", e)
                     failed++
                 } catch (e: IOException) {
                     // Lost the connection: try again later, keeping what's done.
+                    AppLog.w("Backup", "Connection lost, will retry: ${e.message}")
+                    if (settings.albumSync) syncAlbums(client, accountKey, synced)
                     finish(uploaded, skipped, failed)
                     return Result.retry()
                 }
             }
         }
+        if (settings.albumSync) syncAlbums(client, accountKey, synced)
         finish(uploaded, skipped, failed)
         return Result.success(workDataOf(KEY_UPLOADED to uploaded, KEY_FAILED to failed))
     }
 
+    // ---------------- Album sync ----------------
+
+    /**
+     * Puts backed-up photos into server albums named like the phone albums they came from, creating
+     * the albums when needed. [only] limits it to this run's uploads; null re-files everything
+     * backed up from this phone ("Reorganise into albums").
+     */
+    private suspend fun syncAlbums(client: ImmichClient, accountKey: String, only: Map<String, List<String>>?) {
+        val c = applicationContext.container
+        val byAlbum: Map<String, List<String>> = only ?: withContext(Dispatchers.IO) {
+            val remote = c.backupDb.remoteIds(accountKey)
+            LocalMedia.itemsByIds(applicationContext, remote.keys)
+                .groupBy({ it.bucketName }, { remote[it.id] })
+                .mapValues { (_, v) -> v.filterNotNull() }
+        }
+        if (byAlbum.values.all { it.isEmpty() }) return
+        try {
+            val me = c.sessions.active.value?.account?.userId
+            val existing = client.albums().filter { it.ownerUserId == me }.associateBy { it.albumName }
+            for ((name, ids) in byAlbum) {
+                if (name.isBlank() || ids.isEmpty()) continue
+                val album = existing[name] ?: client.createAlbum(name)
+                ids.chunked(500).forEach { client.addToAlbum(album.id, it) }
+            }
+            AppLog.i("Backup", "Album sync: ${byAlbum.size} albums updated")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            AppLog.e("Backup", "Album sync failed", e)
+        }
+    }
+
     private suspend fun finish(uploaded: Int, skipped: Int, failed: Int) {
+        val c = applicationContext.container
+        c.local.changed()
         if (uploaded > 0) withContext(Dispatchers.Main) { Sources.refreshAll() }
+        AppLog.i("Backup", "Done: $uploaded uploaded, $skipped already there, $failed failed")
         val nm = applicationContext.getSystemService(NotificationManager::class.java)
         nm.cancel(NOTIFICATION_ID)
         if (uploaded == 0 && failed == 0) return
@@ -283,6 +343,9 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         const val MODE_TRIGGER = "trigger"
         const val MODE_MANUAL = "manual"
         const val MODE_SHARED = "shared"
+        const val MODE_ITEMS = "items"
+        const val MODE_SYNC_ALBUMS = "sync-albums"
+        const val KEY_IDS = "ids"
 
         /** One backup at a time, whichever way it was started. */
         private val lock = Mutex()

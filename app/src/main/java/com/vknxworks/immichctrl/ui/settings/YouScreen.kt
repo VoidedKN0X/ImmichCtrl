@@ -2,6 +2,24 @@ package com.vknxworks.immichctrl.ui.settings
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import com.vknxworks.immichctrl.data.api.deleteProfileImage
+import com.vknxworks.immichctrl.data.api.majorVersion
+import com.vknxworks.immichctrl.data.api.setProfileImage
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -77,11 +95,37 @@ fun YouScreen() {
     var confirmSignOut by remember { mutableStateOf(false) }
     var changingPassword by remember { mutableStateOf(false) }
     var newPassword by remember { mutableStateOf<String?>(null) }
+    var avatarMenu by remember { mutableStateOf(false) }
+    val pickAvatar = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) c.runTask("Profile picture updated") {
+            val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
+            val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } } ?: error("Couldn't read that picture")
+            c.api.setProfileImage(bytes, mime, if (mime.endsWith("png")) "profile.png" else "profile.jpg")
+            me.reload(silent = true)
+        }
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(bottom = 24.dp + LocalBottomClearance.current)) {
         Column(Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             val m = me.value
-            UserAvatar(acc.userId, acc.name, true, m?.profileChangedAt, m?.avatarColor, Modifier.size(96.dp))
+            Box {
+                UserAvatar(acc.userId, acc.name, true, m?.profileChangedAt, m?.avatarColor, Modifier.size(96.dp).clip(CircleShape).clickable { avatarMenu = true })
+                Icon(
+                    Icons.Filled.PhotoCamera, "Change profile picture",
+                    Modifier.align(Alignment.BottomEnd).size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary).padding(5.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                )
+                DropdownMenu(avatarMenu, onDismissRequest = { avatarMenu = false }) {
+                    DropdownMenuItem(text = { Text("Choose a new picture") }, onClick = {
+                        avatarMenu = false
+                        pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    })
+                    if (!m?.profileImagePath.isNullOrBlank()) DropdownMenuItem(text = { Text("Remove picture") }, onClick = {
+                        avatarMenu = false
+                        c.runTask("Profile picture removed") { c.api.deleteProfileImage(); me.reload(silent = true) }
+                    })
+                }
+            }
             Spacer(Modifier.height(14.dp))
             Text(acc.name.ifBlank { acc.email }, style = MaterialTheme.typography.headlineMedium)
             Text(
@@ -118,6 +162,20 @@ fun YouScreen() {
                     Spacer(Modifier.height(8.dp))
                     LinearProgressIndicator(progress = { fraction.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                 }
+            }
+        }
+
+        // Immich changes its API between major versions; warn if this server is outside what the app knows.
+        val major = majorVersion(acc.serverVersion)
+        if (major != null && major !in 2..3) {
+            Group {
+                GroupRow(
+                    "Server version not supported",
+                    "This server runs Immich ${acc.serverVersion}. ImmichCtrl is built for Immich 2.x and 3.x, so some things may not work." +
+                        if (major > 3) " Check for an app update." else " Update the server if you can.",
+                    icon = Icons.Filled.Warning,
+                    iconTint = MaterialTheme.colorScheme.error,
+                )
             }
         }
 

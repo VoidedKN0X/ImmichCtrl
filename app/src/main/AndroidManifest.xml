@@ -46,6 +46,15 @@
                 <data android:scheme="app.immich" />
             </intent-filter>
 
+            <!-- "Open with ImmichCtrl": view a photo or video from another app, then upload it if wanted. -->
+            <intent-filter android:label="View in ImmichCtrl">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+
             <!-- "Share to ImmichCtrl" uploads photos and videos from other apps. -->
             <intent-filter android:label="Upload to Immich">
                 <action android:name="android.intent.action.SEND" />
@@ -65,6 +74,47 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Quick Settings tile: back up now. -->
+        <service
+            android:name=".data.backup.BackupTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_notification"
+            android:label="@string/tile_backup"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Home screen widgets. -->
+        <receiver
+            android:name=".ui.widget.MemoriesWidget"
+            android:exported="false"
+            android:label="@string/widget_memories">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_memories" />
+        </receiver>
+        <receiver
+            android:name=".ui.widget.RandomWidget"
+            android:exported="false"
+            android:label="@string/widget_random">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_random" />
+        </receiver>
+
+        <!-- Google Cast: photos and videos to a TV (Default Media Receiver). -->
+        <meta-data
+            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+            android:value="com.vknxworks.immichctrl.ui.viewer.CastOptionsProvider" />
 
         <!-- Backups run as WorkManager jobs; long ones show a progress notification. -->
         <service

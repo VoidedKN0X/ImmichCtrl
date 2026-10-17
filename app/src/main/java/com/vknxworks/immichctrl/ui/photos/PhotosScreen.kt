@@ -1,6 +1,16 @@
 package com.vknxworks.immichctrl.ui.photos
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import com.vknxworks.immichctrl.ui.components.ConfirmDialog
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,7 +80,18 @@ fun PhotosScreen() {
     val source = rememberTimeline(
         "photos:${settings.withPartners}",
         TimelineQuery(visibility = "timeline", withPartners = settings.withPartners, withStacked = true, order = "desc"),
+        withLocal = true,
     )
+    // New photos on the phone, a finished backup or the "show phone photos" setting: merge again.
+    val localVersion by c.local.version.collectAsStateWithLifecycle()
+    var seenVersion by remember { mutableIntStateOf(localVersion) }
+    LaunchedEffect(localVersion, settings.showLocal) {
+        if (localVersion != seenVersion) {
+            seenVersion = localVersion
+            source.refresh(silent = true)
+        }
+    }
+    var toggleReadOnly by remember { mutableStateOf(false) }
     val memories = rememberLoader("memories") {
         if (!settings.showMemories) emptyList()
         else c.api.memories(OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)).filter { it.assets.isNotEmpty() }
@@ -99,7 +120,9 @@ fun PhotosScreen() {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text("Photos", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
-                        IconButton(onClick = { nav.navigate(BackupRoute) }) {
+                        if (settings.readOnly) {
+                            Icon(Icons.Outlined.Lock, "Read-only mode", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 4.dp))
+                        } else IconButton(onClick = { nav.navigate(BackupRoute) }) {
                             Box(contentAlignment = Alignment.Center) {
                                 when {
                                     backingUp -> {
@@ -112,7 +135,14 @@ fun PhotosScreen() {
                             }
                         }
                         if (acc != null) {
-                            IconButton(onClick = { nav.navigate(YouRoute) }) {
+                            // Long-press the avatar for read-only mode (handy before handing the phone to a child).
+                            Box(
+                                Modifier.size(48.dp).clip(CircleShape).combinedClickable(
+                                    onClick = { if (!settings.readOnly) nav.navigate(YouRoute) },
+                                    onLongClick = { toggleReadOnly = true },
+                                ),
+                                contentAlignment = Alignment.Center,
+                            ) {
                                 UserAvatar(acc.userId, acc.name, true, null, null, Modifier.size(32.dp))
                             }
                         }
@@ -130,6 +160,34 @@ fun PhotosScreen() {
             }
         },
     )
+
+    if (toggleReadOnly) {
+        ReadOnlyDialog(settings.readOnly, onDismiss = { toggleReadOnly = false })
+    }
+}
+
+/** Turning read-only mode on is a tap; turning it off asks for the phone's lock when there is one. */
+@Composable
+private fun ReadOnlyDialog(on: Boolean, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val c = context.container
+    val scope = rememberCoroutineScope()
+    fun set(v: Boolean) = scope.launch { c.settings.update { it.copy(readOnly = v) } }
+    ConfirmDialog(
+        if (on) "Leave read-only mode?" else "Turn on read-only mode?",
+        if (on) "Everything can be changed and deleted again." else "Only Photos can be browsed, and nothing can be deleted, moved or changed. Long-press your picture again to turn it off.",
+        if (on) "Turn off" else "Turn on",
+        destructive = false,
+        onDismiss = onDismiss,
+    ) {
+        onDismiss()
+        val activity = context as? androidx.fragment.app.FragmentActivity
+        if (on && activity != null && c.appLock.canLock()) {
+            c.appLock.prompt(activity, "Leave read-only mode", allowCredential = true) { ok -> if (ok) set(false) }
+        } else {
+            set(!on)
+        }
+    }
 }
 
 @Composable

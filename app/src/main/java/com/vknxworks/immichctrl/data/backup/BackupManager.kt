@@ -113,6 +113,28 @@ class BackupManager(
         wm.enqueueUniqueWork(MANUAL, ExistingWorkPolicy.KEEP, req)
     }
 
+    /** Uploads specific photos from this phone (picked in the app), whatever the backup settings. */
+    fun uploadLocal(ids: Collection<Long>) {
+        if (ids.isEmpty()) return
+        val req = OneTimeWorkRequestBuilder<BackupWorker>()
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setInputData(workDataOf(BackupWorker.KEY_MODE to BackupWorker.MODE_ITEMS, BackupWorker.KEY_IDS to ids.toLongArray()))
+            .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+            .addTag(TAG)
+            .build()
+        wm.enqueue(req)
+    }
+
+    /** Files everything backed up from this phone into server albums named like the phone's albums. */
+    fun syncAlbumsNow() {
+        val req = OneTimeWorkRequestBuilder<BackupWorker>()
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setInputData(workDataOf(BackupWorker.KEY_MODE to BackupWorker.MODE_SYNC_ALBUMS))
+            .addTag(TAG)
+            .build()
+        wm.enqueue(req)
+    }
+
     fun cancel() {
         wm.cancelUniqueWork(MANUAL)
         wm.cancelUniqueWork(TRIGGER)
@@ -159,7 +181,7 @@ class BackupManager(
         val s = settings.current()
         val account = sessions.active.value?.account?.key ?: return@withContext BackupCounts(0, 0)
         if (!LocalMedia.hasPermission(context)) return@withContext BackupCounts(0, 0)
-        val items = LocalMedia.items(context, s.backupAlbums, s.excludedAlbums, s.backupVideos)
+        val items = LocalMedia.items(context, if (s.backupEverything) null else s.backupAlbums, s.excludedAlbums, s.backupVideos)
         val done = db.uploaded(account)
         BackupCounts(items.size, items.count { db.isDone(done, it) })
     }

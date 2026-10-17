@@ -32,6 +32,11 @@ import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Screenshot
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.InputChip
+import androidx.compose.runtime.remember
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -77,7 +82,6 @@ import com.vknxworks.immichctrl.ui.theme.Gutter
 import com.vknxworks.immichctrl.data.settings.GroupBy
 
 private enum class Mode(val label: String) { SMART("Smart"), FILENAME("File name"), DESCRIPTION("Description"), TEXT("Text in photo") }
-private enum class Kind(val label: String, val type: String?) { ALL("All", null), PHOTOS("Photos", "IMAGE"), VIDEOS("Videos", "VIDEO") }
 
 @Composable
 fun SearchScreen() {
@@ -86,8 +90,8 @@ fun SearchScreen() {
     var text by rememberSaveable { mutableStateOf("") }
     var query by rememberSaveable { mutableStateOf("") }
     var mode by rememberSaveable { mutableStateOf(if (features.smartSearch) Mode.SMART else Mode.FILENAME) }
-    var kind by rememberSaveable { mutableStateOf(Kind.ALL) }
-    var favorites by rememberSaveable { mutableStateOf(false) }
+    var filters by remember { mutableStateOf(SearchFilters()) }
+    var editing by remember { mutableStateOf(false) }
     val focus = LocalFocusManager.current
     val modes = Mode.entries.filter { (it != Mode.SMART || features.smartSearch) && (it != Mode.TEXT || features.ocr) }
 
@@ -107,7 +111,14 @@ fun SearchScreen() {
                 },
                 leadingIcon = { Icon(Icons.Filled.Search, null) },
                 trailingIcon = {
-                    if (text.isNotEmpty()) IconButton(onClick = { text = ""; query = "" }) { Icon(Icons.Filled.Close, "Clear") }
+                    Row {
+                        if (text.isNotEmpty()) IconButton(onClick = { text = ""; query = "" }) { Icon(Icons.Filled.Close, "Clear") }
+                        IconButton(onClick = { editing = true }) {
+                            BadgedBox(badge = { if (filters.active > 0) Badge { Text(filters.active.toString()) } }) {
+                                Icon(Icons.Outlined.Tune, "Filters")
+                            }
+                        }
+                    }
                 },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -126,29 +137,38 @@ fun SearchScreen() {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 modes.forEach { m -> FilterChip(mode == m, onClick = { mode = m }, label = { Text(m.label) }) }
-                Kind.entries.forEach { k -> FilterChip(kind == k, onClick = { kind = k }, label = { Text(k.label) }) }
-                FilterChip(favorites, onClick = { favorites = !favorites }, label = { Text("Favourites") })
+                filters.summary().forEach { label ->
+                    InputChip(selected = true, onClick = { editing = true }, label = { Text(label) })
+                }
             }
         }
     }
 
-    if (query.isEmpty()) {
+    if (editing) {
+        FiltersSheet(filters, onDismiss = { editing = false }) { f ->
+            filters = f
+            editing = false
+            if (query.isEmpty() && text.isNotBlank()) submit()
+        }
+    }
+
+    if (query.isEmpty() && filters.active == 0) {
         Column(Modifier.fillMaxSize()) {
             searchBar()
             Explore(onSearch = { submit(it) })
         }
     } else {
-        val key = "search:${mode.name}:${kind.name}:$favorites:$query"
+        // Text searches use the chosen mode; filters on their own search by metadata.
+        val smart = mode == Mode.SMART && query.isNotEmpty()
+        val key = "search:${mode.name}:${filters.hashCode()}:$query"
         val source = rememberPaged(key) { page ->
-            val filters = buildMap<String, Any?> {
-                kind.type?.let { put("type", it) }
-                if (favorites) put("isFavorite", true)
-            }
-            val res = when (mode) {
-                Mode.SMART -> c.api.smartSearch(query, page, 100, filters)
-                Mode.FILENAME -> c.api.metadataSearch(page, 100, filters + ("originalFileName" to query))
-                Mode.DESCRIPTION -> c.api.metadataSearch(page, 100, filters + ("description" to query))
-                Mode.TEXT -> c.api.metadataSearch(page, 100, filters + ("ocr" to query))
+            val params = filters.params(smart)
+            val res = when {
+                smart -> c.api.smartSearch(query, page, 100, params)
+                query.isEmpty() -> c.api.metadataSearch(page, 100, params)
+                mode == Mode.DESCRIPTION -> c.api.metadataSearch(page, 100, params + ("description" to query))
+                mode == Mode.TEXT -> c.api.metadataSearch(page, 100, params + ("ocr" to query))
+                else -> c.api.metadataSearch(page, 100, params + ("originalFileName" to query))
             }
             res.assets.items.map { it.toAsset() } to (res.assets.nextPage != null)
         }
@@ -156,9 +176,8 @@ fun SearchScreen() {
             source,
             SelectionContext.TIMELINE,
             topBar = searchBar,
-            // Smart search is ordered by relevance, so don't regroup by date.
-            groupBy = if (mode == Mode.SMART) GroupBy.MONTH else null,
-            empty = { MessageView(Icons.Outlined.ImageSearch, "No results", "Try different words, or another search type.") },
+            groupBy = if (smart) GroupBy.MONTH else null,
+            empty = { MessageView(Icons.Outlined.ImageSearch, "No results", "Try different words, fewer filters, or another search type.") },
         )
     }
 }

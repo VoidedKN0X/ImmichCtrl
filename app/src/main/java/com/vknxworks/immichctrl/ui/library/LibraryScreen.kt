@@ -39,6 +39,21 @@ import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Sell
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.automirrored.outlined.ViewList
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.OfflinePin
+import androidx.compose.material.icons.outlined.PhoneAndroid
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import com.vknxworks.immichctrl.data.settings.AlbumSort
+import com.vknxworks.immichctrl.ui.nav.DuplicatesRoute
+import com.vknxworks.immichctrl.ui.nav.LocalAlbumsRoute
+import com.vknxworks.immichctrl.ui.nav.OfflineAlbumRoute
+import kotlinx.coroutines.launch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -97,6 +112,11 @@ fun LibraryScreen() {
     val albums = rememberLoader("albums") { c.api.albums().sortedByDescending { it.lastModifiedAssetTimestamp ?: it.updatedAt } }
     var filter by rememberSaveable { mutableStateOf(AlbumFilter.ALL) }
     var creating by rememberSaveable { mutableStateOf(false) }
+    var search by rememberSaveable { mutableStateOf("") }
+    var sorting by remember { mutableStateOf(false) }
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
+    val offline by c.offline.albums.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
     if (creating) {
         TextInputDialog("New album", "Album name", "Create", onDismiss = { creating = false }) { name ->
@@ -144,17 +164,46 @@ fun LibraryScreen() {
                         Tile(Icons.Outlined.Sell, "Tags") { nav.navigate(TagsRoute) },
                         Tile(Icons.Outlined.Folder, "Folders") { nav.navigate(FoldersRoute()) },
                     )
-                    if (features.trash) {
-                        TileRow(Tile(Icons.Outlined.Delete, "Trash") { nav.navigate(CollectionRoute("trash")) }, null)
+                    TileRow(
+                        Tile(Icons.Outlined.PhoneAndroid, "On this device") { nav.navigate(LocalAlbumsRoute) },
+                        if (features.trash) Tile(Icons.Outlined.Delete, "Trash") { nav.navigate(CollectionRoute("trash")) } else null,
+                    )
+                    if (features.duplicateDetection) {
+                        TileRow(Tile(Icons.Outlined.ContentCopy, "Duplicates") { nav.navigate(DuplicatesRoute) }, null)
                     }
                 }
             }
             fullWidth("albums-title") {
                 Column {
+                    if (offline.isNotEmpty()) {
+                        Text("Available offline", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
+                        offline.forEach { o ->
+                            Row(
+                                Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { nav.navigate(OfflineAlbumRoute(o.albumId)) }.padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(Icons.Outlined.OfflinePin, null, tint = MaterialTheme.colorScheme.primary)
+                                Text(o.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                                Text(if (o.complete) countLabel(o.count, "item") else "Saving…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
                     Row(Modifier.fillMaxWidth().padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("Albums", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-                        IconButton(onClick = { creating = true }) { Icon(Icons.Filled.Add, "New album") }
+                        IconButton(onClick = { sorting = true }) { Icon(Icons.AutoMirrored.Outlined.Sort, "Sort") }
+                        IconButton(onClick = { scope.launch { c.settings.update { it.copy(albumGrid = !it.albumGrid) } } }) {
+                            Icon(if (settings.albumGrid) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView, if (settings.albumGrid) "List" else "Grid")
+                        }
+                        if (!settings.readOnly) IconButton(onClick = { creating = true }) { Icon(Icons.Filled.Add, "New album") }
                     }
+                    OutlinedTextField(
+                        search, { search = it },
+                        placeholder = { Text("Find an album") },
+                        leadingIcon = { Icon(Icons.Outlined.Search, null) },
+                        singleLine = true,
+                        shape = CircleShape,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         AlbumFilter.entries.forEach { f ->
                             FilterChip(selected = filter == f, onClick = { filter = f }, label = { Text(f.label) })
@@ -171,8 +220,8 @@ fun LibraryScreen() {
                             AlbumFilter.ALL -> true
                             AlbumFilter.MINE -> it.ownerUserId == c.me
                             AlbumFilter.SHARED -> it.ownerUserId != c.me
-                        }
-                    }
+                        } && (search.isBlank() || it.albumName.contains(search.trim(), ignoreCase = true))
+                    }.let { list -> sortAlbums(list, settings.albumSort) }
                     if (shown.isEmpty()) {
                         fullWidth("empty") {
                             Text(
@@ -183,9 +232,59 @@ fun LibraryScreen() {
                             )
                         }
                     }
-                    items(shown, key = { it.id }) { a -> AlbumCard(a) { nav.album(a.id) } }
+                    if (settings.albumGrid) {
+                        items(shown, key = { it.id }) { a -> AlbumCard(a) { nav.album(a.id) } }
+                    } else {
+                        items(shown, key = { it.id }, span = { GridItemSpan(maxLineSpan) }) { a -> AlbumRow(a) { nav.album(a.id) } }
+                    }
                 }
             }
+        }
+    }
+    if (sorting) {
+        com.vknxworks.immichctrl.ui.components.ChoiceSheet(
+            "Sort albums",
+            AlbumSort.entries.map { it to it.label },
+            settings.albumSort,
+            onDismiss = { sorting = false },
+        ) { v ->
+            sorting = false
+            scope.launch { c.settings.update { it.copy(albumSort = v) } }
+        }
+    }
+}
+
+private fun sortAlbums(list: List<AlbumDto>, sort: AlbumSort): List<AlbumDto> = when (sort) {
+    AlbumSort.ACTIVITY -> list.sortedByDescending { it.lastModifiedAssetTimestamp ?: it.updatedAt }
+    AlbumSort.NAME -> list.sortedBy { it.albumName.lowercase() }
+    AlbumSort.CREATED -> list.sortedByDescending { it.createdAt }
+    AlbumSort.NEWEST -> list.sortedByDescending { it.endDate ?: "" }
+    AlbumSort.OLDEST -> list.sortedBy { it.startDate ?: "9999" }
+    AlbumSort.COUNT -> list.sortedByDescending { it.assetCount }
+}
+
+@Composable
+private fun AlbumRow(a: AlbumDto, onClick: () -> Unit) {
+    val c = LocalContext.current.container
+    Row(
+        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable(onClick = onClick).padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(64.dp).clip(MaterialTheme.shapes.small)) {
+            RemoteImage(a.albumThumbnailAssetId?.let { c.api.thumbnailUrl(it) }, Modifier.fillMaxSize(), placeholderIcon = Icons.Outlined.PhotoAlbum)
+        }
+        Column(Modifier.weight(1f).padding(start = 14.dp)) {
+            Text(a.albumName.ifBlank { "Untitled" }, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                listOfNotNull(
+                    countLabel(a.assetCount, "item"),
+                    if (a.ownerUserId != c.me) a.ownerUser?.name?.let { "by $it" } else if (a.shared) "Shared" else null,
+                    shortDate(a.startDate),
+                ).joinToString("  ·  "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
         }
     }
 }

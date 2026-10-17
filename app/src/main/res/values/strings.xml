@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ImmichCtrl</string>
+    <string name="widget_memories">Memories</string>
+    <string name="widget_memories_description">On this day, from your Immich library</string>
+    <string name="widget_random">Random photo</string>
+    <string name="widget_random_description">A different photo from your Immich library every few hours</string>
+    <string name="tile_backup">Back up photos</string>
 </resources>

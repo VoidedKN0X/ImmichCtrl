@@ -36,7 +36,10 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Link
-import androidx.compose.material.icons.outlined.Notes
+import androidx.compose.material.icons.automirrored.outlined.Notes
+import androidx.compose.material.icons.outlined.OfflinePin
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.vknxworks.immichctrl.ui.photos.SharedLinkDialog
 import androidx.compose.material.icons.outlined.PersonAdd
 import androidx.compose.material.icons.outlined.PersonAddAlt
 import androidx.compose.material.icons.outlined.PhotoLibrary
@@ -111,7 +114,12 @@ fun AlbumScreen(id: String) {
     val album = rememberLoader("album:$id") { c.api.album(id) }
     when (val s = album.state) {
         is Load.Loading -> Column(Modifier.fillMaxSize()) { ScreenTopBar(""); LoadingView() }
-        is Load.Err -> Column(Modifier.fillMaxSize()) { ScreenTopBar("Album"); ErrorView(s.message) { album.reload() } }
+        is Load.Err -> if (c.offline.isOffline(id)) {
+            // No connection, but it's saved on the phone.
+            OfflineAlbumScreen(id)
+        } else {
+            Column(Modifier.fillMaxSize()) { ScreenTopBar("Album"); ErrorView(s.message) { album.reload() } }
+        }
         is Load.Ok -> AlbumContent(s.value, onChanged = { album.reload(silent = true) }, onGone = { nav.back() })
     }
 }
@@ -131,6 +139,10 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
     var describing by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmLeave by remember { mutableStateOf(false) }
+    var linkOptions by remember { mutableStateOf(false) }
+    val offlineAlbums by c.offline.albums.collectAsStateWithLifecycle()
+    val isOffline = offlineAlbums.any { it.albumId == a.id }
+    val readOnly = c.settings.settings.value.readOnly
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
         if (uris.isNotEmpty()) c.runTask {
@@ -146,8 +158,8 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
         canEditAlbum = canEdit,
         topBar = {
             ScreenTopBar(a.albumName.ifBlank { "Untitled" }) {
-                if (canEdit) IconButton(onClick = { addMenu = true }) { Icon(Icons.Outlined.AddPhotoAlternate, "Add photos") }
-                if (isOwner) IconButton(onClick = { sharing = true }) { Icon(Icons.Outlined.PersonAddAlt, "Share") }
+                if (canEdit && !readOnly) IconButton(onClick = { addMenu = true }) { Icon(Icons.Outlined.AddPhotoAlternate, "Add photos") }
+                if (isOwner && !readOnly) IconButton(onClick = { sharing = true }) { Icon(Icons.Outlined.PersonAddAlt, "Share") }
                 if (a.shared && a.isActivityEnabled) IconButton(onClick = { activity = true }) { Icon(Icons.AutoMirrored.Outlined.Comment, "Activity") }
                 IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "More") }
             }
@@ -207,9 +219,20 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
         ) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(a.albumName, a.ownerUser?.name?.let { if (isOwner) null else "Shared by $it" })
-                if (isOwner) {
+                ActionItem(Icons.Outlined.OfflinePin, if (isOffline) "Remove offline copy" else "Make available offline") {
+                    menu = false
+                    if (isOffline) c.offline.remove(a.id) else {
+                        c.offline.sync(a.id, a.albumName)
+                        c.toast("Saving ${a.albumName} for offline viewing")
+                    }
+                }
+                if (canEdit && !isOwner && !readOnly) {
                     ActionItem(Icons.Outlined.Edit, "Rename") { menu = false; renaming = true }
-                    ActionItem(Icons.Outlined.Notes, "Edit description") { menu = false; describing = true }
+                    ActionItem(Icons.AutoMirrored.Outlined.Notes, "Edit description") { menu = false; describing = true }
+                }
+                if (isOwner && !readOnly) {
+                    ActionItem(Icons.Outlined.Edit, "Rename") { menu = false; renaming = true }
+                    ActionItem(Icons.AutoMirrored.Outlined.Notes, "Edit description") { menu = false; describing = true }
                     ActionItem(Icons.Outlined.SwapVert, if (a.order == "asc") "Show newest first" else "Show oldest first") {
                         menu = false
                         c.runTask {
@@ -219,17 +242,14 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
                     }
                     ActionItem(Icons.Outlined.Link, "Share a link") {
                         menu = false
-                        c.runTask {
-                            val link = c.api.createSharedLink(albumId = a.id)
-                            Exporter.shareText(c.context, Exporter.sharedLinkUrl(c.api, c.serverConfig.value.externalDomain, link.key, link.slug))
-                        }
+                        linkOptions = true
                     }
                     ActionItem(Icons.AutoMirrored.Outlined.Comment, if (a.isActivityEnabled) "Turn off comments and likes" else "Turn on comments and likes") {
                         menu = false
                         c.runTask { c.api.updateAlbum(a.id, "isActivityEnabled" to !a.isActivityEnabled); onChanged() }
                     }
                     ActionItem(Icons.Outlined.Delete, "Delete album", tint = MaterialTheme.colorScheme.error) { menu = false; confirmDelete = true }
-                } else {
+                } else if (!isOwner && !readOnly) {
                     ActionItem(Icons.AutoMirrored.Outlined.ExitToApp, "Leave album", tint = MaterialTheme.colorScheme.error) { menu = false; confirmLeave = true }
                 }
                 ActionItem(Icons.Outlined.SmartDisplay, "Play as slideshow") {
@@ -267,6 +287,23 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
         ConfirmDialog("Leave \"${a.albumName}\"?", "You'll no longer see this album unless it's shared with you again.", "Leave", onDismiss = { confirmLeave = false }) {
             confirmLeave = false
             c.runTask("Left the album") { c.api.removeAlbumUser(a.id, "me"); onGone() }
+        }
+    }
+    if (linkOptions) {
+        SharedLinkDialog("Share \"${a.albumName}\"", allowUploadOption = true, onDismiss = { linkOptions = false }) { o ->
+            linkOptions = false
+            c.runTask {
+                val link = c.api.createSharedLink(
+                    albumId = a.id,
+                    description = o.description.ifBlank { null },
+                    expiresAt = o.expiresAt(),
+                    allowDownload = o.allowDownload,
+                    allowUpload = o.allowUpload,
+                    showMetadata = o.showMetadata,
+                    password = o.password,
+                )
+                Exporter.shareText(c.context, Exporter.sharedLinkUrl(c.api, c.serverConfig.value.externalDomain, link.key, link.slug))
+            }
         }
     }
     if (sharing) ShareAlbumSheet(a, onDismiss = { sharing = false }, onChanged = onChanged)

@@ -26,6 +26,9 @@ data class LocalItem(
     val isVideo: Boolean,
     val isFavorite: Boolean,
     val bucketId: String,
+    val bucketName: String = "",
+    val width: Int = 0,
+    val height: Int = 0,
 )
 
 object LocalMedia {
@@ -70,8 +73,20 @@ object LocalMedia {
             .sortedWith(compareByDescending<LocalAlbum> { it.name.equals("Camera", true) }.thenByDescending { it.count })
     }
 
-    fun items(context: Context, bucketIds: Set<String>, excluded: Set<String>, videos: Boolean): List<LocalItem> {
-        if (bucketIds.isEmpty()) return emptyList()
+    /** Photos and videos in [bucketIds] (null = every album on the phone), oldest first. */
+    fun items(context: Context, bucketIds: Set<String>?, excluded: Set<String>, videos: Boolean): List<LocalItem> {
+        if (bucketIds != null && bucketIds.isEmpty()) return emptyList()
+        return query(context, null, null) { it.bucketId !in excluded && (bucketIds == null || it.bucketId in bucketIds) && (videos || !it.isVideo) }
+    }
+
+    /** Specific items by MediaStore id. */
+    fun itemsByIds(context: Context, ids: Collection<Long>): List<LocalItem> {
+        if (ids.isEmpty()) return emptyList()
+        val wanted = ids.toHashSet()
+        return query(context, null, null) { it.id in wanted }
+    }
+
+    private fun query(context: Context, extraSelection: String?, args: Array<String>?, keep: (LocalItem) -> Boolean): List<LocalItem> {
         val out = ArrayList<LocalItem>()
         val proj = arrayOf(
             MediaStore.Files.FileColumns._ID,
@@ -85,8 +100,13 @@ object LocalMedia {
             MediaStore.MediaColumns.DURATION,
             MediaStore.Files.FileColumns.MEDIA_TYPE,
             MediaStore.MediaColumns.IS_FAVORITE,
+            MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
+            MediaStore.MediaColumns.WIDTH,
+            MediaStore.MediaColumns.HEIGHT,
+            MediaStore.MediaColumns.ORIENTATION,
         )
-        context.contentResolver.query(filesUri, proj, MEDIA_SELECTION, null, "${MediaStore.Files.FileColumns.DATE_ADDED} ASC")?.use { c ->
+        val selection = if (extraSelection != null) "$MEDIA_SELECTION AND $extraSelection" else MEDIA_SELECTION
+        context.contentResolver.query(filesUri, proj, selection, args, "${MediaStore.Files.FileColumns.DATE_ADDED} ASC")?.use { c ->
             val idCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
             val bucketCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_ID)
             val nameCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
@@ -98,17 +118,20 @@ object LocalMedia {
             val durCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DURATION)
             val typeCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MEDIA_TYPE)
             val favCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.IS_FAVORITE)
+            val bucketNameCol = c.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
+            val wCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.WIDTH)
+            val hCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.HEIGHT)
+            val oCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.ORIENTATION)
             while (c.moveToNext()) {
                 val bucket = c.getString(bucketCol) ?: continue
-                if (bucket !in bucketIds || bucket in excluded) continue
                 val video = c.getInt(typeCol) == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO
-                if (video && !videos) continue
                 val size = c.getLong(sizeCol)
                 if (size <= 0) continue
                 val id = c.getLong(idCol)
                 val modified = c.getLong(modCol) * 1000
                 val taken = c.getLong(takenCol).takeIf { it > 0 } ?: modified.takeIf { it > 0 } ?: (c.getLong(addedCol) * 1000)
-                out += LocalItem(
+                val rotated = c.getInt(oCol) % 180 != 0
+                val item = LocalItem(
                     id = id,
                     uri = contentUri(id, video),
                     name = c.getString(nameCol) ?: "$id",
@@ -120,7 +143,11 @@ object LocalMedia {
                     isVideo = video,
                     isFavorite = c.getInt(favCol) == 1,
                     bucketId = bucket,
+                    bucketName = c.getString(bucketNameCol) ?: "",
+                    width = if (rotated) c.getInt(hCol) else c.getInt(wCol),
+                    height = if (rotated) c.getInt(wCol) else c.getInt(hCol),
                 )
+                if (keep(item)) out += item
             }
         }
         return out

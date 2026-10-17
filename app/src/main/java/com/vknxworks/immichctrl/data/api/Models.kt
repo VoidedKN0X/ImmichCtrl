@@ -70,8 +70,19 @@ data class Asset(
     val ownerId: String,
     val city: String? = null,
     val country: String? = null,
+    /** content:// (photo on this phone) or file:// (offline copy); shown instead of the server's image. */
+    val localUri: String? = null,
+    /** Only on this phone, not on the server (id is "local:<MediaStore id>"). */
+    val isLocalOnly: Boolean = false,
+    /** On the server and also on this phone (it was backed up from here). */
+    val onDevice: Boolean = false,
+    /** MediaStore id of the copy on this phone, if there is one. */
+    val localId: Long? = null,
+    val fileName: String? = null,
+    val fileSize: Long? = null,
 ) {
     val isVideo: Boolean get() = !isImage
+    val isRemote: Boolean get() = !isLocalOnly
     val localDateTime: java.time.LocalDateTime
         get() = java.time.LocalDateTime.ofEpochSecond(
             Math.floorDiv(takenAtMs, 1000L) + (localOffsetHours * 3600).toLong(),
@@ -251,6 +262,8 @@ data class ExifDto(
     val description: String? = null,
     val rating: Int? = null,
     val projectionType: String? = null,
+    /** EXIF orientation ("1".."8"); 5 to 8 mean the stored image is turned on its side. */
+    val orientation: String? = null,
 )
 
 @Serializable
@@ -287,6 +300,7 @@ data class AssetDto(
     val isArchived: Boolean = false,
     val isTrashed: Boolean = false,
     val isOffline: Boolean = false,
+    val isEdited: Boolean = false,
     val visibility: String = "timeline",
     val duration: JsonElement? = null,
     val thumbhash: String? = null,
@@ -511,3 +525,65 @@ data class TrashResultDto(val count: Int = 0)
 
 @Serializable
 data class PingDto(val res: String = "")
+
+// ---------------------------------------------------------------------------------------------
+// Editing, OCR, stacks, faces, duplicates, sessions
+// ---------------------------------------------------------------------------------------------
+
+@Serializable
+data class EditDto(val action: String, val parameters: JsonElement)
+
+@Serializable
+data class EditsDto(val assetId: String = "", val edits: List<EditDto> = emptyList())
+
+/** Recognised text; corners are fractions of the image (0..1) on current servers. */
+@Serializable
+data class OcrDto(
+    val id: String,
+    val text: String = "",
+    val x1: Double = 0.0, val y1: Double = 0.0,
+    val x2: Double = 0.0, val y2: Double = 0.0,
+    val x3: Double = 0.0, val y3: Double = 0.0,
+    val x4: Double = 0.0, val y4: Double = 0.0,
+)
+
+@Serializable
+data class StackDto(val id: String, val primaryAssetId: String = "", val assets: List<AssetDto> = emptyList())
+
+@Serializable
+data class FaceDto(
+    val id: String,
+    val boundingBoxX1: Int = 0,
+    val boundingBoxY1: Int = 0,
+    val boundingBoxX2: Int = 0,
+    val boundingBoxY2: Int = 0,
+    val imageWidth: Int = 0,
+    val imageHeight: Int = 0,
+    val person: PersonDto? = null,
+)
+
+@Serializable
+data class DuplicateGroupDto(
+    val duplicateId: String,
+    val assets: List<AssetDto> = emptyList(),
+    val suggestedKeepAssetIds: List<String> = emptyList(),
+)
+
+@Serializable
+data class SessionTokenDto(val id: String = "", val token: String, val expiresAt: String? = null)
+
+@Serializable
+data class VersionCheckDto(val checkedAt: String? = null, val releaseVersion: String? = null)
+
+@Serializable
+data class SharedPersonUserDto(val id: String, val name: String = "")
+
+@Serializable
+data class PersonFullDto(
+    val id: String,
+    val name: String = "",
+    val isHidden: Boolean = false,
+    val isFavorite: Boolean = false,
+    val updatedAt: String? = null,
+    val sharedBy: List<SharedPersonUserDto>? = null,
+)

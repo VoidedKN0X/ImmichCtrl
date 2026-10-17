@@ -1,0 +1,137 @@
+package com.vknxworks.immichctrl.ui.viewer
+
+import android.content.Context
+import android.view.ContextThemeWrapper
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cast
+import androidx.compose.material.icons.filled.CastConnected
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.mediarouter.app.MediaRouteChooserDialog
+import androidx.mediarouter.app.MediaRouteControllerDialog
+import com.google.android.gms.cast.CastMediaControlIntent
+import com.google.android.gms.cast.MediaInfo
+import com.google.android.gms.cast.MediaLoadRequestData
+import com.google.android.gms.cast.MediaMetadata
+import com.google.android.gms.cast.framework.CastContext
+import com.google.android.gms.cast.framework.CastOptions
+import com.google.android.gms.cast.framework.CastSession
+import com.google.android.gms.cast.framework.OptionsProvider
+import com.google.android.gms.cast.framework.SessionManagerListener
+import com.google.android.gms.cast.framework.SessionProvider
+import com.vknxworks.immichctrl.container
+import com.vknxworks.immichctrl.data.api.Asset
+import com.vknxworks.immichctrl.data.api.createSession
+import com.vknxworks.immichctrl.data.log.AppLog
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import java.time.Instant
+
+/** Cast setup: Google's Default Media Receiver, which can show photos and play videos from a URL. */
+class CastOptionsProvider : OptionsProvider {
+    override fun getCastOptions(context: Context): CastOptions =
+        CastOptions.Builder().setReceiverApplicationId(CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID).build()
+
+    override fun getAdditionalSessionProviders(context: Context): List<SessionProvider>? = null
+}
+
+/**
+ * Sends the photo or video on screen to a Cast device. The TV fetches it itself, so the URL carries
+ * a short-lived Immich session key (15 minutes, renewed as needed) instead of the app's credentials,
+ * and uses the home address when the phone is on it.
+ */
+object CastController {
+    private var token: String? = null
+    private var expires: Instant = Instant.EPOCH
+
+    fun context(ctx: Context): CastContext? = runCatching { CastContext.getSharedInstance(ctx) }.getOrNull()
+
+    fun connected(ctx: Context): Boolean = context(ctx)?.sessionManager?.currentCastSession?.isConnected == true
+
+    suspend fun show(ctx: Context, asset: Asset) {
+        val c = ctx.container
+        val session = context(ctx)?.sessionManager?.currentCastSession ?: return
+        if (!session.isConnected || !asset.isRemote) return
+        val client = c.api
+        if (token == null || Instant.now().isAfter(expires.minusSeconds(60))) {
+            val s = client.createSession(15 * 60)
+            token = s.token
+            expires = s.expiresAt?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: Instant.now().plusSeconds(15 * 60)
+        }
+        val base = if (asset.isImage) client.thumbnailUrl(asset.id, "preview") else client.videoUrl(asset.id)
+        val url = reachable(ctx, base) + "&sessionKey=$token"
+        val metadata = MediaMetadata(if (asset.isImage) MediaMetadata.MEDIA_TYPE_PHOTO else MediaMetadata.MEDIA_TYPE_MOVIE)
+        val info = MediaInfo.Builder(url)
+            .setContentType(if (asset.isImage) "image/jpeg" else "video/mp4")
+            .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
+            .setMetadata(metadata)
+            .build()
+        session.remoteMediaClient?.load(MediaLoadRequestData.Builder().setMediaInfo(info).setAutoplay(true).build())
+    }
+
+    /** The URL the TV should use: the home address when the phone is using it (both are on the same network). */
+    private fun reachable(ctx: Context, url: String): String {
+        val router = ctx.container.router
+        val local = router.config.local ?: return url
+        if (!router.usingLocal.value) return url
+        val u = url.toHttpUrl()
+        return u.newBuilder()
+            .scheme(local.scheme).host(local.host).port(local.port)
+            .encodedPath(local.encodedPath.trimEnd('/') + u.encodedPath)
+            .build().toString()
+    }
+
+    fun stop(ctx: Context) {
+        context(ctx)?.sessionManager?.endCurrentSession(true)
+    }
+}
+
+/** The Cast icon: pick a device, or (when casting) see and stop the session. */
+@Composable
+fun CastButton(current: Asset?, tint: Color) {
+    val ctx = LocalContext.current
+    val cast = remember { CastController.context(ctx) } ?: return
+    var connected by remember { mutableStateOf(CastController.connected(ctx)) }
+
+    DisposableEffect(cast) {
+        val listener = object : SessionManagerListener<CastSession> {
+            override fun onSessionStarted(session: CastSession, sessionId: String) { connected = true }
+            override fun onSessionResumed(session: CastSession, wasSuspended: Boolean) { connected = true }
+            override fun onSessionEnded(session: CastSession, error: Int) { connected = false }
+            override fun onSessionStarting(session: CastSession) = Unit
+            override fun onSessionStartFailed(session: CastSession, error: Int) { connected = false }
+            override fun onSessionEnding(session: CastSession) = Unit
+            override fun onSessionResuming(session: CastSession, sessionId: String) = Unit
+            override fun onSessionResumeFailed(session: CastSession, error: Int) { connected = false }
+            override fun onSessionSuspended(session: CastSession, reason: Int) = Unit
+        }
+        cast.sessionManager.addSessionManagerListener(listener, CastSession::class.java)
+        onDispose { cast.sessionManager.removeSessionManagerListener(listener, CastSession::class.java) }
+    }
+
+    // Follow the viewer: whatever is on screen is on the TV.
+    androidx.compose.runtime.LaunchedEffect(connected, current?.id) {
+        if (connected && current != null) {
+            runCatching { CastController.show(ctx, current) }.onFailure { AppLog.e("Cast", "Couldn't cast", it) }
+        }
+    }
+
+    IconButton(onClick = {
+        val themed = ContextThemeWrapper(ctx, androidx.appcompat.R.style.Theme_AppCompat_DayNight_Dialog)
+        if (connected) {
+            MediaRouteControllerDialog(themed).show()
+        } else {
+            val selector = cast.mergedSelector ?: return@IconButton
+            MediaRouteChooserDialog(themed).apply { routeSelector = selector }.show()
+        }
+    }) {
+        Icon(if (connected) Icons.Filled.CastConnected else Icons.Filled.Cast, "Cast", tint = tint)
+    }
+}

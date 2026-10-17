@@ -40,6 +40,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.CloudDone
+import androidx.compose.material.icons.outlined.CloudOff
 import androidx.compose.material.icons.outlined.Collections
 import androidx.compose.material.icons.outlined.MotionPhotosOn
 import androidx.compose.material.icons.outlined.PhotoLibrary
@@ -189,6 +191,8 @@ fun AssetGrid(
     state: LazyListState = rememberLazyListState(),
     topPadding: androidx.compose.ui.unit.Dp = 0.dp,
     selectable: Boolean = true,
+    /** Cloud icons for photos only on this phone, or backed up from it. */
+    indicator: Boolean = false,
     empty: @Composable () -> Unit = { MessageView(Icons.Outlined.PhotoLibrary, "Nothing here yet") },
     header: (LazyListScope.() -> Unit)? = null,
 ) {
@@ -372,7 +376,7 @@ fun AssetGrid(
                         when (item) {
                             is MonthHeader -> MonthHeaderRow(item.label)
                             is DayHeader -> DayHeaderRow(item, selection)
-                            is AssetRow -> AssetRowView(item, cols, selection)
+                            is AssetRow -> AssetRowView(item, cols, selection, indicator)
                             is PlaceholderRow -> PlaceholderRowView(item.cells, cols)
                         }
                     }
@@ -443,12 +447,12 @@ private fun DayHeaderRow(item: DayHeader, selection: Selection) {
 }
 
 @Composable
-private fun AssetRowView(row: AssetRow, cols: Int, selection: Selection) {
+private fun AssetRowView(row: AssetRow, cols: Int, selection: Selection, indicator: Boolean) {
     Row(Modifier.fillMaxWidth().padding(bottom = 2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         for (i in 0 until cols) {
             val a = row.assets.getOrNull(i)
             Box(Modifier.weight(1f).aspectRatio(1f)) {
-                if (a != null) AssetCell(a, a.id in selection, selection.active, cols)
+                if (a != null) AssetCell(a, a.id in selection, selection.active, cols, indicator)
             }
         }
     }
@@ -467,14 +471,22 @@ private fun PlaceholderRowView(cells: Int, cols: Int) {
 }
 
 @Composable
-private fun AssetCell(a: Asset, selected: Boolean, selecting: Boolean, cols: Int) {
+private fun AssetCell(a: Asset, selected: Boolean, selecting: Boolean, cols: Int, indicator: Boolean) {
     val scale by animateFloatAsState(if (selected) 0.86f else 1f, label = "sel-scale")
     Box(Modifier.fillMaxSize()) {
         AssetThumb(
-            a.id, a.thumbhash,
+            a,
             Modifier.fillMaxSize().scale(scale).clip(if (selected) RoundedCornerShape(10.dp) else RoundedCornerShape(0.dp)),
             size = if (cols <= 2) "preview" else "thumbnail",
         )
+        if (indicator && !selecting && cols <= 5 && (a.isLocalOnly || a.onDevice)) {
+            Icon(
+                if (a.isLocalOnly) Icons.Outlined.CloudOff else Icons.Outlined.CloudDone,
+                if (a.isLocalOnly) "Only on this phone" else "Backed up from this phone",
+                Modifier.align(Alignment.TopStart).padding(5.dp).size(15.dp),
+                tint = Color.White,
+            )
+        }
         if (a.isVideo) {
             Badge(a.durationMs?.let { formatClock(it) } ?: "", Modifier.align(Alignment.TopEnd).padding(5.dp), icon = Icons.Filled.PlayArrow)
         } else if (a.livePhotoVideoId != null && cols <= 4) {

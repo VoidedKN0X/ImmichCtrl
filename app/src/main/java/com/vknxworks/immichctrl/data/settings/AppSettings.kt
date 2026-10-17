@@ -19,6 +19,13 @@ enum class ThemeChoice(val label: String) { SYSTEM("Follow system"), DARK("Dark"
 
 enum class GroupBy(val label: String) { DAY("Day"), MONTH("Month") }
 
+/** Size of photos sent to other apps. */
+enum class ShareSize(val label: String) { ASK("Ask each time"), ORIGINAL("Original"), LARGE("Large (smaller file)") }
+
+enum class AlbumSort(val label: String) {
+    ACTIVITY("Recent activity"), NAME("Name"), CREATED("Date created"), NEWEST("Newest photo"), OLDEST("Oldest photo"), COUNT("Most items")
+}
+
 data class AppSettings(
     val theme: ThemeChoice = ThemeChoice.SYSTEM,
     val dynamicColor: Boolean = false,
@@ -27,21 +34,51 @@ data class AppSettings(
     val groupBy: GroupBy = GroupBy.DAY,
     val showMemories: Boolean = true,
     val withPartners: Boolean = true,
+    /** Photos on this phone that aren't backed up yet show in Photos too. */
+    val showLocal: Boolean = true,
+    /** Small cloud icons on tiles: on the phone only, or backed up from here. */
+    val storageIndicator: Boolean = true,
     /** Load the full-size original when zooming in, not just the preview. */
     val loadOriginal: Boolean = false,
     val autoPlayVideos: Boolean = true,
     val loopVideos: Boolean = true,
     val confirmDelete: Boolean = true,
+    val shareSize: ShareSize = ShareSize.ASK,
     /** MB of thumbnails and previews kept on disk; takes effect after a restart. */
     val cacheMb: Int = 1024,
+    val albumSort: AlbumSort = AlbumSort.ACTIVITY,
+    val albumGrid: Boolean = true,
+
+    // Slideshow
+    val slideSeconds: Int = 5,
+    val slideShuffle: Boolean = false,
+    val slideLoop: Boolean = true,
+
+    // Read-only (kid) mode: only the timeline, nothing can be changed.
+    val readOnly: Boolean = false,
+
+    // App lock
+    val appLock: Boolean = false,
+    /** Seconds in the background before the app locks again. */
+    val appLockTimeout: Int = 0,
+    /** Unlock the locked folder with a fingerprint once its PIN has been entered here. */
+    val lockedFolderBiometric: Boolean = false,
+
+    // Admin alerts
+    val adminAlerts: Boolean = true,
+    val adminDiskPercent: Int = 90,
 
     // Backup
     val backupEnabled: Boolean = false,
+    /** Back up every album on the phone, including ones added later. */
+    val backupEverything: Boolean = false,
     val backupAlbums: Set<String> = emptySet(),
     val excludedAlbums: Set<String> = emptySet(),
     val backupWifiOnly: Boolean = true,
     val backupChargingOnly: Boolean = false,
     val backupVideos: Boolean = true,
+    /** Mirror phone albums to server albums with the same names. */
+    val albumSync: Boolean = false,
 )
 
 class SettingsRepository(private val context: Context, scope: CoroutineScope) {
@@ -52,17 +89,33 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val groupBy = stringPreferencesKey("group_by")
         val memories = booleanPreferencesKey("show_memories")
         val partners = booleanPreferencesKey("with_partners")
+        val showLocal = booleanPreferencesKey("show_local")
+        val indicator = booleanPreferencesKey("storage_indicator")
         val original = booleanPreferencesKey("load_original")
         val autoPlay = booleanPreferencesKey("auto_play")
         val loop = booleanPreferencesKey("loop_videos")
         val confirmDelete = booleanPreferencesKey("confirm_delete")
+        val shareSize = stringPreferencesKey("share_size")
         val cache = intPreferencesKey("cache_mb")
+        val albumSort = stringPreferencesKey("album_sort")
+        val albumGrid = booleanPreferencesKey("album_grid")
+        val slideSeconds = intPreferencesKey("slide_seconds")
+        val slideShuffle = booleanPreferencesKey("slide_shuffle")
+        val slideLoop = booleanPreferencesKey("slide_loop")
+        val readOnly = booleanPreferencesKey("read_only")
+        val appLock = booleanPreferencesKey("app_lock")
+        val appLockTimeout = intPreferencesKey("app_lock_timeout")
+        val lockedBio = booleanPreferencesKey("locked_folder_biometric")
+        val adminAlerts = booleanPreferencesKey("admin_alerts")
+        val adminDisk = intPreferencesKey("admin_disk_percent")
         val backup = booleanPreferencesKey("backup_enabled")
+        val backupAll = booleanPreferencesKey("backup_everything")
         val backupAlbums = stringSetPreferencesKey("backup_albums")
         val excluded = stringSetPreferencesKey("excluded_albums")
         val wifi = booleanPreferencesKey("backup_wifi_only")
         val charging = booleanPreferencesKey("backup_charging_only")
         val videos = booleanPreferencesKey("backup_videos")
+        val albumSync = booleanPreferencesKey("album_sync")
     }
 
     val settings: StateFlow<AppSettings> = context.appDataStore.data
@@ -76,17 +129,33 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         groupBy = enumOr(this[K.groupBy], GroupBy.DAY),
         showMemories = this[K.memories] ?: true,
         withPartners = this[K.partners] ?: true,
+        showLocal = this[K.showLocal] ?: true,
+        storageIndicator = this[K.indicator] ?: true,
         loadOriginal = this[K.original] ?: false,
         autoPlayVideos = this[K.autoPlay] ?: true,
         loopVideos = this[K.loop] ?: true,
         confirmDelete = this[K.confirmDelete] ?: true,
+        shareSize = enumOr(this[K.shareSize], ShareSize.ASK),
         cacheMb = this[K.cache] ?: 1024,
+        albumSort = enumOr(this[K.albumSort], AlbumSort.ACTIVITY),
+        albumGrid = this[K.albumGrid] ?: true,
+        slideSeconds = this[K.slideSeconds] ?: 5,
+        slideShuffle = this[K.slideShuffle] ?: false,
+        slideLoop = this[K.slideLoop] ?: true,
+        readOnly = this[K.readOnly] ?: false,
+        appLock = this[K.appLock] ?: false,
+        appLockTimeout = this[K.appLockTimeout] ?: 0,
+        lockedFolderBiometric = this[K.lockedBio] ?: false,
+        adminAlerts = this[K.adminAlerts] ?: true,
+        adminDiskPercent = this[K.adminDisk] ?: 90,
         backupEnabled = this[K.backup] ?: false,
+        backupEverything = this[K.backupAll] ?: false,
         backupAlbums = this[K.backupAlbums] ?: emptySet(),
         excludedAlbums = this[K.excluded] ?: emptySet(),
         backupWifiOnly = this[K.wifi] ?: true,
         backupChargingOnly = this[K.charging] ?: false,
         backupVideos = this[K.videos] ?: true,
+        albumSync = this[K.albumSync] ?: false,
     )
 
     /** The stored settings, read fresh (for background work started before [settings] has loaded). */
@@ -101,17 +170,33 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.groupBy] = s.groupBy.name
             p[K.memories] = s.showMemories
             p[K.partners] = s.withPartners
+            p[K.showLocal] = s.showLocal
+            p[K.indicator] = s.storageIndicator
             p[K.original] = s.loadOriginal
             p[K.autoPlay] = s.autoPlayVideos
             p[K.loop] = s.loopVideos
             p[K.confirmDelete] = s.confirmDelete
+            p[K.shareSize] = s.shareSize.name
             p[K.cache] = s.cacheMb
+            p[K.albumSort] = s.albumSort.name
+            p[K.albumGrid] = s.albumGrid
+            p[K.slideSeconds] = s.slideSeconds
+            p[K.slideShuffle] = s.slideShuffle
+            p[K.slideLoop] = s.slideLoop
+            p[K.readOnly] = s.readOnly
+            p[K.appLock] = s.appLock
+            p[K.appLockTimeout] = s.appLockTimeout
+            p[K.lockedBio] = s.lockedFolderBiometric
+            p[K.adminAlerts] = s.adminAlerts
+            p[K.adminDisk] = s.adminDiskPercent
             p[K.backup] = s.backupEnabled
+            p[K.backupAll] = s.backupEverything
             p[K.backupAlbums] = s.backupAlbums
             p[K.excluded] = s.excludedAlbums
             p[K.wifi] = s.backupWifiOnly
             p[K.charging] = s.backupChargingOnly
             p[K.videos] = s.backupVideos
+            p[K.albumSync] = s.albumSync
         }
     }
 

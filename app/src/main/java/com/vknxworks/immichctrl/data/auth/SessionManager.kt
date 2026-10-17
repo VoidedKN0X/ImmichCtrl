@@ -47,6 +47,12 @@ data class Account(
     val secretEnc: String,
     val isAdmin: Boolean = false,
     val serverVersion: String? = null,
+    /** Address used instead of [serverUrl] while it answers on Wi-Fi (e.g. http://192.168.1.10:2283). */
+    val localUrl: String? = null,
+    /** Extra headers sent with every request to this server (proxy tokens and the like). */
+    val headers: Map<String, String> = emptyMap(),
+    /** Alias of a client certificate in Android's certificate store, for servers that require one. */
+    val clientCert: String? = null,
 ) {
     val key: String get() = "$serverUrl|$userId"
     val serverName: String get() = Uri.parse(serverUrl).host ?: serverUrl
@@ -63,6 +69,7 @@ class HttpFallbackNeeded(val httpUrl: String, cause: Throwable) :
 /** What the sign-in screen needs to know about a server before asking for credentials. */
 data class ServerProbe(
     val baseUrl: String,
+    val headers: Map<String, String> = emptyMap(),
     val features: ServerFeaturesDto,
     val config: ServerConfigDto,
     val version: String?,
@@ -117,11 +124,12 @@ class SessionManager(
      * HTTPS only; if that fails with a connection error (not a TLS/certificate error),
      * [HttpFallbackNeeded] is thrown so the UI can ask before using plain HTTP.
      */
-    suspend fun probe(address: String): ServerProbe {
+    suspend fun probe(address: String, headers: Map<String, String> = emptyMap()): ServerProbe {
         val raw = address.trim().trimEnd('/')
         val explicit = raw.startsWith("http://", true) || raw.startsWith("https://", true)
         val url = if (explicit) raw else "https://$raw"
         val client = ImmichClient(url, "", AuthType.PASSWORD, http)
+        client.extraHeaders = headers
         CleartextPolicy.allowServer(client.baseUrl)
         try {
             val pong = client.ping()
@@ -149,17 +157,17 @@ class SessionManager(
         val features = runCatching { client.serverFeatures() }.getOrDefault(ServerFeaturesDto())
         val config = runCatching { client.serverConfig() }.getOrDefault(ServerConfigDto())
         val version = runCatching { client.serverVersion().toString() }.getOrNull()
-        return ServerProbe(client.baseUrl, features, config, version)
+        return ServerProbe(client.baseUrl, headers, features, config, version)
     }
 
     suspend fun signInWithPassword(probe: ServerProbe, email: String, password: String): Account {
-        val anon = ImmichClient(probe.baseUrl, "", AuthType.PASSWORD, http)
+        val anon = ImmichClient(probe.baseUrl, "", AuthType.PASSWORD, http).also { it.extraHeaders = probe.headers }
         val login = anon.login(email.trim(), password)
         return finishLogin(probe, login, AuthType.PASSWORD)
     }
 
     suspend fun signInWithApiKey(probe: ServerProbe, apiKey: String): Account {
-        val client = ImmichClient(probe.baseUrl, apiKey.trim(), AuthType.API_KEY, http)
+        val client = ImmichClient(probe.baseUrl, apiKey.trim(), AuthType.API_KEY, http).also { it.extraHeaders = probe.headers }
         val me = try {
             client.me()
         } catch (e: ApiException) {
@@ -174,6 +182,7 @@ class SessionManager(
             secretEnc = KeystoreCrypto.encrypt(apiKey.trim()),
             isAdmin = me.isAdmin,
             serverVersion = probe.version,
+            headers = probe.headers,
         )
         save(account, client)
         return account
@@ -187,7 +196,7 @@ class SessionManager(
             MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(Charsets.US_ASCII)),
             Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING,
         )
-        val anon = ImmichClient(probe.baseUrl, "", AuthType.OAUTH, http)
+        val anon = ImmichClient(probe.baseUrl, "", AuthType.OAUTH, http).also { it.extraHeaders = probe.headers }
         val url = anon.oauthAuthorize(OAUTH_REDIRECT, state, challenge).url
         pendingOAuth = PendingOAuth(probe, state, verifier)
         _oauthError.value = null
@@ -200,7 +209,7 @@ class SessionManager(
         pendingOAuth = null
         scope.launch {
             try {
-                val anon = ImmichClient(pending.probe.baseUrl, "", AuthType.OAUTH, http)
+                val anon = ImmichClient(pending.probe.baseUrl, "", AuthType.OAUTH, http).also { it.extraHeaders = pending.probe.headers }
                 val login = anon.oauthCallback(callback.toString(), pending.state, pending.verifier)
                 finishLogin(pending.probe, login, AuthType.OAUTH)
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -216,7 +225,7 @@ class SessionManager(
     }
 
     private suspend fun finishLogin(probe: ServerProbe, login: LoginResponse, type: AuthType): Account {
-        val client = ImmichClient(probe.baseUrl, login.accessToken, type, http)
+        val client = ImmichClient(probe.baseUrl, login.accessToken, type, http).also { it.extraHeaders = probe.headers }
         val me = runCatching { client.me() }.getOrNull()
         val account = Account(
             serverUrl = client.baseUrl,
@@ -227,6 +236,7 @@ class SessionManager(
             secretEnc = KeystoreCrypto.encrypt(login.accessToken),
             isAdmin = me?.isAdmin ?: login.isAdmin,
             serverVersion = probe.version,
+            headers = probe.headers,
         )
         save(account, client)
         return account
@@ -255,6 +265,15 @@ class SessionManager(
         val nextActive = if (_active.value?.account?.key == key) remaining.firstOrNull() else _active.value?.account
         persist(remaining, nextActive?.key)
         if (nextActive != null) activate(nextActive) else _active.value = null
+    }
+
+    /** Saves connection settings for an account (home address, headers, client certificate). */
+    suspend fun updateNetworking(key: String, localUrl: String?, headers: Map<String, String>, clientCert: String?) {
+        val acc = _accounts.value.firstOrNull { it.key == key } ?: return
+        val updated = acc.copy(localUrl = localUrl?.trim()?.ifBlank { null }, headers = headers, clientCert = clientCert)
+        persist(_accounts.value.map { if (it.key == key) updated else it }, _active.value?.account?.key)
+        val s = _active.value
+        if (s != null && s.account.key == key) _active.value = ActiveSession(updated, s.client)
     }
 
     /** Refreshes name, admin flag and server version for the active account. */
