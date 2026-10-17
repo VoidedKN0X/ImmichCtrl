@@ -200,11 +200,26 @@ private fun TrashScreen() {
 // Locked folder: PIN protected, hidden from everything else
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * Lives as long as the locked folder's back stack entry, so opening a photo from it (which disposes
+ * the grid) keeps the session unlocked; it locks again only when the folder is really left.
+ */
+class LockedFolderGuard : androidx.lifecycle.ViewModel() {
+    var unlocked by mutableStateOf(false)
+    var lock: (() -> Unit)? = null
+
+    override fun onCleared() {
+        if (unlocked) lock?.invoke()
+    }
+}
+
 @Composable
 fun LockedScreen() {
     val c = LocalContext.current.container
     val status = rememberLoader("auth-status") { c.api.authStatus() }
-    var unlocked by remember { mutableStateOf(false) }
+    val guard: LockedFolderGuard = androidx.lifecycle.viewmodel.compose.viewModel()
+    guard.lock = { c.appScope.launch { runCatching { c.api.lockSession() } } }
+    var unlocked by guard::unlocked
     var error by remember { mutableStateOf<String?>(null) }
     var settingUp by remember { mutableStateOf(false) }
     var entering by remember { mutableStateOf(false) }
@@ -213,11 +228,6 @@ fun LockedScreen() {
     val accountKey = c.sessions.active.collectAsStateWithLifecycle().value?.account?.key
     val bio = settings.lockedFolderBiometric && c.appLock.canLock()
     fun rememberPin(pin: String) { if (bio && accountKey != null) c.appScope.launch { c.appLock.savePin(accountKey, pin) } }
-
-    // Lock again when leaving.
-    DisposableEffect(Unit) {
-        onDispose { if (unlocked) c.appScope.launch { runCatching { c.api.lockSession() } } }
-    }
 
     if (unlocked) {
         SourceGrid(

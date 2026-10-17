@@ -122,6 +122,8 @@ private fun InfoContent(
     val nav = LocalNavigator.current
     val focus = LocalFocusManager.current
     val mine = d.ownerId == c.me
+    // Read-only mode: show details, offer no edits.
+    val canEdit = mine && !c.settings.settings.value.readOnly
     val exif = d.exifInfo
     var description by remember(d.id) { mutableStateOf(exif?.description.orEmpty()) }
     var rating by remember(d.id) { mutableStateOf(exif?.rating ?: 0) }
@@ -134,7 +136,7 @@ private fun InfoContent(
     Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
         SheetTitle("Details", if (!mine) d.owner?.name?.let { "Shared by $it" } else null)
 
-        if (mine) {
+        if (canEdit) {
             OutlinedTextField(
                 description, { description = it },
                 label = { Text("Description") },
@@ -161,7 +163,7 @@ private fun InfoContent(
                         modifier = Modifier.size(36.dp).padding(4.dp).clickable {
                             val next = if (rating == i) 0 else i
                             rating = next
-                            c.runTask { c.api.updateAsset(d.id, "rating" to if (next == 0) Null else next) }
+                            c.runTask { c.api.updateAsset(d.id, "rating" to if (next != 0) next else if (c.api.serverMajor < 3) 0 else Null) }
                         },
                     )
                 }
@@ -174,8 +176,8 @@ private fun InfoContent(
         InfoRow(
             Icons.Outlined.CalendarToday,
             longDate(local.toLocalDate()),
-            listOfNotNull(local.format(DateTimeFormatter.ofPattern("HH:mm")), exif?.timeZone, if (mine) "Tap to change" else null).joinToString("  ·  "),
-            onClick = if (mine) onEditDate else null,
+            listOfNotNull(local.format(DateTimeFormatter.ofPattern("HH:mm")), exif?.timeZone, if (canEdit) "Tap to change" else null).joinToString("  ·  "),
+            onClick = if (canEdit) onEditDate else null,
         )
         InfoRow(
             Icons.Outlined.Image,
@@ -201,13 +203,13 @@ private fun InfoContent(
         }
         val lat = exif?.latitude
         val lon = exif?.longitude
-        if (mine && lat == null) {
+        if (canEdit && lat == null) {
             InfoRow(Icons.Outlined.Place, "No location", "Tap to add one", onClick = onEditLocation)
         }
         if (lat != null && lon != null) {
             MiniMap(lat, lon, Modifier.padding(horizontal = 24.dp, vertical = 8.dp).fillMaxWidth().height(160.dp).clip(MaterialTheme.shapes.medium))
         }
-        if (mine && lat != null) {
+        if (canEdit && lat != null) {
             Text(
                 "Change location",
                 color = MaterialTheme.colorScheme.primary,

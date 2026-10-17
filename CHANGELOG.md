@@ -64,6 +64,21 @@ Everything the official Immich app does, plus duplicate review, offline albums, 
 - **Logs** screen to copy or share what the app has been doing
 - Warning when the server runs an Immich version the app doesn't support
 
+### Fixed (since 0.2.4)
+- Duplicate review: "Resolve all" no longer trashes every copy in a group where none was ticked to keep; resolving works on Immich 2.5
+- "Delete permanently" on a selection with phone-only photos sends those to the phone's trash instead of deleting them for good
+- Moving photos to the locked folder sends the phone copies to the phone's trash rather than deleting them
+- Crash in phone albums that contain identical copies of a photo
+- Crash when uploading or sharing a very large number of photos at once
+- An http:// home network address next to an https:// public one no longer blocks every request
+- App lock no longer locks again right after unlocking with the phone's PIN or pattern, and can't trap you if the screen lock is removed
+- Opening a photo from the locked folder no longer locks the folder under it
+- Read-only mode also blocks editing in the details sheet
+- Clearing a star rating works on Immich 2.5
+- One item the server can't provide no longer stops an offline album from finishing
+- "Save to phone" sends your custom headers, so it works behind Cloudflare Access and similar
+- Lower memory use after browsing many albums and searches
+
 ### Changed
 - Release notes on GitHub now come from this changelog
 - Material icons that are mirrored for right-to-left languages use the auto-mirrored versions

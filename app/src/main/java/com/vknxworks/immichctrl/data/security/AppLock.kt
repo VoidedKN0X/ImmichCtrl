@@ -29,8 +29,10 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
     // Starts locked so nothing shows before the first check; screens only honour it while app lock is on.
     private val _locked = MutableStateFlow(true)
     val locked: StateFlow<Boolean> = _locked.asStateFlow()
-    private var backgroundedAt: Long? = null
-    private var startChecked = false
+    @Volatile private var backgroundedAt: Long? = null
+    @Volatile private var startChecked = false
+    /** The system prompt is up; its screen-lock page takes the app to the background, which mustn't re-lock. */
+    @Volatile private var prompting = false
 
     /** Whether the phone has a fingerprint, face or screen lock the app can use. */
     fun canLock(): Boolean =
@@ -47,6 +49,7 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
         if (!startChecked || (away != null && away >= maxOf(s.appLockTimeout * 1000L, 5_000L))) _locked.value = true
         startChecked = true
         backgroundedAt = null
+        prompting = false
     }
 
     /** After the user has just proved it's them (e.g. turning app lock on). */
@@ -56,10 +59,16 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
     }
 
     fun onBackground() {
+        if (prompting) return
         backgroundedAt = SystemClock.elapsedRealtime()
     }
 
     fun unlockWith(activity: FragmentActivity) {
+        // The phone's screen lock was removed: there's nothing to unlock with, so don't trap the user.
+        if (!canLock()) {
+            _locked.value = false
+            return
+        }
         prompt(activity, "Unlock ImmichCtrl", allowCredential = true) { ok -> if (ok) _locked.value = false }
     }
 
@@ -69,8 +78,16 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
             activity,
             ContextCompat.getMainExecutor(activity),
             object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) = onResult(true)
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) = onResult(false)
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    prompting = false
+                    backgroundedAt = null
+                    onResult(true)
+                }
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    prompting = false
+                    backgroundedAt = null
+                    onResult(false)
+                }
             },
         )
         val info = BiometricPrompt.PromptInfo.Builder()
@@ -83,7 +100,12 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
                 }
             }
             .build()
-        prompt.authenticate(info)
+        // Only the unlock prompt (shown while already locked) can open the screen-lock page.
+        prompting = allowCredential
+        runCatching { prompt.authenticate(info) }.onFailure {
+            prompting = false
+            onResult(false)
+        }
     }
 
     suspend fun promptAsync(activity: FragmentActivity, title: String): Boolean = suspendCancellableCoroutine { cont ->

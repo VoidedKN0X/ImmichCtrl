@@ -136,7 +136,8 @@ fun AppContainer.setVisibility(assets: Collection<Asset>, visibility: String, do
         api.updateAssets(ids, "visibility" to visibility)
         Sources.removeEverywhere(ids)
         Sources.refreshAll()
-        if (onPhone.isNotEmpty() && device.delete(onPhone)) local.changed()
+        // The phone's trash, not a permanent delete: the phone copy may have been edited since it was backed up.
+        if (onPhone.isNotEmpty() && device.trash(onPhone)) local.changed()
     }
 }
 
@@ -153,7 +154,8 @@ fun AppContainer.trash(assets: Collection<Asset>, permanently: Boolean) {
         }
         if (localOnly.isNotEmpty()) {
             val uris = phoneUris(localOnly)
-            val ok = if (permanently) device.delete(uris) else device.trash(uris)
+            // Not backed up: always the phone's trash, even from "Delete permanently" (which is about the server).
+            val ok = device.trash(uris)
             if (ok) {
                 Sources.removeEverywhere(localOnly.mapTo(HashSet()) { it.id })
                 local.changed()

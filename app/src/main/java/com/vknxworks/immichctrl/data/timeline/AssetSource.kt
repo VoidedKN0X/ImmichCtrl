@@ -347,6 +347,11 @@ object Sources {
         map[source.key] = source
     }
 
+    /** Only removes [source] itself, not a newer one registered under the same key. */
+    fun unregister(source: AssetSource) {
+        map.remove(source.key, source)
+    }
+
     operator fun get(key: String): AssetSource? = map[key]
 
     fun clear() = map.clear()

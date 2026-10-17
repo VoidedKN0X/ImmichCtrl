@@ -27,10 +27,13 @@ object CleartextPolicy {
 
     fun isAllowed(url: HttpUrl): Boolean = url.isHttps || origin(url) in allowed
 
+    /** Request tag: the call was moved to the home address, which is where it really starts. */
+    class RoutedTo(val url: HttpUrl)
+
     val interceptor = Interceptor { chain ->
         val url = chain.request().url
         if (!url.isHttps) {
-            val original = chain.call().request().url
+            val original = chain.request().tag(RoutedTo::class.java)?.url ?: chain.call().request().url
             if (original.isHttps || !isAllowed(original)) {
                 throw IOException("Blocked an unencrypted (HTTP) connection to ${url.host}")
             }

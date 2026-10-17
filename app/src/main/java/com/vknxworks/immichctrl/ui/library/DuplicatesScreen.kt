@@ -82,17 +82,21 @@ fun DuplicatesScreen() {
         keep[g.duplicateId] ?: g.suggestedKeepAssetIds.toSet().ifEmpty { setOf(bestOf(g.assets).id) }
 
     fun resolve(list: List<DuplicateGroupDto>) {
-        val payload = list.map { g ->
-            val k = keepFor(g)
-            Triple(g.duplicateId, k.toList(), g.assets.map { it.id }.filter { it !in k })
+        // Never send a group with nothing kept: the server would trash every copy.
+        val ready = list.filter { g -> g.assets.any { it.id in keepFor(g) } }
+        if (ready.isEmpty()) return
+        val payload = ready.map { g ->
+            val ids = g.assets.map { it.id }
+            val k = keepFor(g).filter { it in ids }
+            Triple(g.duplicateId, k, ids.filter { it !in k })
         }
-        list.forEach { done[it.duplicateId] = true }
-        c.runTask(if (list.size == 1) "Duplicates resolved" else "${list.size} groups resolved") {
+        ready.forEach { done[it.duplicateId] = true }
+        c.runTask(if (ready.size == 1) "Duplicates resolved" else "${ready.size} groups resolved") {
             try {
                 c.api.resolveDuplicates(payload)
                 Sources.refreshAll()
             } catch (e: Throwable) {
-                list.forEach { done.remove(it.duplicateId) }
+                ready.forEach { done.remove(it.duplicateId) }
                 throw e
             }
         }
