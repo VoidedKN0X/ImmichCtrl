@@ -57,11 +57,16 @@ class NetworkRouter(private val context: Context, private val scope: CoroutineSc
 
     private var probeJob: Job? = null
 
-    /** Plain client used only to test whether the home address answers. */
+    /**
+     * Plain client used only to test whether the home address answers. It never follows redirects:
+     * a captive portal or anything else that isn't the Immich server must not be mistaken for it.
+     */
     private val probeClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(3, TimeUnit.SECONDS)
             .readTimeout(3, TimeUnit.SECONDS)
+            .followRedirects(false)
+            .followSslRedirects(false)
             .addNetworkInterceptor(CleartextPolicy.interceptor)
             .build()
     }
@@ -110,6 +115,26 @@ class NetworkRouter(private val context: Context, private val scope: CoroutineSc
         chain.proceed(req)
     }
 
+    /**
+     * Network interceptor: credentials only ever go to the address a call was started for. Runs on
+     * every hop, so a redirect to another host (or port, or scheme) loses the access token, API key,
+     * cookies and the account's custom proxy headers instead of handing them to that host.
+     * (OkHttp itself only drops "Authorization" on a cross-host redirect.)
+     */
+    val credentialScope = Interceptor { chain ->
+        val req = chain.request()
+        val start = req.tag(CleartextPolicy.RoutedTo::class.java)?.url ?: chain.call().request().url
+        if (sameOrigin(req.url, start)) return@Interceptor chain.proceed(req)
+        val strip = HashSet<String>()
+        strip += CREDENTIAL_HEADERS
+        strip += config.headers.keys.map { it.lowercase() }
+        // Anything the caller set itself (e.g. sign-in proxy headers) apart from plain HTTP plumbing.
+        chain.call().request().headers.names().forEach { n -> if (n.lowercase() !in HARMLESS_HEADERS) strip += n.lowercase() }
+        val b = req.newBuilder()
+        req.headers.names().forEach { n -> if (n.lowercase() in strip) b.removeHeader(n) }
+        chain.proceed(b.build())
+    }
+
     /** Re-test the home address, e.g. after the network changed. */
     fun recheck() {
         probeJob?.cancel()
@@ -123,7 +148,10 @@ class NetworkRouter(private val context: Context, private val scope: CoroutineSc
                     .tag(NoRewrite::class.java, NoRewrite)
                     .apply { config.headers.forEach { (k, v) -> header(k, v) } }
                     .build()
-                probeClient.newCall(req).execute().use { it.isSuccessful }
+                // Only a real Immich answer counts ({"res":"pong"}), not any page that returns 200.
+                probeClient.newCall(req).execute().use { resp ->
+                    resp.isSuccessful && resp.body?.string()?.take(200)?.contains("\"pong\"", ignoreCase = true) == true
+                }
             }.getOrDefault(false)
             if (_usingLocal.value != ok) AppLog.i("Network", if (ok) "Using the home address ${local.host}" else "Using the public address")
             _usingLocal.value = ok
@@ -191,6 +219,12 @@ class NetworkRouter(private val context: Context, private val scope: CoroutineSc
         SSLContext.getInstance("TLS").apply { init(arrayOf(keyManager), arrayOf(trustManager), null) }
     }
 }
+
+private val CREDENTIAL_HEADERS = setOf("authorization", "x-api-key", "cookie", "proxy-authorization", "x-immich-user-token", "x-immich-session-token", "x-immich-share-key")
+private val HARMLESS_HEADERS = setOf(
+    "accept", "accept-encoding", "accept-language", "user-agent", "content-type", "content-length",
+    "range", "if-range", "if-none-match", "if-modified-since", "cache-control", "connection", "host",
+)
 
 /** "Name: value" lines → headers. Blank lines and lines without a colon are ignored. */
 fun parseHeaders(text: String): Map<String, String> = text.lines().mapNotNull { line ->

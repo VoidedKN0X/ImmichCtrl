@@ -4,6 +4,32 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.2.7
+
+A security and privacy update. Private photos now leave fewer traces on the phone, and nothing is uploaded or sent anywhere without you choosing it.
+
+### Security
+
+- **Sharing to ImmichCtrl asks first.** Photos shared from another app are no longer uploaded straight away: a dialog shows how many items and which account and server they'll go to, and nothing is uploaded until you tap Upload. Another app can no longer quietly make ImmichCtrl upload photos, or pass it links to ImmichCtrl's own private files
+- **Automatic backup only goes to the account you turned it on for.** Switching to, or adding, another account or server no longer starts backing up your phone's photos there. If you open Backup on a different account it says so; turn automatic backup off and on again there to move it
+- **Your sign-in never follows a redirect to another site.** The access token, API key, cookies and your custom proxy headers are only sent to the exact server address they belong to; if the server (or something in front of it) redirects elsewhere, they're removed first
+- **"Save to phone" downloads inside the app.** Originals are now fetched by ImmichCtrl itself and written to Pictures/ImmichCtrl, instead of handing your access token to Android's download manager (which stored it in its own database and could pass it on through redirects). The HTTPS rules and client certificate apply to these downloads too
+- **Home network address is checked properly.** The app only switches to the home address when an actual Immich server answers there (not a hotel or café login page that answers everything), and never follows redirects while checking. Saving a plain-HTTP home address now asks you to confirm first, and Networking shows "Not encrypted (HTTP)" when you're connected over HTTP
+- **Locked folder:** screenshots, screen recordings and screen casting are blocked while the locked folder or a photo opened from it is on screen, its photos are no longer written to the image cache on storage, and they're dropped from memory when you leave it
+- **Fingerprint for the locked folder is now tied to the fingerprint.** The remembered PIN is encrypted with a key the phone's secure hardware only releases right after a strong fingerprint or face check, and that key is wiped if a new fingerprint is added. You'll need to type the PIN once more after updating so it can be saved this way
+- **App lock uses strong biometrics.** Unlocking needs a fingerprint, secure face unlock or the phone's screen lock; weaker face unlock that can be fooled by a photo no longer counts. The lock screen also can't be screenshotted or recorded
+- **Recent apps shows a blank card** instead of a snapshot of your photos
+- **Remove location when sharing** (new setting in Settings, on by default): the GPS position is taken out of JPEG, PNG and WebP photos you send to other apps. Videos and HEIC photos keep theirs
+- **Signing out cleans up.** Removing an account deletes its offline albums, its backup record and its remembered locked-folder PIN from the phone, and clears cached thumbnails and previews
+- **Custom headers are encrypted on the phone.** Proxy headers (Cloudflare Access secrets and the like) are now stored encrypted with the phone's Keystore, like passwords and API keys; existing ones are converted on the first start. They're also no longer kept in the screen's saved state
+- **Casting:** the short-lived key given to the TV is ended as soon as casting stops, and is never reused after switching accounts
+- **Copied shared links and text copied from photos** are marked as sensitive, so Android hides them from the clipboard preview and keyboard clipboard history
+- **Shared link passwords** are hidden while you type them (tap the eye to show)
+- **Notifications on the lock screen** show backup and offline-album progress without file or album names
+- **Quick Settings tile** asks you to unlock the phone before starting or stopping a backup from the lock screen
+- **OAuth sign-in** ignores redirects that don't match the sign-in in progress, and only ever opens a web address in the browser
+- Copies of shared photos are removed from the app's cache if an upload fails for good, and any left behind are cleaned up after a day. File names from other apps and the server are made safe before they're used on the phone
+
 ## 0.2.6
 
 - Version numbers are now plain, with no build number on the end, and a new version only comes out when something in the app actually changes. Nothing else in the app has changed.

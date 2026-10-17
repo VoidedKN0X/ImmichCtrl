@@ -48,6 +48,7 @@ import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.net.formatHeaders
 import com.vknxworks.immichctrl.data.net.parseHeaders
+import com.vknxworks.immichctrl.ui.components.ConfirmDialog
 import com.vknxworks.immichctrl.ui.components.Group
 import com.vknxworks.immichctrl.ui.components.GroupRow
 import com.vknxworks.immichctrl.ui.components.MessageView
@@ -72,7 +73,9 @@ fun NetworkingScreen() {
     val acc = session?.account ?: return
 
     var localUrl by rememberSaveable(acc.key) { mutableStateOf(acc.localUrl.orEmpty()) }
-    var headers by rememberSaveable(acc.key) { mutableStateOf(formatHeaders(acc.headers)) }
+    // Headers often hold proxy secrets: kept in memory only, not in the saved screen state.
+    var headers by remember(acc.key) { mutableStateOf(formatHeaders(acc.headers)) }
+    var confirmHttp by remember { mutableStateOf(false) }
     var cert by rememberSaveable(acc.key) { mutableStateOf(acc.clientCert) }
     val changed = localUrl.trim() != acc.localUrl.orEmpty() || parseHeaders(headers) != acc.headers || cert != acc.clientCert
 
@@ -80,9 +83,10 @@ fun NetworkingScreen() {
         ScreenTopBar("Networking")
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
             Group("Now connected through") {
+                val now = if (usingLocal) acc.localUrl.orEmpty() else acc.serverUrl
                 GroupRow(
                     if (usingLocal) "Home network" else "Public address",
-                    if (usingLocal) acc.localUrl else acc.serverUrl,
+                    if (now.startsWith("http://", ignoreCase = true)) "$now  ·  Not encrypted (HTTP)" else now,
                     icon = if (usingLocal) Icons.Outlined.Home else Icons.Outlined.Public,
                 )
             }
@@ -131,15 +135,20 @@ fun NetworkingScreen() {
                     } else null,
                 )
             }
+            fun save() {
+                val parsed = parseHeaders(headers)
+                scope.launch {
+                    c.sessions.updateNetworking(acc.key, localUrl, parsed, cert)
+                    AppLog.i("Network", "Connection settings changed")
+                    c.toast("Saved")
+                }
+            }
             PillButton(
                 "Save",
                 onClick = {
-                    val parsed = parseHeaders(headers)
-                    scope.launch {
-                        c.sessions.updateNetworking(acc.key, localUrl, parsed, cert)
-                        AppLog.i("Network", "Connection settings changed")
-                        c.toast("Saved")
-                    }
+                    val newHttp = localUrl.trim().startsWith("http://", ignoreCase = true) &&
+                        !localUrl.trim().equals(acc.localUrl.orEmpty(), ignoreCase = true)
+                    if (newHttp) confirmHttp = true else save()
                 },
                 enabled = changed,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 16.dp),
@@ -148,6 +157,19 @@ fun NetworkingScreen() {
                 Text("Check the home address again")
             }
             Spacer(Modifier.height(24.dp))
+            if (confirmHttp) {
+                ConfirmDialog(
+                    "Use an unencrypted home address?",
+                    "This address uses plain HTTP. Whenever the phone is on Wi-Fi and something answers there, the app sends your " +
+                        "sign-in and photos to it unencrypted. Anyone on that network can read them, and another network " +
+                        "could have a device at the same address. Only use it if you trust your home network.",
+                    "Use HTTP",
+                    onDismiss = { confirmHttp = false },
+                ) {
+                    confirmHttp = false
+                    save()
+                }
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.LocationOff
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.PhoneAndroid
@@ -115,6 +116,12 @@ fun SettingsScreen() {
                     update { it.copy(storageIndicator = v) }
                 }
                 GroupChoice("Share size", ShareSize.entries.map { it to it.label }, s.shareSize, Icons.Outlined.Share) { v -> update { it.copy(shareSize = v) } }
+                GroupSwitch(
+                    "Remove location when sharing",
+                    "Takes the GPS position out of JPEG, PNG and WebP photos you send to other apps. Videos and HEIC photos keep theirs.",
+                    s.shareStripLocation,
+                    Icons.Outlined.LocationOff,
+                ) { v -> update { it.copy(shareStripLocation = v) } }
             }
             Group("Slideshow") {
                 GroupChoice("Each photo shows for", listOf(3, 5, 8, 12, 20).map { it to "$it seconds" }, s.slideSeconds, Icons.Outlined.Timer) { v ->
@@ -142,8 +149,14 @@ fun SettingsScreen() {
                         Icons.Outlined.Timer,
                     ) { v -> update { it.copy(appLockTimeout = v) } }
                 }
-                GroupSwitch("Fingerprint for the locked folder", "Remembers your locked-folder PIN on this phone, protected by the fingerprint", s.lockedFolderBiometric && canLock, Icons.Outlined.Fingerprint) { v ->
-                    if (!canLock) return@GroupSwitch
+                val canBioPin = remember { c.appLock.canUseBiometricPin() }
+                GroupSwitch(
+                    "Fingerprint for the locked folder",
+                    if (canBioPin) "Remembers your locked-folder PIN on this phone, protected by the fingerprint" else "Needs a fingerprint (or secure face unlock) set up on the phone",
+                    s.lockedFolderBiometric && canBioPin,
+                    Icons.Outlined.Fingerprint,
+                ) { v ->
+                    if (!canBioPin) return@GroupSwitch
                     update { it.copy(lockedFolderBiometric = v) }
                     if (!v) scope.launch { session?.account?.key?.let { c.appLock.forgetPin(it) } }
                 }

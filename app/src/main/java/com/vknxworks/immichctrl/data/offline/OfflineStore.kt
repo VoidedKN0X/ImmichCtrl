@@ -76,12 +76,23 @@ class OfflineStore(private val context: Context) {
         reload()
     }
 
-    private fun root(): File? = account?.let { key ->
+    private fun root(): File? = account?.let { rootFor(it) }
+
+    private fun rootFor(key: String): File {
         val hash = MessageDigest.getInstance("SHA-1").digest(key.toByteArray()).joinToString("") { "%02x".format(it) }.take(16)
-        File(context.filesDir, "offline/$hash")
+        return File(context.filesDir, "offline/$hash")
     }
 
-    fun dir(albumId: String): File? = root()?.let { File(it, albumId) }
+    /** Signing out removes that account's offline albums from the phone. */
+    fun deleteAccount(key: String) {
+        rootFor(key).deleteRecursively()
+        if (key == account) reload()
+    }
+
+    fun dir(albumId: String): File? = root()?.let { r ->
+        // Album ids come from the server; never let one point outside this account's folder.
+        File(r, albumId).takeIf { albumId.isNotBlank() && it.canonicalFile.parentFile == r.canonicalFile }
+    }
 
     fun reload() {
         val r = root()
@@ -222,6 +233,16 @@ class OfflineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             .setProgress(total, done, total == 0)
             .setOngoing(true)
             .setSilent(true)
+            // On the lock screen: no album name.
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(
+                NotificationCompat.Builder(applicationContext, CHANNEL)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle("Saving an album for offline")
+                    .setProgress(total, done, total == 0)
+                    .setSilent(true)
+                    .build(),
+            )
             .build()
 
     private fun info(done: Int, total: Int, name: String) =

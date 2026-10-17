@@ -120,7 +120,33 @@ fun AppRoot() {
         }
         val settings by c.settings.settings.collectAsStateWithLifecycle()
         val locked by c.appLock.locked.collectAsStateWithLifecycle()
-        if (ready && active != null && settings.appLock && locked) LockScreen()
+        val showLock = ready && active != null && settings.appLock && locked
+        if (showLock) LockScreen()
+
+        // Photos another app shared to ImmichCtrl are only uploaded once the user says so.
+        val pending by c.pendingUploads.collectAsStateWithLifecycle()
+        val context = LocalContext.current
+        val uploads = pending
+        if (ready && !showLock && !uploads.isNullOrEmpty()) {
+            val acc = active?.account
+            if (acc == null) {
+                LaunchedEffect(uploads) {
+                    c.pendingUploads.value = null
+                    android.widget.Toast.makeText(context, "Sign in to an Immich server first", android.widget.Toast.LENGTH_LONG).show()
+                }
+            } else {
+                com.vknxworks.immichctrl.ui.components.ConfirmDialog(
+                    "Upload to Immich?",
+                    "${com.vknxworks.immichctrl.ui.components.countLabel(uploads.size, "item")} shared from another app will be uploaded to ${acc.name.ifBlank { acc.email }} on ${acc.serverName}.",
+                    "Upload",
+                    destructive = false,
+                    onDismiss = { c.pendingUploads.value = null },
+                ) {
+                    c.pendingUploads.value = null
+                    (context.findActivity() as? com.vknxworks.immichctrl.MainActivity)?.uploadShared(uploads)
+                }
+            }
+        }
     }
 }
 
@@ -131,6 +157,8 @@ private fun LockScreen() {
     val c = context.container
     fun unlock() { context.findActivity()?.let { c.appLock.unlockWith(it) } }
     LaunchedEffect(Unit) { unlock() }
+    // Nothing behind the cover may end up in a screenshot or screen recording.
+    com.vknxworks.immichctrl.data.security.SecureScreen()
     Box(
         Modifier
             .fillMaxSize()

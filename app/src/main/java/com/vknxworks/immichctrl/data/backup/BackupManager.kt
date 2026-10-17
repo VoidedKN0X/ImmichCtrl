@@ -149,10 +149,11 @@ class BackupManager(
      */
     suspend fun uploadShared(uris: List<Uri>, albumId: String? = null): Int = withContext(Dispatchers.IO) {
         val dir = File(context.cacheDir, "incoming/${UUID.randomUUID()}").apply { mkdirs() }
-        val paths = uris.mapNotNull { uri ->
+        val paths = uris.mapIndexedNotNull { i, uri ->
             runCatching {
-                val name = displayName(uri) ?: "shared-${System.currentTimeMillis()}"
-                val target = File(dir, name.replace('/', '_'))
+                // The name comes from the other app: make it one safe path segment, and unique.
+                val name = com.vknxworks.immichctrl.data.share.Exporter.safeFileName(displayName(uri), "shared-${System.currentTimeMillis()}")
+                val target = File(File(dir, "$i").apply { mkdirs() }, name)
                 context.contentResolver.openInputStream(uri)?.use { input -> target.outputStream().use { input.copyTo(it) } } ?: return@runCatching null
                 target.absolutePath
             }.getOrNull()

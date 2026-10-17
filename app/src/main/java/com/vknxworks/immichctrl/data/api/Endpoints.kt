@@ -363,6 +363,9 @@ suspend fun ImmichClient.dismissDuplicate(id: String) = sendUnit("DELETE", "/dup
 suspend fun ImmichClient.createSession(seconds: Int): SessionTokenDto =
     send("POST", "/sessions", obj("duration" to seconds, "deviceType" to "Chromecast", "deviceOS" to "Cast"))
 
+/** Ends a session (e.g. the cast session's key once casting stops). */
+suspend fun ImmichClient.deleteSession(id: String) = sendUnit("DELETE", "/sessions/$id")
+
 suspend fun ImmichClient.versionCheck(): VersionCheckDto = get("/server/version-check")
 
 suspend fun ImmichClient.deleteProfileImage() = sendUnit("DELETE", "/users/profile-image")

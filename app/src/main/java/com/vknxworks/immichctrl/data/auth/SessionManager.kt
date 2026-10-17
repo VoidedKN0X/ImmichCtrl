@@ -23,6 +23,7 @@ import com.vknxworks.immichctrl.data.api.serverConfig
 import com.vknxworks.immichctrl.data.api.serverFeatures
 import com.vknxworks.immichctrl.data.api.serverVersion
 import com.vknxworks.immichctrl.data.appDataStore
+import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.net.CleartextPolicy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import okhttp3.OkHttpClient
 import java.security.MessageDigest
 import java.security.SecureRandom
@@ -53,6 +56,8 @@ data class Account(
     val headers: Map<String, String> = emptyMap(),
     /** Alias of a client certificate in Android's certificate store, for servers that require one. */
     val clientCert: String? = null,
+    /** [headers] as saved on disk: Keystore-encrypted, since they often hold proxy secrets. */
+    val headersEnc: String? = null,
 ) {
     val key: String get() = "$serverUrl|$userId"
     val serverName: String get() = Uri.parse(serverUrl).host ?: serverUrl
@@ -97,6 +102,9 @@ class SessionManager(
     private val _ready = MutableStateFlow(false)
     val ready: StateFlow<Boolean> = _ready.asStateFlow()
 
+    /** Called after an account is signed out, to remove what the app kept for it on the phone. */
+    var onSignedOut: (suspend (Account) -> Unit)? = null
+
     /** Set while the browser is open for an OAuth sign-in. */
     @Volatile private var pendingOAuth: PendingOAuth? = null
 
@@ -110,10 +118,13 @@ class SessionManager(
 
     private suspend fun load() {
         val prefs = context.appDataStore.data.first()
-        val list = prefs[accountsKey]?.let {
+        val stored = prefs[accountsKey]?.let {
             runCatching { ApiJson.decodeFromString(ListSerializer(Account.serializer()), it) }.getOrNull()
         }.orEmpty()
+        val list = stored.map { it.withHeadersDecrypted() }
         _accounts.value = list
+        // Accounts saved by older versions kept their headers in plain text: re-save them encrypted.
+        if (stored.any { it.headers.isNotEmpty() }) persist(list, prefs[activeKey])
         val acc = list.firstOrNull { it.key == prefs[activeKey] } ?: list.firstOrNull()
         if (acc != null) activate(acc)
         _ready.value = true
@@ -198,6 +209,9 @@ class SessionManager(
         )
         val anon = ImmichClient(probe.baseUrl, "", AuthType.OAUTH, http).also { it.extraHeaders = probe.headers }
         val url = anon.oauthAuthorize(OAUTH_REDIRECT, state, challenge).url
+        // Only ever open a web page in the browser, whatever the server sends.
+        val scheme = Uri.parse(url).scheme?.lowercase()
+        if (scheme != "https" && scheme != "http") throw ApiException("The server sent an invalid sign-in address")
         pendingOAuth = PendingOAuth(probe, state, verifier)
         _oauthError.value = null
         return url
@@ -206,6 +220,11 @@ class SessionManager(
     /** Called with the redirect the browser sent back to the app. */
     fun completeOAuth(callback: Uri) {
         val pending = pendingOAuth ?: return
+        // Must answer the sign-in this app started (another app could send a made-up redirect).
+        if (callback.getQueryParameter("state") != pending.state) {
+            AppLog.w("Auth", "Ignored an OAuth redirect that didn't match the sign-in in progress")
+            return
+        }
         pendingOAuth = null
         scope.launch {
             try {
@@ -265,6 +284,7 @@ class SessionManager(
         val nextActive = if (_active.value?.account?.key == key) remaining.firstOrNull() else _active.value?.account
         persist(remaining, nextActive?.key)
         if (nextActive != null) activate(nextActive) else _active.value = null
+        if (acc != null) runCatching { onSignedOut?.invoke(acc) }
     }
 
     /** Saves connection settings for an account (home address, headers, client certificate). */
@@ -305,9 +325,24 @@ class SessionManager(
     private suspend fun persist(list: List<Account>, activeKeyValue: String?) {
         _accounts.value = list
         context.appDataStore.edit { prefs ->
-            prefs[accountsKey] = ApiJson.encodeToString(ListSerializer(Account.serializer()), list)
+            prefs[accountsKey] = ApiJson.encodeToString(ListSerializer(Account.serializer()), list.map { it.withHeadersEncrypted() })
             if (activeKeyValue != null) prefs[activeKey] = activeKeyValue else prefs.remove(activeKey)
         }
+    }
+
+    private fun Account.withHeadersEncrypted(): Account = copy(
+        headers = emptyMap(),
+        headersEnc = headers.takeIf { it.isNotEmpty() }?.let {
+            KeystoreCrypto.encrypt(ApiJson.encodeToString(MapSerializer(String.serializer(), String.serializer()), it))
+        },
+    )
+
+    private fun Account.withHeadersDecrypted(): Account {
+        val enc = headersEnc ?: return this
+        val map = KeystoreCrypto.decrypt(enc)?.let {
+            runCatching { ApiJson.decodeFromString(MapSerializer(String.serializer(), String.serializer()), it) }.getOrNull()
+        }
+        return copy(headers = map ?: headers, headersEnc = null)
     }
 
     private fun Throwable.isTlsProblem(): Boolean {

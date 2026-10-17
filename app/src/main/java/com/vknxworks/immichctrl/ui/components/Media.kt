@@ -67,13 +67,16 @@ fun AssetThumb(
     contentScale: ContentScale = ContentScale.Crop,
     /** A copy on the phone or saved offline; shown instead of downloading. */
     localUri: String? = null,
+    /** Locked-folder photos: kept in memory only, never written to the image cache on disk. */
+    isPrivate: Boolean = false,
 ) {
     val c = LocalContext.current.container
     val url = remember(assetId, size, localUri) { localUri ?: c.api.thumbnailUrl(assetId, size, thumbhash?.take(12)) }
     val blur = remember(thumbhash) { ThumbHash.bitmap(thumbhash)?.asImageBitmap() }
+    val model = privateImageModel(url, isPrivate)
     Box(modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
         if (blur != null) Image(blur, null, Modifier.fillMaxSize(), contentScale = contentScale)
-        AsyncImage(model = url, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = contentScale)
+        AsyncImage(model = model, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = contentScale)
     }
 }
 
@@ -296,7 +299,24 @@ fun Badge(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null
 /** The thumbnail for any [com.vknxworks.immichctrl.data.api.Asset], wherever it lives. */
 @Composable
 fun AssetThumb(asset: com.vknxworks.immichctrl.data.api.Asset, modifier: Modifier = Modifier, size: String = "thumbnail") =
-    AssetThumb(asset.id, asset.thumbhash, modifier, size, localUri = if (asset.isLocalOnly || asset.localUri?.startsWith("file:") == true) asset.localUri else null)
+    AssetThumb(
+        asset.id, asset.thumbhash, modifier, size,
+        localUri = if (asset.isLocalOnly || asset.localUri?.startsWith("file:") == true) asset.localUri else null,
+        isPrivate = asset.visibility == "locked",
+    )
+
+/** Image model for Coil: locked-folder images skip the disk cache, so they're never left on storage. */
+@Composable
+fun privateImageModel(url: String, isPrivate: Boolean): Any {
+    if (!isPrivate) return url
+    val ctx = coil3.compose.LocalPlatformContext.current
+    return remember(url) {
+        coil3.request.ImageRequest.Builder(ctx)
+            .data(url)
+            .diskCachePolicy(coil3.request.CachePolicy.DISABLED)
+            .build()
+    }
+}
 
 /** The activity behind a Compose context (needed for fingerprint prompts). */
 fun android.content.Context.findActivity(): androidx.fragment.app.FragmentActivity? {
