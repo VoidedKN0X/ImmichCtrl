@@ -4,6 +4,13 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.2.9
+
+### Fixed
+
+- The profile picture on the Photos tab is easy to tap again. The timeline's fast-scroll strip along the right edge was covering it and catching most taps; that strip now starts below the title row
+- The profile picture now sits in the same place on Photos, Search and Library, the same distance from the edge of the screen
+
 ## 0.2.8
 
 ### Changed

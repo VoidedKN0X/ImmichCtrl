@@ -103,6 +103,8 @@ fun PhotosScreen() {
         source = source,
         context = SelectionContext.TIMELINE,
         topPadding = top,
+        // The title row's backup and profile buttons sit where the fast scroller's strip would be.
+        scrollerTopInset = 64.dp,
         empty = {
             MessageView(
                 Icons.Outlined.PhotoLibrary,
@@ -116,7 +118,7 @@ fun PhotosScreen() {
             item(key = "photos-header") {
                 Column {
                     Row(
-                        Modifier.fillMaxWidth().padding(start = Gutter, end = 8.dp, top = 12.dp, bottom = 4.dp),
+                        Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 12.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text("Photos", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
