@@ -4,6 +4,12 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.2.11
+
+### Security
+
+- **Nothing stays usable above the app lock.** When ImmichCtrl locked itself, the lock screen was drawn over the app, but anything that opens in its own window (a delete confirmation, the share options, the album picker, menus and other pop-ups) stayed on top of it and could still be used without unlocking. The screens underneath also kept running behind it: a video kept playing, and screen readers could still read what was there. While the app is locked, its screens are now closed completely; when you unlock, you're back on the same screen you left. The "Upload to Immich?" question for photos shared from another app waits until you've unlocked
+
 ## 0.2.10
 
 A security follow-up that closes gaps in 0.2.7's protections, including one opened by moving the You page in 0.2.8.

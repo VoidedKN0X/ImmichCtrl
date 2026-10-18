@@ -110,15 +110,24 @@ fun AppRoot() {
     val c = LocalContext.current.container
     val ready by c.sessions.ready.collectAsStateWithLifecycle()
     val active by c.sessions.active.collectAsStateWithLifecycle()
+    // Keeps each account's screens (back stack, scroll positions) while the app is locked.
+    val screens = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        when {
-            !ready -> LoadingView()
-            active == null -> SignInScreen(onDone = {}, onCancel = null)
-            else -> key(active!!.account.key) { MainScaffold() }
-        }
         val settings by c.settings.settings.collectAsStateWithLifecycle()
         val locked by c.appLock.locked.collectAsStateWithLifecycle()
         val showLock = ready && active != null && settings.appLock && locked
+        when {
+            !ready -> LoadingView()
+            active == null -> SignInScreen(onDone = {}, onCancel = null)
+            // While locked the app's screens aren't composed at all, not just covered: dialogs, menus and
+            // sheets are windows of their own that would stay above (and usable over) the lock screen, and
+            // covered screens would keep playing video and stay readable by accessibility services.
+            // Their state is saved and comes back on unlock.
+            showLock -> Unit
+            else -> key(active!!.account.key) {
+                screens.SaveableStateProvider(active!!.account.key) { MainScaffold() }
+            }
+        }
         if (showLock) LockScreen()
 
         // Photos another app shared to ImmichCtrl are only uploaded once the user says so.
