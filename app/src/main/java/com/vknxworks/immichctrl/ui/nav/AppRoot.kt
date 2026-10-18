@@ -16,11 +16,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.Search
@@ -182,7 +180,6 @@ private val topDestinations = listOf(
     TopDest(PhotosRoute, TabItem("Photos", Icons.Outlined.Photo, Icons.Filled.Photo)),
     TopDest(SearchRoute, TabItem("Search", Icons.Outlined.Search, Icons.Filled.Search)),
     TopDest(LibraryRoute, TabItem("Library", Icons.Outlined.PhotoLibrary, Icons.Filled.PhotoLibrary)),
-    TopDest(YouRoute, TabItem("You", Icons.Outlined.AccountCircle, Icons.Filled.AccountCircle)),
 )
 
 @Composable
