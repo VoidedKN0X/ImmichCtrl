@@ -257,7 +257,8 @@ fun LockedScreen() {
             is Load.Loading -> LoadingView()
             is Load.Err -> ErrorView(s.message) { status.reload() }
             is Load.Ok -> {
-                androidx.compose.runtime.LaunchedEffect(s.value.isElevated) { if (s.value.isElevated) unlocked = true }
+                // The server may still count this session as unlocked (the app was closed while the folder
+                // was open, or locking it again failed): opening the folder still asks for the PIN.
                 MessageView(
                     Icons.Outlined.Lock,
                     if (s.value.pinCode) "Enter your PIN" else "Set up a PIN",

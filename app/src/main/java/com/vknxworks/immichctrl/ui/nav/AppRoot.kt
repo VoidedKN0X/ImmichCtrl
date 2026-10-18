@@ -174,6 +174,14 @@ private fun LockScreen() {
     }
 }
 
+/** Screens read-only mode never shows: they change the account, its settings or what's on the server. */
+private fun androidx.navigation.NavDestination.blockedInReadOnly(): Boolean =
+    hasRoute(YouRoute::class) || hasRoute(SettingsRoute::class) || hasRoute(AccountsRoute::class) ||
+        hasRoute(AddAccountRoute::class) || hasRoute(AdminRoute::class) || hasRoute(BackupRoute::class) ||
+        hasRoute(NetworkingRoute::class) || hasRoute(LogsRoute::class) || hasRoute(LockedRoute::class) ||
+        hasRoute(SharedLinksRoute::class) || hasRoute(FreeUpSpaceRoute::class) || hasRoute(PickAssetsRoute::class) ||
+        hasRoute(EditorRoute::class) || hasRoute(DuplicatesRoute::class)
+
 private data class TopDest(val route: Any, val item: TabItem)
 
 private val topDestinations = listOf(
@@ -212,8 +220,10 @@ private fun MainScaffold() {
     LaunchedEffect(external) {
         if (!external.isNullOrEmpty() && dest?.hasRoute(ExternalViewRoute::class) != true) navigator.navigate(ExternalViewRoute)
     }
-    // Read-only mode keeps to the Photos tab.
-    LaunchedEffect(readOnly, selectedIndex) { if (readOnly && selectedIndex > 0) navController.navigate(PhotosRoute) { popUpTo(0) } }
+    // Read-only mode keeps to the Photos tab: the other tabs, the You page (now opened from the
+    // profile picture rather than a tab) and everything that changes the account or settings are left.
+    val offLimits = selectedIndex > 0 || dest?.blockedInReadOnly() == true
+    LaunchedEffect(readOnly, offLimits) { if (readOnly && offLimits) navController.navigate(PhotosRoute) { popUpTo(0) } }
 
     fun selectTab(i: Int) {
         navController.navigate(topDestinations[i].route) {

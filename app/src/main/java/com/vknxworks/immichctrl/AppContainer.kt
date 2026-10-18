@@ -132,10 +132,18 @@ class AppContainer(val context: Context) {
         // Signing out leaves nothing of that account's photos on the phone.
         sessions.onSignedOut = { acc ->
             withContext(Dispatchers.IO) {
-                offline.deleteAccount(acc.key)
+                // Each step on its own, so one failing doesn't leave the rest behind.
+                runCatching { offline.deleteAccount(acc.key) }
                 runCatching { backupDb.reset(acc.key) }
-                appLock.forgetPin(acc.key)
-                java.io.File(context.cacheDir, "shared").deleteRecursively()
+                runCatching { appLock.forgetPin(acc.key) }
+                // Automatic backup was for this account: it stops, and doesn't quietly resume if the
+                // account (or someone else with the same server address and user id) is added again.
+                runCatching {
+                    if (settings.current().backupAccount == acc.key) {
+                        settings.update { it.copy(backupEnabled = false, backupAccount = null) }
+                    }
+                }
+                runCatching { java.io.File(context.cacheDir, "shared").deleteRecursively() }
                 runCatching {
                     val loader = coil3.SingletonImageLoader.get(context)
                     loader.memoryCache?.clear()

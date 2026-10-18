@@ -56,6 +56,14 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         c.sessions.ready.first { it }
         val session = c.sessions.active.value ?: return Result.success()
         val mode = inputData.getString(KEY_MODE) ?: MODE_AUTO
+        // Queued for one account (e.g. photos the user agreed to upload to it): if another account is
+        // active by now, or that one was signed out, upload nothing rather than send them elsewhere.
+        val queuedFor = inputData.getString(KEY_ACCOUNT)
+        if (queuedFor != null && queuedFor != session.account.key) {
+            AppLog.w("Backup", "Skipped an upload queued for another account")
+            if (mode == MODE_SHARED) deleteSharedCopies()
+            return Result.success()
+        }
         return lock.withLock {
             try {
                 runCatching {
@@ -231,6 +239,17 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
 
     // ---------------- Shared to the app ----------------
 
+    /** Removes this job's copies of shared files (they were only kept to be uploaded). */
+    private fun deleteSharedCopies() {
+        val incoming = File(applicationContext.cacheDir, "incoming").canonicalFile
+        inputData.getStringArray(KEY_FILES).orEmpty().forEach { path ->
+            val f = File(path)
+            if (!f.canonicalPath.startsWith(incoming.path + File.separator)) return@forEach
+            f.delete()
+            f.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
+        }
+    }
+
     private suspend fun uploadShared(client: ImmichClient): Result {
         val paths = inputData.getStringArray(KEY_FILES).orEmpty()
         val albumId = inputData.getString(KEY_ALBUM)
@@ -361,6 +380,8 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         const val KEY_MODE = "mode"
         const val KEY_FILES = "files"
         const val KEY_ALBUM = "album"
+        /** Key of the account a job was queued for; it never runs for any other. */
+        const val KEY_ACCOUNT = "account"
         const val KEY_DONE = "done"
         const val KEY_TOTAL = "total"
         const val KEY_CURRENT = "current"

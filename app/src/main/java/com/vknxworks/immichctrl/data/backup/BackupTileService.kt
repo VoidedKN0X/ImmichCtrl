@@ -11,6 +11,9 @@ import androidx.work.WorkManager
 import com.vknxworks.immichctrl.MainActivity
 import com.vknxworks.immichctrl.R
 import com.vknxworks.immichctrl.container
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /** Quick Settings tile: tap to back up now; shows progress while a backup runs. */
 class BackupTileService : TileService() {
@@ -45,10 +48,31 @@ class BackupTileService : TileService() {
     private fun toggleBackup() {
         val c = applicationContext.container
         val running = qsTile?.state == Tile.STATE_ACTIVE
-        if (running) c.backup.cancel() else c.backup.backupNow()
+        if (running) {
+            c.backup.cancel()
+            showState(false, "Stopped")
+            return
+        }
+        c.appScope.launch(Dispatchers.Main) {
+            // The tile doesn't say which account is in use: when backup is set up for a different
+            // account than the active one, don't upload this phone's photos to the active one.
+            // (Read from storage: right after the process starts, the in-memory settings are still defaults.)
+            val s = c.settings.current()
+            c.sessions.ready.first { it }
+            val active = c.sessions.active.value?.account?.key
+            if (active == null || (s.backupEnabled && s.backupAccount != null && s.backupAccount != active)) {
+                showState(false, if (active == null) "Not signed in" else "Set up for another account")
+                return@launch
+            }
+            c.backup.backupNow()
+            showState(true, "Starting…")
+        }
+    }
+
+    private fun showState(active: Boolean, text: String) {
         qsTile?.apply {
-            state = if (running) Tile.STATE_INACTIVE else Tile.STATE_ACTIVE
-            subtitle = if (running) "Stopped" else "Starting…"
+            state = if (active) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+            subtitle = text
             updateTile()
         }
     }
