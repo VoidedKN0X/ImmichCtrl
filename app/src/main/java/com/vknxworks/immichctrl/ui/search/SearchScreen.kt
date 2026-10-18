@@ -104,7 +104,7 @@ fun SearchScreen() {
 
     val searchBar: @Composable () -> Unit = {
         Column(Modifier.statusBarsPadding().padding(top = 8.dp)) {
-            Row(Modifier.fillMaxWidth().padding(start = Gutter, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter), verticalAlignment = Alignment.CenterVertically) {
                 TextField(
                     value = text,
                     onValueChange = { text = it },

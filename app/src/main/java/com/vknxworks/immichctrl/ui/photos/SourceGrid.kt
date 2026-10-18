@@ -77,6 +77,7 @@ fun SourceGrid(
     modifier: Modifier = Modifier,
     topBar: (@Composable () -> Unit)? = null,
     topPadding: Dp = 0.dp,
+    scrollerTopInset: Dp = 0.dp,
     albumId: String? = null,
     canEditAlbum: Boolean = false,
     selectable: Boolean = true,
@@ -110,6 +111,7 @@ fun SourceGrid(
                 groupBy = groupBy ?: settings.groupBy,
                 state = state,
                 topPadding = topPadding,
+                scrollerTopInset = scrollerTopInset,
                 // Read-only mode: look, don't touch.
                 selectable = selectable && !settings.readOnly,
                 indicator = settings.storageIndicator,

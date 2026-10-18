@@ -190,6 +190,8 @@ fun AssetGrid(
     groupBy: GroupBy = GroupBy.DAY,
     state: LazyListState = rememberLazyListState(),
     topPadding: androidx.compose.ui.unit.Dp = 0.dp,
+    /** Keeps the fast scroller's touch strip clear of buttons in a title row above the grid. */
+    scrollerTopInset: androidx.compose.ui.unit.Dp = 0.dp,
     selectable: Boolean = true,
     /** Cloud icons for photos only on this phone, or backed up from it. */
     indicator: Boolean = false,
@@ -395,7 +397,7 @@ fun AssetGrid(
                         val g = currentItems.getOrNull(i) ?: return@GridFastScroller null
                         source.buckets.getOrNull(g.bucket)?.label
                     },
-                    modifier = Modifier.align(Alignment.TopEnd).padding(top = topPadding, bottom = bottom),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(top = topPadding + scrollerTopInset, bottom = bottom),
                 )
             }
         }
