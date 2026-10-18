@@ -50,7 +50,11 @@ fun copySensitive(context: Context, text: String, label: String = "ImmichCtrl") 
  * private files on another app's behalf.
  */
 fun isForeignContentUri(context: Context, uri: Uri): Boolean {
-    if (uri.scheme != ContentResolver.SCHEME_CONTENT) return false
-    val authority = uri.authority ?: return false
-    return !authority.startsWith(context.packageName)
+    if (!uri.scheme.equals(ContentResolver.SCHEME_CONTENT, ignoreCase = true)) return false
+    // "content://0@<authority>" still reaches <authority> (the number is a user id), so look past it.
+    val authority = uri.authority?.substringAfterLast('@')?.takeIf { it.isNotBlank() } ?: return false
+    if (authority.startsWith(context.packageName)) return false
+    // And whatever its name, a provider that belongs to this app is never "another app's".
+    val owner = runCatching { context.packageManager.resolveContentProvider(authority, android.content.pm.PackageManager.ComponentInfoFlags.of(0))?.packageName }.getOrNull()
+    return owner != context.packageName
 }

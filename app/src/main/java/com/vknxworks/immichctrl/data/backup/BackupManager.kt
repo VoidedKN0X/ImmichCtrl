@@ -106,7 +106,7 @@ class BackupManager(
     fun backupNow() {
         val req = OneTimeWorkRequestBuilder<BackupWorker>()
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .setInputData(workDataOf(BackupWorker.KEY_MODE to BackupWorker.MODE_MANUAL))
+            .setInputData(workDataOf(BackupWorker.KEY_MODE to BackupWorker.MODE_MANUAL, BackupWorker.KEY_ACCOUNT to activeKey()))
             .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
             .addTag(TAG)
             .build()
@@ -120,7 +120,13 @@ class BackupManager(
         ids.chunked(500).forEach { chunk ->
             val req = OneTimeWorkRequestBuilder<BackupWorker>()
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-                .setInputData(workDataOf(BackupWorker.KEY_MODE to BackupWorker.MODE_ITEMS, BackupWorker.KEY_IDS to chunk.toLongArray()))
+                .setInputData(
+                    workDataOf(
+                        BackupWorker.KEY_MODE to BackupWorker.MODE_ITEMS,
+                        BackupWorker.KEY_IDS to chunk.toLongArray(),
+                        BackupWorker.KEY_ACCOUNT to activeKey(),
+                    ),
+                )
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .addTag(TAG)
                 .build()
@@ -132,11 +138,17 @@ class BackupManager(
     fun syncAlbumsNow() {
         val req = OneTimeWorkRequestBuilder<BackupWorker>()
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .setInputData(workDataOf(BackupWorker.KEY_MODE to BackupWorker.MODE_SYNC_ALBUMS))
+            .setInputData(workDataOf(BackupWorker.KEY_MODE to BackupWorker.MODE_SYNC_ALBUMS, BackupWorker.KEY_ACCOUNT to activeKey()))
             .addTag(TAG)
             .build()
         wm.enqueue(req)
     }
+
+    /**
+     * The account a job is queued for. Jobs can wait (e.g. for a connection) while the user switches
+     * account or signs out; the worker then refuses to send them anywhere else.
+     */
+    private fun activeKey(): String? = sessions.active.value?.account?.key
 
     fun cancel() {
         wm.cancelUniqueWork(MANUAL)
@@ -148,6 +160,7 @@ class BackupManager(
      * grant doesn't outlast the screen that received it), then uploaded in the background.
      */
     suspend fun uploadShared(uris: List<Uri>, albumId: String? = null): Int = withContext(Dispatchers.IO) {
+        val account = activeKey() ?: return@withContext 0
         val dir = File(context.cacheDir, "incoming/${UUID.randomUUID()}").apply { mkdirs() }
         val paths = uris.mapIndexedNotNull { i, uri ->
             runCatching {
@@ -168,6 +181,8 @@ class BackupManager(
                         BackupWorker.KEY_MODE to BackupWorker.MODE_SHARED,
                         BackupWorker.KEY_FILES to chunk.toTypedArray(),
                         BackupWorker.KEY_ALBUM to albumId,
+                        // Confirmed for this account: never uploaded to whichever account is active later.
+                        BackupWorker.KEY_ACCOUNT to account,
                     ),
                 )
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)

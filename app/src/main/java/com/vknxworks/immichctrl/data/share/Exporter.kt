@@ -131,15 +131,22 @@ object Exporter {
                         val preview = large && dto.isImage
                         val name = if (preview) original.substringBeforeLast('.') + ".jpg" else original
                         val target = File(File(dir, safeDirName(id)).apply { mkdirs() }, name)
-                        val url = if (preview) client.url("/assets/$id/thumbnail", "size" to "preview") else client.url("/assets/$id/original")
-                        val req = client.request(url).build()
-                        client.execute(req).use { resp ->
-                            val body = resp.body ?: throw IOException("Empty response")
-                            target.sink().buffer().use { it.writeAll(body.source()) }
-                        }
+                        val previewUrl = client.url("/assets/$id/thumbnail", "size" to "preview")
+                        fetch(client, if (preview) previewUrl else client.url("/assets/$id/original"), target)
                         val mime = if (preview) "image/jpeg" else dto.originalMimeType ?: if (dto.isImage) "image/*" else "video/*"
-                        if (stripLocation && dto.isImage) removeLocation(target, mime)
-                        target to mime
+                        if (!stripLocation || !dto.isImage || removeLocation(target, mime)) return@withPermit target to mime
+                        // The location couldn't be removed for sure: never send the original then. Immich's
+                        // preview is re-encoded without the photo's metadata; send that (checked too) instead.
+                        target.delete()
+                        if (preview) throw IOException("Couldn't remove the location from $original")
+                        val fallback = File(target.parentFile, original.substringBeforeLast('.') + ".jpg")
+                        fetch(client, previewUrl, fallback)
+                        if (!removeLocation(fallback, "image/jpeg")) {
+                            fallback.delete()
+                            throw IOException("Couldn't remove the location from $original")
+                        }
+                        AppLog.i("Share", "Sent a preview of a photo whose location couldn't be removed from the original")
+                        fallback to "image/jpeg"
                     }
                 }
             }.awaitAll()
@@ -180,18 +187,67 @@ object Exporter {
         ExifInterface.TAG_GPS_H_POSITIONING_ERROR, ExifInterface.TAG_GPS_VERSION_ID,
     )
 
-    /** Takes the GPS position out of a shared copy (formats ExifInterface can rewrite: JPEG, PNG, WebP). */
-    private fun removeLocation(file: File, mime: String) {
+    private suspend fun fetch(client: ImmichClient, url: okhttp3.HttpUrl, target: File) {
+        client.execute(client.request(url).build()).use { resp ->
+            val body = resp.body ?: throw IOException("Empty response")
+            target.sink().buffer().use { it.writeAll(body.source()) }
+        }
+    }
+
+    /**
+     * Takes the GPS position out of a shared copy, in formats ExifInterface can rewrite (JPEG, PNG,
+     * WebP; others such as HEIC are sent as they are, as the setting says). True only when the file was
+     * checked afterwards and has no position left, in its EXIF or its XMP; false when that can't be
+     * guaranteed (unreadable file, a failed rewrite, a position that stayed), so it isn't sent.
+     */
+    private fun removeLocation(file: File, mime: String): Boolean {
         val m = mime.lowercase()
         val writable = m == "image/jpeg" || m == "image/jpg" || m == "image/png" || m == "image/webp" ||
             file.extension.lowercase() in setOf("jpg", "jpeg", "png", "webp")
-        if (!writable) return
-        runCatching {
+        if (!writable) return true
+        return runCatching {
             val exif = ExifInterface(file)
-            if (GPS_TAGS.none { exif.getAttribute(it) != null }) return
-            GPS_TAGS.forEach { exif.setAttribute(it, null) }
-            exif.saveAttributes()
-        }.onFailure { AppLog.w("Share", "Couldn't remove the location from a shared photo: ${it.message}") }
+            var changed = false
+            if (GPS_TAGS.any { exif.getAttribute(it) != null }) {
+                GPS_TAGS.forEach { exif.setAttribute(it, null) }
+                changed = true
+            }
+            // Many cameras and editors repeat the position in the XMP block (exif:GPSLatitude...).
+            if (exif.getAttribute(ExifInterface.TAG_XMP)?.contains("GPS") == true) {
+                exif.setAttribute(ExifInterface.TAG_XMP, null)
+                changed = true
+            }
+            if (changed) exif.saveAttributes()
+            hasNoLocation(file)
+        }.getOrElse {
+            AppLog.w("Share", "Couldn't remove the location from a shared photo: ${it.message}")
+            false
+        }
+    }
+
+    /** Reads the file again: no EXIF position, no GPS tags, and no GPS fields anywhere in its bytes (XMP is text). */
+    private fun hasNoLocation(file: File): Boolean {
+        val exif = ExifInterface(file)
+        if (exif.latLong != null || GPS_TAGS.any { exif.getAttribute(it) != null }) return false
+        return !containsText(file, listOf("GPSLatitude", "GPSLongitude"))
+    }
+
+    private fun containsText(file: File, needles: List<String>): Boolean = file.inputStream().use { input ->
+        val overlap = needles.maxOf { it.length } - 1
+        val buf = ByteArray(256 * 1024)
+        var carry = 0
+        var found = false
+        while (!found) {
+            val n = input.read(buf, carry, buf.size - carry)
+            if (n <= 0) break
+            val len = carry + n
+            // ISO-8859-1 maps each byte to one char, so ASCII text is found wherever it is.
+            val text = String(buf, 0, len, Charsets.ISO_8859_1)
+            found = needles.any { text.contains(it) }
+            carry = minOf(overlap, len)
+            System.arraycopy(buf, len - carry, buf, 0, carry)
+        }
+        found
     }
 
     fun shareText(context: Context, text: String) {

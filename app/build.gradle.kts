@@ -22,8 +22,8 @@ android {
         minSdk = 33
         targetSdk = 36
         // Bump both to publish a new release (see CHANGELOG.md).
-        versionCode = 9
-        versionName = "0.2.9"
+        versionCode = 10
+        versionName = "0.2.10"
     }
 
     signingConfigs {

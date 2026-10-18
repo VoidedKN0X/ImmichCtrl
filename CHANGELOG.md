@@ -4,6 +4,20 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.2.10
+
+A security follow-up that closes gaps in 0.2.7's protections, including one opened by moving the You page in 0.2.8.
+
+### Security
+
+- **Read-only mode keeps to Photos again.** Since the You tab moved behind your profile picture, going back from Settings after turning read-only mode on left the You page open, with sign out, accounts, backup and server administration still usable. Read-only mode now closes the You page, Settings, accounts, backup, the server dashboard, the locked folder, shared links and the other screens that change things, and goes back to Photos
+- **Shared photos only go to the account you said yes to.** If you confirmed an upload from another app (or tapped Upload, "Back up now" or album sync) and then switched account or signed out before it started, for example while waiting for a connection, it could upload to whichever account was active by then. Each upload now remembers its account and is cancelled if that account isn't the one in use, and copies of shared files are deleted
+- **The Quick Settings tile respects the backup account.** When automatic backup is set up for another account, the tile no longer starts a backup to the account that happens to be active (it shows "Set up for another account" instead). The check also works right after the phone starts, before the app has loaded its settings
+- **Signing out turns off automatic backup** when it was set up for that account, so it doesn't quietly resume if the account is added again. Every clean-up step on sign out now runs even if an earlier one fails
+- **"Remove location when sharing" no longer lets a location through when something goes wrong.** Each shared photo is now checked after the location is removed, including the copy of the position many cameras and editors keep in the photo's XMP data. If the location can't be removed for sure, the original isn't sent: you get Immich's preview of the photo instead (which has no location), and if even that can't be checked, the share stops with a message. Before, a failure was only logged and the photo was sent with its location
+- **The locked folder always asks for your PIN** (or fingerprint) when you open it. Before, it opened without one if the server still counted the session as unlocked, for example after the app was closed while the folder was open
+- **Another app can no longer pass ImmichCtrl a link to ImmichCtrl's own private files** by writing it in a different form ("content://0@…"). Shared and "Open with" links are now checked against the app that really provides them
+
 ## 0.2.9
 
 ### Fixed
