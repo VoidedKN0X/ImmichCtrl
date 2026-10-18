@@ -47,9 +47,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
+import com.vknxworks.immichctrl.ui.nav.YouRoute
 import com.vknxworks.immichctrl.ui.theme.Gutter
 
 // ---------- Top bars ----------
@@ -75,15 +81,35 @@ fun ScreenTopBar(
     )
 }
 
-/** Big left-aligned title for the main tabs. */
+/** Big left-aligned title for the main tabs, with your profile picture at the end. */
 @Composable
-fun TabTitle(title: String, modifier: Modifier = Modifier, padded: Boolean = true, trailing: @Composable RowScope.() -> Unit = {}) {
+fun TabTitle(
+    title: String,
+    modifier: Modifier = Modifier,
+    padded: Boolean = true,
+    showProfile: Boolean = true,
+    trailing: @Composable RowScope.() -> Unit = {},
+) {
     Row(
         modifier.fillMaxWidth().padding(start = if (padded) Gutter else 0.dp, end = if (padded) 8.dp else 0.dp, top = 12.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
         trailing()
+        if (showProfile) ProfileButton()
+    }
+}
+
+/** The signed-in user's Immich picture; tapping it opens the You page (not in read-only mode). */
+@Composable
+fun ProfileButton() {
+    val c = LocalContext.current.container
+    val nav = LocalNavigator.current
+    val session by c.sessions.active.collectAsStateWithLifecycle()
+    val settings by c.settings.settings.collectAsStateWithLifecycle()
+    val acc = session?.account ?: return
+    IconButton(onClick = { if (!settings.readOnly) nav.navigate(YouRoute) }) {
+        UserAvatar(acc.userId, acc.name, true, null, null, Modifier.size(32.dp).semantics { contentDescription = "You" })
     }
 }
 

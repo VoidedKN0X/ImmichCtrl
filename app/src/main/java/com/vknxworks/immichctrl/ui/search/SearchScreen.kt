@@ -30,15 +30,14 @@ import androidx.compose.material.icons.outlined.NewReleases
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Screenshot
-import androidx.compose.material.icons.outlined.VideoLibrary
-import androidx.compose.material3.FilterChip
 import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.InputChip
-import androidx.compose.runtime.remember
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,6 +46,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -65,10 +65,12 @@ import com.vknxworks.immichctrl.data.api.explore
 import com.vknxworks.immichctrl.data.api.metadataSearch
 import com.vknxworks.immichctrl.data.api.people
 import com.vknxworks.immichctrl.data.api.smartSearch
+import com.vknxworks.immichctrl.data.settings.GroupBy
 import com.vknxworks.immichctrl.ui.components.AssetThumb
 import com.vknxworks.immichctrl.ui.components.LocalBottomClearance
 import com.vknxworks.immichctrl.ui.components.MessageView
 import com.vknxworks.immichctrl.ui.components.PersonFace
+import com.vknxworks.immichctrl.ui.components.ProfileButton
 import com.vknxworks.immichctrl.ui.components.rememberLoader
 import com.vknxworks.immichctrl.ui.nav.CollectionRoute
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
@@ -79,7 +81,6 @@ import com.vknxworks.immichctrl.ui.photos.SelectionContext
 import com.vknxworks.immichctrl.ui.photos.SourceGrid
 import com.vknxworks.immichctrl.ui.photos.rememberPaged
 import com.vknxworks.immichctrl.ui.theme.Gutter
-import com.vknxworks.immichctrl.data.settings.GroupBy
 
 private enum class Mode(val label: String) { SMART("Smart"), FILENAME("File name"), DESCRIPTION("Description"), TEXT("Text in photo") }
 
@@ -103,35 +104,38 @@ fun SearchScreen() {
 
     val searchBar: @Composable () -> Unit = {
         Column(Modifier.statusBarsPadding().padding(top = 8.dp)) {
-            TextField(
-                value = text,
-                onValueChange = { text = it },
-                placeholder = {
-                    Text(if (mode == Mode.SMART) "Search photos, e.g. \"dog on a beach\"" else "Search by ${mode.label.lowercase()}")
-                },
-                leadingIcon = { Icon(Icons.Filled.Search, null) },
-                trailingIcon = {
-                    Row {
-                        if (text.isNotEmpty()) IconButton(onClick = { text = ""; query = "" }) { Icon(Icons.Filled.Close, "Clear") }
-                        IconButton(onClick = { editing = true }) {
-                            BadgedBox(badge = { if (filters.active > 0) Badge { Text(filters.active.toString()) } }) {
-                                Icon(Icons.Outlined.Tune, "Filters")
+            Row(Modifier.fillMaxWidth().padding(start = Gutter, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    placeholder = {
+                        Text(if (mode == Mode.SMART) "Search photos, e.g. \"dog on a beach\"" else "Search by ${mode.label.lowercase()}")
+                    },
+                    leadingIcon = { Icon(Icons.Filled.Search, null) },
+                    trailingIcon = {
+                        Row {
+                            if (text.isNotEmpty()) IconButton(onClick = { text = ""; query = "" }) { Icon(Icons.Filled.Close, "Clear") }
+                            IconButton(onClick = { editing = true }) {
+                                BadgedBox(badge = { if (filters.active > 0) Badge { Text(filters.active.toString()) } }) {
+                                    Icon(Icons.Outlined.Tune, "Filters")
+                                }
                             }
                         }
-                    }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { submit() }),
-                shape = CircleShape,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                ),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter),
-            )
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { submit() }),
+                    shape = CircleShape,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
+                    modifier = Modifier.weight(1f),
+                )
+                ProfileButton()
+            }
             Row(
                 Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = Gutter, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

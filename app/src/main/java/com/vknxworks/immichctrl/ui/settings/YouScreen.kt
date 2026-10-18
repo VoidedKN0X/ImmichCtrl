@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -66,6 +65,7 @@ import com.vknxworks.immichctrl.ui.components.ConfirmDialog
 import com.vknxworks.immichctrl.ui.components.Group
 import com.vknxworks.immichctrl.ui.components.GroupRow
 import com.vknxworks.immichctrl.ui.components.LocalBottomClearance
+import com.vknxworks.immichctrl.ui.components.ScreenTopBar
 import com.vknxworks.immichctrl.ui.components.TextInputDialog
 import com.vknxworks.immichctrl.ui.components.UserAvatar
 import com.vknxworks.immichctrl.ui.components.formatBytes
@@ -79,7 +79,7 @@ import com.vknxworks.immichctrl.ui.nav.SettingsRoute
 import com.vknxworks.immichctrl.ui.theme.Gutter
 import kotlinx.coroutines.launch
 
-/** The You tab: who you're signed in as, your storage, backup, and where the settings live. */
+/** The You page, opened from your profile picture: who you're signed in as, your storage, backup, and where the settings live. */
 @Composable
 fun YouScreen() {
     val context = LocalContext.current
@@ -105,136 +105,139 @@ fun YouScreen() {
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(bottom = 24.dp + LocalBottomClearance.current)) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            val m = me.value
-            Box {
-                UserAvatar(acc.userId, acc.name, true, m?.profileChangedAt, m?.avatarColor, Modifier.size(96.dp).clip(CircleShape).clickable { avatarMenu = true })
-                Icon(
-                    Icons.Filled.PhotoCamera, "Change profile picture",
-                    Modifier.align(Alignment.BottomEnd).size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary).padding(5.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                )
-                DropdownMenu(avatarMenu, onDismissRequest = { avatarMenu = false }) {
-                    DropdownMenuItem(text = { Text("Choose a new picture") }, onClick = {
-                        avatarMenu = false
-                        pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                    })
-                    if (!m?.profileImagePath.isNullOrBlank()) DropdownMenuItem(text = { Text("Remove picture") }, onClick = {
-                        avatarMenu = false
-                        c.runTask("Profile picture removed") { c.api.deleteProfileImage(); me.reload(silent = true) }
-                    })
-                }
-            }
-            Spacer(Modifier.height(14.dp))
-            Text(acc.name.ifBlank { acc.email }, style = MaterialTheme.typography.headlineMedium)
-            Text(
-                listOfNotNull(acc.email.takeIf { it.isNotBlank() && it != acc.name }, if (acc.isAdmin) "Admin" else null).joinToString("  ·  "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            stats.value?.let {
-                Text(
-                    "%,d photos  ·  %,d videos".format(it.images, it.videos),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
-            }
-        }
-
-        // Storage: your quota if you have one, else the server's disk.
-        val m = me.value
-        val quota = m?.quotaSizeInBytes
-        val used = m?.quotaUsageInBytes
-        val disk = storage.value
-        if ((quota != null && used != null) || disk != null) {
-            Group("Storage") {
-                Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                    val (label, fraction) = if (quota != null && quota > 0 && used != null) {
-                        "${formatBytes(used)} of ${formatBytes(quota)} used" to (used.toFloat() / quota)
-                    } else if (disk != null) {
-                        "${disk.diskUse} of ${disk.diskSize} used on the server" to (disk.diskUsagePercentage.toFloat() / 100f)
-                    } else {
-                        "${formatBytes(used ?: 0)} used" to 0f
+    Column(Modifier.fillMaxSize()) {
+        ScreenTopBar("You")
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp + LocalBottomClearance.current)) {
+            Column(Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 8.dp, bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                val m = me.value
+                Box {
+                    UserAvatar(acc.userId, acc.name, true, m?.profileChangedAt, m?.avatarColor, Modifier.size(96.dp).clip(CircleShape).clickable { avatarMenu = true })
+                    Icon(
+                        Icons.Filled.PhotoCamera, "Change profile picture",
+                        Modifier.align(Alignment.BottomEnd).size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary).padding(5.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    DropdownMenu(avatarMenu, onDismissRequest = { avatarMenu = false }) {
+                        DropdownMenuItem(text = { Text("Choose a new picture") }, onClick = {
+                            avatarMenu = false
+                            pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        })
+                        if (!m?.profileImagePath.isNullOrBlank()) DropdownMenuItem(text = { Text("Remove picture") }, onClick = {
+                            avatarMenu = false
+                            c.runTask("Profile picture removed") { c.api.deleteProfileImage(); me.reload(silent = true) }
+                        })
                     }
-                    Text(label, style = MaterialTheme.typography.bodyLarge)
-                    Spacer(Modifier.height(8.dp))
-                    LinearProgressIndicator(progress = { fraction.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
+                }
+                Spacer(Modifier.height(14.dp))
+                Text(acc.name.ifBlank { acc.email }, style = MaterialTheme.typography.headlineMedium)
+                Text(
+                    listOfNotNull(acc.email.takeIf { it.isNotBlank() && it != acc.name }, if (acc.isAdmin) "Admin" else null).joinToString("  ·  "),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                stats.value?.let {
+                    Text(
+                        "%,d photos  ·  %,d videos".format(it.images, it.videos),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
                 }
             }
-        }
 
-        // Immich changes its API between major versions; warn if this server is outside what the app knows.
-        val major = majorVersion(acc.serverVersion)
-        if (major != null && major !in 2..3) {
+            // Storage: your quota if you have one, else the server's disk.
+            val m = me.value
+            val quota = m?.quotaSizeInBytes
+            val used = m?.quotaUsageInBytes
+            val disk = storage.value
+            if ((quota != null && used != null) || disk != null) {
+                Group("Storage") {
+                    Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                        val (label, fraction) = if (quota != null && quota > 0 && used != null) {
+                            "${formatBytes(used)} of ${formatBytes(quota)} used" to (used.toFloat() / quota)
+                        } else if (disk != null) {
+                            "${disk.diskUse} of ${disk.diskSize} used on the server" to (disk.diskUsagePercentage.toFloat() / 100f)
+                        } else {
+                            "${formatBytes(used ?: 0)} used" to 0f
+                        }
+                        Text(label, style = MaterialTheme.typography.bodyLarge)
+                        Spacer(Modifier.height(8.dp))
+                        LinearProgressIndicator(progress = { fraction.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
+                    }
+                }
+            }
+
+            // Immich changes its API between major versions; warn if this server is outside what the app knows.
+            val major = majorVersion(acc.serverVersion)
+            if (major != null && major !in 2..3) {
+                Group {
+                    GroupRow(
+                        "Server version not supported",
+                        "This server runs Immich ${acc.serverVersion}. ImmichCtrl is built for Immich 2.x and 3.x, so some things may not work." +
+                            if (major > 3) " Check for an app update." else " Update the server if you can.",
+                        icon = Icons.Filled.Warning,
+                        iconTint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+
             Group {
                 GroupRow(
-                    "Server version not supported",
-                    "This server runs Immich ${acc.serverVersion}. ImmichCtrl is built for Immich 2.x and 3.x, so some things may not work." +
-                        if (major > 3) " Check for an app update." else " Update the server if you can.",
-                    icon = Icons.Filled.Warning,
-                    iconTint = MaterialTheme.colorScheme.error,
+                    "Backup",
+                    if (settings.backupEnabled) "On  ·  ${if (settings.backupWifiOnly) "Wi-Fi only" else "Wi-Fi and mobile data"}" else "Off",
+                    icon = Icons.Filled.CloudUpload,
+                    showChevron = true,
+                    onClick = { nav.navigate(BackupRoute) },
                 )
             }
-        }
 
-        Group {
-            GroupRow(
-                "Backup",
-                if (settings.backupEnabled) "On  ·  ${if (settings.backupWifiOnly) "Wi-Fi only" else "Wi-Fi and mobile data"}" else "Off",
-                icon = Icons.Filled.CloudUpload,
-                showChevron = true,
-                onClick = { nav.navigate(BackupRoute) },
+            Group("Server") {
+                GroupRow(
+                    acc.serverUrl,
+                    listOfNotNull(
+                        acc.serverVersion?.let { "Immich $it" },
+                        if (acc.isEncrypted) null else "Not encrypted (HTTP)",
+                        when (acc.authType) {
+                            AuthType.API_KEY -> "Signed in with an API key"
+                            AuthType.OAUTH -> "Signed in with OAuth"
+                            AuthType.PASSWORD -> null
+                        },
+                    ).joinToString("  ·  ").ifEmpty { null },
+                    icon = Icons.Filled.Dns,
+                )
+                GroupRow("Open in browser", icon = Icons.Filled.OpenInBrowser, onClick = {
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(acc.serverUrl))) }
+                })
+                if (acc.isAdmin) {
+                    GroupRow("Server administration", "Storage, users and background jobs", icon = Icons.Filled.AdminPanelSettings, showChevron = true, onClick = { nav.navigate(AdminRoute) })
+                }
+                if (storage.value != null && acc.isAdmin) {
+                    GroupRow("Server disk", "${storage.value!!.diskAvailable} free of ${storage.value!!.diskSize}", icon = Icons.Filled.Storage)
+                }
+            }
+
+            Group {
+                GroupRow("Settings", icon = Icons.Filled.Settings, showChevron = true, onClick = { nav.navigate(SettingsRoute) })
+                GroupRow("Servers and accounts", icon = Icons.Filled.SwapHoriz, showChevron = true, onClick = { nav.navigate(AccountsRoute) })
+                if (acc.authType == AuthType.PASSWORD) {
+                    GroupRow("Change password", icon = Icons.Filled.Password, onClick = { changingPassword = true })
+                }
+                GroupRow(
+                    "Sign out",
+                    icon = Icons.AutoMirrored.Filled.Logout,
+                    iconTint = MaterialTheme.colorScheme.error,
+                    titleColor = MaterialTheme.colorScheme.error,
+                    onClick = { confirmSignOut = true },
+                )
+            }
+            Text(
+                "ImmichCtrl ${BuildConfig.VERSION_NAME}  ·  VKNXWorks",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                textAlign = TextAlign.Center,
             )
         }
-
-        Group("Server") {
-            GroupRow(
-                acc.serverUrl,
-                listOfNotNull(
-                    acc.serverVersion?.let { "Immich $it" },
-                    if (acc.isEncrypted) null else "Not encrypted (HTTP)",
-                    when (acc.authType) {
-                        AuthType.API_KEY -> "Signed in with an API key"
-                        AuthType.OAUTH -> "Signed in with OAuth"
-                        AuthType.PASSWORD -> null
-                    },
-                ).joinToString("  ·  ").ifEmpty { null },
-                icon = Icons.Filled.Dns,
-            )
-            GroupRow("Open in browser", icon = Icons.Filled.OpenInBrowser, onClick = {
-                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(acc.serverUrl))) }
-            })
-            if (acc.isAdmin) {
-                GroupRow("Server administration", "Storage, users and background jobs", icon = Icons.Filled.AdminPanelSettings, showChevron = true, onClick = { nav.navigate(AdminRoute) })
-            }
-            if (storage.value != null && acc.isAdmin) {
-                GroupRow("Server disk", "${storage.value!!.diskAvailable} free of ${storage.value!!.diskSize}", icon = Icons.Filled.Storage)
-            }
-        }
-
-        Group {
-            GroupRow("Settings", icon = Icons.Filled.Settings, showChevron = true, onClick = { nav.navigate(SettingsRoute) })
-            GroupRow("Servers and accounts", icon = Icons.Filled.SwapHoriz, showChevron = true, onClick = { nav.navigate(AccountsRoute) })
-            if (acc.authType == AuthType.PASSWORD) {
-                GroupRow("Change password", icon = Icons.Filled.Password, onClick = { changingPassword = true })
-            }
-            GroupRow(
-                "Sign out",
-                icon = Icons.AutoMirrored.Filled.Logout,
-                iconTint = MaterialTheme.colorScheme.error,
-                titleColor = MaterialTheme.colorScheme.error,
-                onClick = { confirmSignOut = true },
-            )
-        }
-        Text(
-            "ImmichCtrl ${BuildConfig.VERSION_NAME}  ·  VKNXWorks",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            textAlign = TextAlign.Center,
-        )
     }
 
     if (confirmSignOut) {

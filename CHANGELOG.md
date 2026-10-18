@@ -4,6 +4,14 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.2.8
+
+### Changed
+
+- The **You** tab is gone from the bar at the bottom. Tap your profile picture at the top right of Photos, Search or Library to open it instead. Everything that was there (your storage, backup, settings, the server dashboard, accounts and sign out) is still on that page, now with a back arrow
+- The bottom bar now has three tabs: Photos, Search and Library. On tablets and unfolded foldables the side rail matches
+- Search and Library now show your profile picture next to the search bar and the title, like Photos already did. Long-pressing the picture on Photos still turns read-only mode on or off
+
 ## 0.2.7
 
 A security and privacy update. Private photos now leave fewer traces on the phone, and nothing is uploaded or sent anywhere without you choosing it.
