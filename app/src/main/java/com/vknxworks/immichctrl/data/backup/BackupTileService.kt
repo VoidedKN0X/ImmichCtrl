@@ -65,6 +65,7 @@ class BackupTileService : TileService() {
                 return@launch
             }
             c.backup.backupNow()
+            c.telemetry.track("backup_run", mapOf("trigger" to "tile"))
             showState(true, "Starting…")
         }
     }

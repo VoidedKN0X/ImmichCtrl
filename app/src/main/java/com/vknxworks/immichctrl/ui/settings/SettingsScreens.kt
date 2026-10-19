@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.LocationOff
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.NotificationsActive
@@ -162,6 +163,16 @@ fun SettingsScreen() {
                 }
                 GroupSwitch("Read-only mode", "Only the timeline, nothing can be changed. Good for handing the phone to a child.", s.readOnly, Icons.Outlined.ChildCare) { v ->
                     update { it.copy(readOnly = v) }
+                }
+            }
+            if (c.telemetry.available) {
+                Group("Usage stats", footer = USAGE_STATS_DESCRIPTION) {
+                    GroupSwitch(
+                        "Share anonymous usage stats",
+                        "Helps decide what to improve next",
+                        s.usageStats,
+                        Icons.Outlined.Insights,
+                    ) { v -> update { it.copy(usageStats = v, usageStatsAsked = true) } }
                 }
             }
             if (session?.account?.isAdmin == true) {

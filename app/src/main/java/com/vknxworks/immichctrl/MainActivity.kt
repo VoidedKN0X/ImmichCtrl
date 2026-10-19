@@ -46,6 +46,7 @@ class MainActivity : FragmentActivity() {
         setRecentsScreenshotEnabled(false)
         enableEdgeToEdge()
         val c = container
+        if (savedInstanceState == null) c.telemetry.appOpened()
         setContent {
             // FLAG_SECURE while the locked folder or the app-lock cover is showing.
             val secure = ScreenPrivacy.secure
