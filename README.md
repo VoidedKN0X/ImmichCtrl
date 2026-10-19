@@ -26,7 +26,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Stacks**: browse, choose the cover photo, unstack
 - **Change the date, time and location** of one photo or many
 - Full details with a mini map and the photo's owner
-- **Cast** photos and videos to a Chromecast or Google TV
+- **Cast** photos and videos to a Chromecast or Google TV (needs Google Play services, which only start once you tap the Cast button)
 - Share at full size or as a smaller file, share a link with an expiry date, password and download options
 
 **Library**
@@ -36,7 +36,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **On this device**: your phone's albums, with what's backed up and what isn't
 - Favourites, archive, trash, recently added (by upload date on Immich 3), videos, tags and folders
 - **Locked folder** with PIN or fingerprint; moving a photo there also removes the copy on the phone
-- **People** (including people shared with you), **places** and a **map** with date and favourite filters
+- **People** (including people shared with you), **places** and a **map** with date and favourite filters (maps follow your server's map setting, and you can turn them off)
 - **Partner sharing** and shared links you can edit later
 
 **Search**
@@ -54,7 +54,9 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 **Privacy and control**
 - **App lock** with your fingerprint, face or screen lock
 - **Read-only mode** for handing the phone to a child: just the timeline, nothing can be changed
-- **Home network address**: the app switches to your local server address on Wi-Fi and back when you leave
+- **Remove location when sharing**: takes the GPS position out of JPEG, PNG and WebP photos you send to other apps (videos and HEIC photos keep theirs)
+- **Show maps** switch: turn off the mini map and Map screen so no map tiles are loaded
+- **Home network address**: on Wi-Fi, the app uses your local server address whenever it answers, and the public one otherwise
 - **Custom headers** (Cloudflare Access, auth proxies) and **client certificates** (mutual TLS)
 
 **Everything else**
@@ -69,6 +71,8 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 
 - Android 13 or newer
 - An Immich server, version 2.x or 3.x
+- Access to your photos and videos, only if you back up or show this phone's photos in the timeline
+- Google Play services, only for casting
 
 ## Install
 
@@ -89,7 +93,9 @@ If the Obtainium button doesn't open the app, add `https://github.com/VoidedKN0X
 
 1. Enter your Immich server address, e.g. `https://photos.example.com`.
 2. Sign in with email and password, OAuth, or an API key.
-3. To back up your phone, open **Backup**, pick the albums to upload and turn it on.
+3. To back up your phone, tap your profile picture at the top right, open **Backup**, tick the albums to back up (or choose **Everything on this phone**) and turn on **Back up automatically**.
+
+Your account, backup, **Settings** and sign out are all on that same page behind your profile picture.
 
 ## Tips and troubleshooting
 
@@ -100,7 +106,7 @@ If the Obtainium button doesn't open the app, add `https://github.com/VoidedKN0X
 - **Quick Settings tile:** pull down the notification shade, tap the pencil and drag **Back up photos** into your tiles.
 - **Widgets:** long-press your home screen, choose **Widgets** and look for ImmichCtrl.
 - **Backup stops in the background?** Open **Backup** and follow the battery warning to let ImmichCtrl run without restrictions.
-- **Read-only mode** is in Settings. To leave it, long-press your profile picture on the Photos tab (and unlock with your fingerprint if one is set up).
+- **Read-only mode** is in **Settings → Privacy**, or long-press your profile picture on the Photos tab. To leave it, long-press the picture again and unlock with your phone's fingerprint, face or screen lock (if the phone has one).
 - **Duplicate review** needs Immich's duplicate detection, which needs smart search (machine learning) on the server.
 - **Something not working?** **Settings → Logs** shows what the app has been doing; copy or share it when reporting a bug.
 - See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
@@ -109,7 +115,7 @@ If the Obtainium button doesn't open the app, add `https://github.com/VoidedKN0X
 
 ImmichCtrl can share anonymous usage stats, **only if you say yes**. It asks once after you sign in, and you can change it any time in **Settings > Usage stats**.
 
-- **Shared:** which screens you open (the kind of screen, never which album, person or place), whether automatic backup is on and when a backup is started, which kind of search you use, which photo actions you use (share, share a link, save, add to an album, new album) with a rough number of photos like "2-10", the app version, Android version, phone model, language, and phone or tablet.
+- **Shared:** which screens you open (the kind of screen, never which album, person or place), whether automatic backup is on, when you turn it on or off and when a backup is started (from the app or the Quick Settings tile), which kind of search you use and whether filters were on, which photo actions you use (share, share a link, save, add to an album, new album) with a rough number of photos like "2-10", the app version, Android version, phone model, language, and phone or tablet.
 - **Never shared:** your server address, email, username or passwords, your photos or anything about them (IDs, file names, locations), album, people, place or tag names, what you search for, exact counts, or any ID that stays the same between sessions.
 - **Where:** VKNXWorks' own self-hosted [Aptabase](https://aptabase.com) server. Nothing goes to Google or analytics companies. Like any website, the server sees your IP address; Aptabase uses it only to work out the country and doesn't store it.
 
