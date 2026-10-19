@@ -4,6 +4,17 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.2
+
+Released 2026-10-19.
+
+### Changed
+
+- **One About section in every Ctrl app**: Support, Report a bug, Source code and Licence (GPL-3.0), with the version underneath, at the bottom of the You page (tap your profile picture). Every Ctrl app now has the same four rows, in the same order, with the same wording and icons
+- **Report a bug** is a new row in **About** that opens ImmichCtrl's GitHub issues page, where you can report a problem or suggest an idea
+- **Source code and issues** is now called **Source code**, since reporting bugs has its own row. It still opens ImmichCtrl's GitHub repository
+- In **Server administration**, the section showing your server's Immich version is now headed **Server** instead of **About**, so **About** only ever means the app itself
+
 ## 0.3.1
 
 Released 2026-10-19.

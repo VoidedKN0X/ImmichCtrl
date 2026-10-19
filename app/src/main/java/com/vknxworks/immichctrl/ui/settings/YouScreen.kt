@@ -32,6 +32,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gavel
@@ -89,6 +90,7 @@ import kotlinx.coroutines.launch
 
 private const val SPONSOR_URL = "https://github.com/sponsors/VoidedKN0X"
 private const val REPO_URL = "https://github.com/VoidedKN0X/ImmichCtrl"
+private const val ISSUES_URL = "$REPO_URL/issues"
 private const val LICENCE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 
 /** The You page, opened from your profile picture: who you're signed in as, your storage, backup, and where the settings live. */
@@ -268,6 +270,13 @@ fun YouScreen() {
                     onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SPONSOR_URL))) } },
                 )
                 GroupRow(
+                    stringResource(R.string.bugs_title),
+                    stringResource(R.string.bugs_subtitle),
+                    icon = Icons.Filled.BugReport,
+                    showChevron = true,
+                    onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ISSUES_URL))) } },
+                )
+                GroupRow(
                     stringResource(R.string.source_title),
                     stringResource(R.string.source_subtitle),
                     icon = Icons.Filled.Code,
@@ -283,7 +292,7 @@ fun YouScreen() {
                 )
             }
             Text(
-                "ImmichCtrl ${BuildConfig.VERSION_NAME}  ·  VKNXWorks",
+                stringResource(R.string.about_footer, BuildConfig.VERSION_NAME),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
