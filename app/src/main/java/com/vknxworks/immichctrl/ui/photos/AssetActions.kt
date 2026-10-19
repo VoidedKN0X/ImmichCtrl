@@ -164,6 +164,13 @@ fun AppContainer.trash(assets: Collection<Asset>, permanently: Boolean) {
     }
 }
 
+/**
+ * Usage stats (only if the user opted in): which kind of action, and a rough size ("2-10"),
+ * never which photos or album.
+ */
+internal fun AppContainer.trackAction(kind: String, count: Int) =
+    telemetry.track("photo_action", mapOf("kind" to kind, "items" to telemetry.sizeBucket(count)))
+
 /** Removes the phone's copy of photos that are backed up (Free Up Space for a few photos). */
 fun AppContainer.deleteFromPhone(assets: Collection<Asset>) {
     val backedUp = assets.filter { it.onDevice && it.localId != null }
@@ -198,7 +205,8 @@ fun AppContainer.restore(assets: Collection<Asset>) {
 }
 
 /** Server photos are added; photos only on this phone are uploaded straight into the album. */
-fun AppContainer.addToAlbum(albumId: String, albumName: String, assets: Collection<Asset>) {
+fun AppContainer.addToAlbum(albumId: String, albumName: String, assets: Collection<Asset>, track: Boolean = true) {
+    if (track) trackAction("add_to_album", assets.size)
     val remote = assets.filter { it.isRemote }.map { it.id }
     val phone = phoneUris(assets.filter { it.isLocalOnly })
     runTask {
@@ -224,6 +232,7 @@ fun AppContainer.removeFromAlbum(albumId: String, assets: Collection<Asset>) {
 }
 
 fun AppContainer.share(assets: Collection<Asset>, large: Boolean) {
+    trackAction(if (large) "share_large" else "share_original", assets.size)
     val remote = assets.filter { it.isRemote }.map { it.id }
     val phone = phoneUris(assets.filter { it.isLocalOnly })
     if (remote.isNotEmpty()) toast(if (assets.size == 1) "Preparing to share…" else "Preparing ${assets.size} items to share…")
@@ -234,6 +243,7 @@ fun AppContainer.share(assets: Collection<Asset>, large: Boolean) {
 fun AppContainer.download(assets: Collection<Asset>) {
     val remote = assets.filter { it.isRemote }
     if (remote.isEmpty()) return
+    trackAction("save_to_phone", remote.size)
     toast("Saving ${countLabel(remote.size, "item")} to Pictures/ImmichCtrl…")
     runTask {
         val n = Exporter.download(context, api, remote.map { it.id })
@@ -244,6 +254,7 @@ fun AppContainer.download(assets: Collection<Asset>) {
 fun AppContainer.shareLink(assets: Collection<Asset>, options: LinkOptions = LinkOptions()) {
     val remote = assets.filter { it.isRemote }
     if (remote.isEmpty()) return
+    trackAction("share_link", remote.size)
     runTask {
         val link = api.createSharedLink(
             assetIds = remote.map { it.id },
@@ -439,11 +450,12 @@ fun SelectionBar(
             pickAlbum = false
             val list = assets
             if (id == null) {
+                c.trackAction("create_album", list.size)
                 c.runTask {
                     val remote = list.filter { it.isRemote }.map { it.id }
                     val album = c.api.createAlbum(name, remote)
                     c.toast("Created $name")
-                    if (list.any { it.isLocalOnly }) c.addToAlbum(album.id, name, list.filter { it.isLocalOnly })
+                    if (list.any { it.isLocalOnly }) c.addToAlbum(album.id, name, list.filter { it.isLocalOnly }, track = false)
                     Sources.refreshAll()
                 }
             } else {

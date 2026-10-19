@@ -100,6 +100,10 @@ fun SearchScreen() {
         text = q
         query = q.trim()
         focus.clearFocus()
+        // Only the kind of search and whether filters were on, never what was searched for.
+        if (query.isNotEmpty()) {
+            c.telemetry.track("search_used", mapOf("mode" to mode.name.lowercase(), "filters" to (filters.active > 0).toString()))
+        }
     }
 
     val searchBar: @Composable () -> Unit = {

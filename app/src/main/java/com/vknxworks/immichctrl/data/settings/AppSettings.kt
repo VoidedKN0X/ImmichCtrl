@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.vknxworks.immichctrl.data.appDataStore
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -83,6 +84,12 @@ data class AppSettings(
     val backupVideos: Boolean = true,
     /** Mirror phone albums to server albums with the same names. */
     val albumSync: Boolean = false,
+
+    // Usage stats
+    /** Opt-in anonymous usage stats (off until the user says yes). */
+    val usageStats: Boolean = false,
+    /** Whether the one-time usage stats question has been answered. */
+    val usageStatsAsked: Boolean = false,
 )
 
 class SettingsRepository(private val context: Context, scope: CoroutineScope) {
@@ -122,11 +129,16 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val charging = booleanPreferencesKey("backup_charging_only")
         val videos = booleanPreferencesKey("backup_videos")
         val albumSync = booleanPreferencesKey("album_sync")
+        val usageStats = booleanPreferencesKey("usage_stats")
+        val usageStatsAsked = booleanPreferencesKey("usage_stats_asked")
     }
 
     val settings: StateFlow<AppSettings> = context.appDataStore.data
         .map { it.toSettings() }
         .stateIn(scope, SharingStarted.Eagerly, AppSettings())
+
+    /** The stored settings as they're read and changed, without [settings]' placeholder defaults at start-up. */
+    val stored: Flow<AppSettings> = context.appDataStore.data.map { it.toSettings() }
 
     private fun Preferences.toSettings() = AppSettings(
         theme = enumOr(this[K.theme], ThemeChoice.SYSTEM),
@@ -164,6 +176,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         backupChargingOnly = this[K.charging] ?: false,
         backupVideos = this[K.videos] ?: true,
         albumSync = this[K.albumSync] ?: false,
+        usageStats = this[K.usageStats] ?: false,
+        usageStatsAsked = this[K.usageStatsAsked] ?: false,
     )
 
     /** The stored settings, read fresh (for background work started before [settings] has loaded). */
@@ -207,6 +221,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.charging] = s.backupChargingOnly
             p[K.videos] = s.backupVideos
             p[K.albumSync] = s.albumSync
+            p[K.usageStats] = s.usageStats
+            p[K.usageStatsAsked] = s.usageStatsAsked
         }
     }
 

@@ -28,6 +28,7 @@ import com.vknxworks.immichctrl.data.offline.OfflineStore
 import com.vknxworks.immichctrl.data.offline.OfflineWorker
 import com.vknxworks.immichctrl.data.security.AppLock
 import com.vknxworks.immichctrl.data.settings.SettingsRepository
+import com.vknxworks.immichctrl.data.telemetry.Telemetry
 import com.vknxworks.immichctrl.data.timeline.Sources
 import com.vknxworks.immichctrl.ui.widget.WidgetWorker
 import kotlinx.coroutines.CoroutineScope
@@ -102,6 +103,7 @@ class AppContainer(val context: Context) {
 
     val sessions = SessionManager(context, http, appScope)
     val settings = SettingsRepository(context, appScope)
+    val telemetry = Telemetry(context, settings, appScope)
     val backupDb = BackupDb(context)
     val backup = BackupManager(context, settings, sessions, backupDb, appScope)
     val local = LocalLibrary(context, backupDb, sessions, settings)

@@ -4,13 +4,21 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
-## Unreleased
+## 0.2.12
 
-README only; the app itself hasn't changed, so this doesn't make a new release.
+Released 2026-10-19.
+
+### New
+
+- **Optional anonymous usage stats.** After you sign in, ImmichCtrl asks once whether you'd like to share anonymous usage stats. Nothing is sent unless you tap **Share stats**, and you can switch it on or off any time in **Settings > Usage stats**
+- **What's shared:** which screens you open (for example "Album", "Person" or "Backup", never which album, person or place), whether automatic backup is on, when you turn it on or off or start a backup by hand or from the Quick Settings tile, which kind of search you use (smart, file name, description or text in photo, and whether filters were on), and which photo actions you use (share, share a link, save to phone, add to an album, new album) with a rough number of photos ("1", "2-10", "11-100" or "100+"). Also the app version, Android version, phone model, language, and whether it's a phone or tablet
+- **What's never shared:** your server address, email, username or passwords, your photos or anything about them (IDs, file names, dates, locations), album, people, place or tag names, what you search for, exact photo counts, or any ID that follows you between sessions. Each session gets a new random ID, and stats from before and after you switch them off and on again aren't linked
+- **Where it goes:** to VKNXWorks' own self-hosted server (Aptabase), not to Google or any analytics company. Stats that can't be sent are dropped, never saved for later. Builds you make from source can't send stats at all, and the setting doesn't appear in them
 
 ### Changed
 
 - **PrintCtrl in the Ctrl series list.** The README's table of Ctrl apps now includes [PrintCtrl](https://github.com/VoidedKN0X/PrintCtrl), the app for Bambu Lab printers through a self-hosted Bambuddy server, and Spoolman spools.
+- The README has a new **Usage stats** section listing exactly what's collected
 
 ## 0.2.11
 
