@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.LocationOff
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Share
@@ -164,6 +165,12 @@ fun SettingsScreen() {
                 GroupSwitch("Read-only mode", "Only the timeline, nothing can be changed. Good for handing the phone to a child.", s.readOnly, Icons.Outlined.ChildCare) { v ->
                     update { it.copy(readOnly = v) }
                 }
+                GroupSwitch(
+                    "Show maps",
+                    "Map tiles come from your server's map provider (Immich's tile server unless your admin chose another), which sees your IP address and the area shown",
+                    s.showMaps,
+                    Icons.Outlined.Map,
+                ) { v -> update { it.copy(showMaps = v) } }
             }
             if (c.telemetry.available) {
                 Group("Usage stats", footer = USAGE_STATS_DESCRIPTION) {

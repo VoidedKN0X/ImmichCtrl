@@ -151,6 +151,18 @@ class AppContainer(val context: Context) {
                     loader.memoryCache?.clear()
                     loader.diskCache?.clear()
                 }
+                // Map tiles cached by the photo's mini map and the Map screen show where photos were taken.
+                withContext(Dispatchers.Main) {
+                    runCatching {
+                        org.maplibre.android.MapLibre.getInstance(context)
+                        org.maplibre.android.offline.OfflineManager.getInstance(context).clearAmbientCache(
+                            object : org.maplibre.android.offline.OfflineManager.FileSourceCallback {
+                                override fun onSuccess() = Unit
+                                override fun onError(message: String) = Unit
+                            },
+                        )
+                    }
+                }
                 AppLog.i("Account", "Signed out of ${acc.serverName}; removed its offline albums and cached photos")
             }
         }
@@ -169,6 +181,9 @@ class AppContainer(val context: Context) {
                 live.setClient(s?.client)
                 offline.setAccount(s?.account?.key)
                 local.changed()
+                // Never another server's settings (its map provider, external domain for shared links...).
+                _features.value = ServerFeaturesDto()
+                _serverConfig.value = ServerConfigDto()
                 if (s == null) return@collect
                 runCatching { s.client.serverFeatures() }.onSuccess { _features.value = it }
                 runCatching { s.client.serverConfig() }.onSuccess { _serverConfig.value = it }

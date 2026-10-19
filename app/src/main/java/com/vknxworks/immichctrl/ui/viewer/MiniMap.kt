@@ -27,16 +27,32 @@ import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Point
 
+/**
+ * The map style to load, or null when no map should be shown. Map tiles come from whoever hosts the style
+ * (Immich's own tile server unless the server's admin picked another), and that host sees the phone's IP
+ * address and which area is shown. So maps only load when the server's admin left the map on, the user
+ * left "Show maps" on, and the style address is https.
+ */
+@Composable
+fun rememberMapStyleUrl(): String? {
+    val c = LocalContext.current.container
+    val features by c.features.collectAsStateWithLifecycle()
+    val config by c.serverConfig.collectAsStateWithLifecycle()
+    // The stored value, not the start-up placeholder, so a map never loads before the setting is known.
+    val stored by c.settings.stored.collectAsStateWithLifecycle(initialValue = null)
+    val dark = isSystemInDarkTheme()
+    if (!features.map || stored?.showMaps != true) return null
+    val url = (if (dark) config.mapDarkStyleUrl else config.mapLightStyleUrl).ifBlank {
+        if (dark) "https://tiles.immich.cloud/v1/style/dark.json" else "https://tiles.immich.cloud/v1/style/light.json"
+    }
+    return url.takeIf { it.startsWith("https://", ignoreCase = true) }
+}
+
 /** A small, still map with a dot where the photo was taken (uses the server's map style). */
 @Composable
 fun MiniMap(lat: Double, lon: Double, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val c = context.container
-    val config by c.serverConfig.collectAsStateWithLifecycle()
-    val dark = isSystemInDarkTheme()
-    val styleUrl = (if (dark) config.mapDarkStyleUrl else config.mapLightStyleUrl).ifBlank {
-        if (dark) "https://tiles.immich.cloud/v1/style/dark.json" else "https://tiles.immich.cloud/v1/style/light.json"
-    }
+    val styleUrl = rememberMapStyleUrl() ?: return
     val accent = MaterialTheme.colorScheme.primary.toArgb()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val mapView = remember {
