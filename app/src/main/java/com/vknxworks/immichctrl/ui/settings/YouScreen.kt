@@ -32,6 +32,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Home
@@ -53,10 +56,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.immichctrl.BuildConfig
+import com.vknxworks.immichctrl.R
 import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.data.api.AuthType
 import com.vknxworks.immichctrl.data.api.assetStats
@@ -81,6 +86,10 @@ import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import com.vknxworks.immichctrl.ui.nav.SettingsRoute
 import com.vknxworks.immichctrl.ui.theme.Gutter
 import kotlinx.coroutines.launch
+
+private const val SPONSOR_URL = "https://github.com/sponsors/VoidedKN0X"
+private const val REPO_URL = "https://github.com/VoidedKN0X/ImmichCtrl"
+private const val LICENCE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 
 /** The You page, opened from your profile picture: who you're signed in as, your storage, backup, and where the settings live. */
 @Composable
@@ -247,6 +256,30 @@ fun YouScreen() {
                     iconTint = MaterialTheme.colorScheme.error,
                     titleColor = MaterialTheme.colorScheme.error,
                     onClick = { confirmSignOut = true },
+                )
+            }
+
+            Group(stringResource(R.string.group_about)) {
+                GroupRow(
+                    stringResource(R.string.support_title),
+                    stringResource(R.string.support_subtitle),
+                    icon = Icons.Filled.Favorite,
+                    showChevron = true,
+                    onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SPONSOR_URL))) } },
+                )
+                GroupRow(
+                    stringResource(R.string.source_title),
+                    stringResource(R.string.source_subtitle),
+                    icon = Icons.Filled.Code,
+                    showChevron = true,
+                    onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(REPO_URL))) } },
+                )
+                GroupRow(
+                    stringResource(R.string.licence_title),
+                    stringResource(R.string.licence_subtitle),
+                    icon = Icons.Filled.Gavel,
+                    showChevron = true,
+                    onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LICENCE_URL))) } },
                 )
             }
             Text(

@@ -4,6 +4,16 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.1
+
+Released 2026-10-19.
+
+### New
+
+- **Support ImmichCtrl** under **About** at the bottom of the You page (tap your profile picture) opens VKNXWorks' GitHub Sponsors page in your browser. ImmichCtrl is free and open source, and sponsoring helps keep it that way
+- **Source code and issues** in the same **About** section opens ImmichCtrl's GitHub repository, where you can read the code or report a bug
+- **Licence** in the same section opens the GNU General Public License v3.0 that ImmichCtrl is released under
+
 ## 0.3.0
 
 Released 2026-10-19. ImmichCtrl is now completely Google-free, and you decide which server address it uses.
