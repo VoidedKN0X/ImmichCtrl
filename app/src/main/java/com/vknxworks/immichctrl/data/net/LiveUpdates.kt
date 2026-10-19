@@ -40,6 +40,12 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
         restart()
     }
 
+    /** Connects again, e.g. after the user switched between the home and public address. */
+    fun reconnect() {
+        attempt = 0
+        restart()
+    }
+
     fun setForeground(fg: Boolean) {
         foreground = fg
         if (fg) restart() else stop()

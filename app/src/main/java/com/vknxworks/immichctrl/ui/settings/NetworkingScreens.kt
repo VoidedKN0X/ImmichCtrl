@@ -26,8 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -60,8 +60,9 @@ import com.vknxworks.immichctrl.ui.theme.Gutter
 import kotlinx.coroutines.launch
 
 /**
- * Per-account connection options: a home-network address used whenever it answers on Wi-Fi, extra
- * headers for servers behind an auth proxy, and a client certificate for servers that require mTLS.
+ * Per-account connection options: which saved address is in use (public or home network, picked by
+ * the user and never switched automatically), the home address itself, extra headers for servers
+ * behind an auth proxy, and a client certificate for servers that require mTLS.
  */
 @Composable
 fun NetworkingScreen() {
@@ -82,17 +83,39 @@ fun NetworkingScreen() {
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar("Networking")
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
-            Group("Now connected through") {
-                val now = if (usingLocal) acc.localUrl.orEmpty() else acc.serverUrl
+            fun pick(home: Boolean) {
+                if (home == usingLocal) return
+                scope.launch {
+                    c.useAddress(home)
+                    c.toast(if (home) "Using the home address" else "Using the public address")
+                }
+            }
+            fun described(url: String) = if (url.startsWith("http://", ignoreCase = true)) "$url  ·  Not encrypted (HTTP)" else url
+            Group(
+                "Address in use",
+                footer = "The app always uses the address you pick here and never switches by itself. " +
+                    "Pick the public address before you leave your home network.",
+            ) {
                 GroupRow(
-                    if (usingLocal) "Home network" else "Public address",
-                    if (now.startsWith("http://", ignoreCase = true)) "$now  ·  Not encrypted (HTTP)" else now,
-                    icon = if (usingLocal) Icons.Outlined.Home else Icons.Outlined.Public,
+                    "Use public address",
+                    described(acc.serverUrl),
+                    icon = Icons.Outlined.Public,
+                    onClick = { pick(false) },
+                    trailing = { RadioButton(selected = !usingLocal, onClick = { pick(false) }) },
+                )
+                val home = acc.localUrl
+                GroupRow(
+                    "Use home address",
+                    home?.let { described(it) } ?: "Add a home network address below first",
+                    icon = Icons.Outlined.Home,
+                    onClick = if (home != null) ({ pick(true) }) else null,
+                    trailing = { RadioButton(selected = usingLocal, onClick = { pick(true) }, enabled = home != null) },
                 )
             }
             Group(
                 "Home network address",
-                footer = "When you're on Wi-Fi and this address answers, the app uses it instead of ${acc.serverName}: faster, and it works even if the internet is down. Leave empty to always use the public address.",
+                footer = "Your server's address on your home network, e.g. its IP and port: faster, and it works even if the internet is down. " +
+                    "Save it, then pick it under Address in use. Leave empty to remove it.",
             ) {
                 OutlinedTextField(
                     localUrl, { localUrl = it },
@@ -153,16 +176,14 @@ fun NetworkingScreen() {
                 enabled = changed,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 16.dp),
             )
-            TextButton(onClick = { c.router.recheck(); c.toast("Checking the home address…") }, modifier = Modifier.padding(horizontal = Gutter)) {
-                Text("Check the home address again")
-            }
             Spacer(Modifier.height(24.dp))
             if (confirmHttp) {
                 ConfirmDialog(
                     "Use an unencrypted home address?",
-                    "This address uses plain HTTP. Whenever the phone is on Wi-Fi and something answers there, the app sends your " +
-                        "sign-in and photos to it unencrypted. Anyone on that network can read them, and another network " +
-                        "could have a device at the same address. Only use it if you trust your home network.",
+                    "This address uses plain HTTP. While you use it, the app sends your sign-in and photos to it unencrypted, " +
+                        "so anyone on that network can read them. The app doesn't check which network you're on: on another network, " +
+                        "a different device could be at the same address. Only use it on a home network you trust, and pick the " +
+                        "public address before you leave.",
                     "Use HTTP",
                     onDismiss = { confirmHttp = false },
                 ) {

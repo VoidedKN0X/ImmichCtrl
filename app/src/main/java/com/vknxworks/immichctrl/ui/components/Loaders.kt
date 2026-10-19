@@ -17,20 +17,25 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.data.api.ApiException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -183,9 +188,36 @@ fun LoadingView(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
 }
 
+/**
+ * A failed load, with Retry. When the account has a home address saved, it also offers to switch to the
+ * other address (the app never switches by itself) and retries once the switch is done.
+ */
 @Composable
 fun ErrorView(message: String, modifier: Modifier = Modifier, onRetry: (() -> Unit)? = null) {
-    MessageView(Icons.Outlined.ErrorOutline, "Couldn't load this", message, modifier, actionLabel = onRetry?.let { "Retry" }, onAction = onRetry)
+    val c = LocalContext.current.container
+    val session by c.sessions.active.collectAsStateWithLifecycle()
+    val usingLocal by c.router.usingLocal.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+    val acc = session?.account
+    if (acc?.localUrl == null) {
+        MessageView(Icons.Outlined.ErrorOutline, "Couldn't load this", message, modifier, actionLabel = onRetry?.let { "Retry" }, onAction = onRetry)
+        return
+    }
+    MessageView(
+        Icons.Outlined.ErrorOutline,
+        "Couldn't load this",
+        "$message\n\nConnected through your ${if (usingLocal) "home" else "public"} address.",
+        modifier,
+        actionLabel = onRetry?.let { "Retry" },
+        onAction = onRetry,
+        secondaryLabel = if (usingLocal) "Use public address" else "Use home address",
+        onSecondary = {
+            scope.launch {
+                c.useAddress(!usingLocal)
+                onRetry?.invoke()
+            }
+        },
+    )
 }
 
 @Composable
@@ -196,6 +228,8 @@ fun MessageView(
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
+    secondaryLabel: String? = null,
+    onSecondary: (() -> Unit)? = null,
 ) {
     Box(modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
         Column(
@@ -220,6 +254,9 @@ fun MessageView(
             }
             if (actionLabel != null && onAction != null) {
                 FilledTonalButton(onClick = onAction, shape = CircleShape) { Text(actionLabel) }
+            }
+            if (secondaryLabel != null && onSecondary != null) {
+                TextButton(onClick = onSecondary) { Text(secondaryLabel) }
             }
         }
     }

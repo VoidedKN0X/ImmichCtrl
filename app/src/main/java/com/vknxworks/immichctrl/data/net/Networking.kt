@@ -1,49 +1,40 @@
 package com.vknxworks.immichctrl.data.net
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
 import android.security.KeyChain
 import com.vknxworks.immichctrl.data.log.AppLog
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.net.Socket
 import java.security.KeyStore
 import java.security.Principal
 import java.security.PrivateKey
 import java.security.cert.X509Certificate
-import java.util.concurrent.TimeUnit
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
 import javax.net.ssl.X509TrustManager
 
-/** Request tag: send to exactly this URL (used to test the home address). */
-object NoRewrite
-
 /**
  * Per-account connection settings, applied to every request the app makes (API, images, video,
  * downloads, live updates):
  * - extra headers, for servers behind Cloudflare Access, Authelia and similar proxies;
- * - a home-network address used instead of the public one whenever it answers on Wi-Fi;
+ * - which saved address is in use: the public one, or the home-network one. The user picks it; the app
+ *   never tests addresses or switches between them by itself;
  * - a client certificate from Android's certificate store, for servers that require mTLS.
  */
-class NetworkRouter(private val context: Context, private val scope: CoroutineScope) {
+class NetworkRouter(private val context: Context) {
     data class Config(
         val external: HttpUrl? = null,
         val local: HttpUrl? = null,
+        /** The user chose the home address (only honoured while one is saved). */
+        val useLocal: Boolean = false,
         val headers: Map<String, String> = emptyMap(),
         val certAlias: String? = null,
     )
@@ -55,30 +46,17 @@ class NetworkRouter(private val context: Context, private val scope: CoroutineSc
     /** True while requests go to the home-network address. */
     val usingLocal: StateFlow<Boolean> = _usingLocal.asStateFlow()
 
-    private var probeJob: Job? = null
-
-    /**
-     * Plain client used only to test whether the home address answers. It never follows redirects:
-     * a captive portal or anything else that isn't the Immich server must not be mistaken for it.
-     */
-    private val probeClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(3, TimeUnit.SECONDS)
-            .readTimeout(3, TimeUnit.SECONDS)
-            .followRedirects(false)
-            .followSslRedirects(false)
-            .addNetworkInterceptor(CleartextPolicy.interceptor)
-            .build()
-    }
-
-    fun configure(external: String?, local: String?, headers: Map<String, String>, certAlias: String?) {
+    fun configure(external: String?, local: String?, useLocal: Boolean, headers: Map<String, String>, certAlias: String?) {
         val ext = external?.toHttpUrlOrNull()
         val loc = local?.trim()?.trimEnd('/')?.removeSuffix("/api")?.takeIf { it.isNotBlank() }?.toHttpUrlOrNull()
         loc?.let { CleartextPolicy.allowServer(it.toString()) }
-        config = Config(ext, loc, headers.filterKeys { it.isNotBlank() }, certAlias?.ifBlank { null })
+        val home = useLocal && loc != null
+        config = Config(ext, loc, home, headers.filterKeys { it.isNotBlank() }, certAlias?.ifBlank { null })
         keyManager.reset()
-        _usingLocal.value = false
-        recheck()
+        if (_usingLocal.value != home && ext != null) {
+            AppLog.i("Network", if (home) "Using the home address ${loc!!.host}" else "Using the public address")
+        }
+        _usingLocal.value = home
     }
 
     /** Whether [url] goes to the signed-in server, at either of its addresses. */
@@ -90,12 +68,12 @@ class NetworkRouter(private val context: Context, private val scope: CoroutineSc
     private fun sameOrigin(a: HttpUrl, b: HttpUrl?) =
         b != null && a.host.equals(b.host, true) && a.port == b.port && a.scheme == b.scheme
 
-    /** Application interceptor: route to the home address when it's reachable, and add custom headers. */
+    /** Application interceptor: route to the home address when the user picked it, and add custom headers. */
     val interceptor = Interceptor { chain ->
         var req: Request = chain.request()
         val c = config
-        if (c.external != null && req.tag(NoRewrite::class.java) == null) {
-            if (_usingLocal.value && c.local != null && sameOrigin(req.url, c.external)) {
+        if (c.external != null) {
+            if (c.useLocal && c.local != null && sameOrigin(req.url, c.external)) {
                 val path = c.local.encodedPath.trimEnd('/') + req.url.encodedPath
                 val url = req.url.newBuilder()
                     .scheme(c.local.scheme)
@@ -133,48 +111,6 @@ class NetworkRouter(private val context: Context, private val scope: CoroutineSc
         val b = req.newBuilder()
         req.headers.names().forEach { n -> if (n.lowercase() in strip) b.removeHeader(n) }
         chain.proceed(b.build())
-    }
-
-    /** Re-test the home address, e.g. after the network changed. */
-    fun recheck() {
-        probeJob?.cancel()
-        val local = config.local ?: run { _usingLocal.value = false; return }
-        probeJob = scope.launch {
-            delay(500)
-            val onWifi = isOnLocalNetwork()
-            val ok = onWifi && runCatching {
-                val req = Request.Builder()
-                    .url(local.newBuilder().addPathSegments("api/server/ping").build())
-                    .tag(NoRewrite::class.java, NoRewrite)
-                    .apply { config.headers.forEach { (k, v) -> header(k, v) } }
-                    .build()
-                // Only a real Immich answer counts ({"res":"pong"}), not any page that returns 200.
-                probeClient.newCall(req).execute().use { resp ->
-                    resp.isSuccessful && resp.body?.string()?.take(200)?.contains("\"pong\"", ignoreCase = true) == true
-                }
-            }.getOrDefault(false)
-            if (_usingLocal.value != ok) AppLog.i("Network", if (ok) "Using the home address ${local.host}" else "Using the public address")
-            _usingLocal.value = ok
-        }
-    }
-
-    private fun isOnLocalNetwork(): Boolean {
-        val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false
-        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
-        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-    }
-
-    /** Watches for network changes so the home address is picked up (or dropped) right away. */
-    fun watchNetwork() {
-        val cm = context.getSystemService(ConnectivityManager::class.java) ?: return
-        cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) = recheck()
-            override fun onLost(network: Network) = recheck()
-            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-                val wifi = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                if (wifi != _usingLocal.value) recheck()
-            }
-        })
     }
 
     // ---------------- Client certificates ----------------

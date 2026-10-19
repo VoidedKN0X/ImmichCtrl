@@ -40,8 +40,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -50,8 +52,8 @@ import java.util.concurrent.TimeUnit
 class AppContainer(val context: Context) {
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    /** Home address, extra headers and client certificate for the signed-in account. */
-    val router = NetworkRouter(context, appScope)
+    /** Address in use (public or home), extra headers and client certificate for the signed-in account. */
+    val router = NetworkRouter(context)
 
     val http: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -166,12 +168,14 @@ class AppContainer(val context: Context) {
                 AppLog.i("Account", "Signed out of ${acc.serverName}; removed its offline albums and cached photos")
             }
         }
-        router.watchNetwork()
         local.watchGallery()
         appScope.launch {
             sessions.active.distinctUntilChangedBy { it?.account }.collect { s ->
                 val acc = s?.account
-                router.configure(acc?.serverUrl, acc?.localUrl, acc?.headers.orEmpty(), acc?.clientCert)
+                val wasLocal = router.usingLocal.value
+                router.configure(acc?.serverUrl, acc?.localUrl, acc?.useLocalUrl == true, acc?.headers.orEmpty(), acc?.clientCert)
+                // Same account, other address: live updates move over too.
+                if (wasLocal != router.usingLocal.value) live.reconnect()
                 s?.client?.extraHeaders = acc?.headers.orEmpty()
             }
         }
@@ -200,7 +204,6 @@ class AppContainer(val context: Context) {
             ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
                     live.setForeground(true)
-                    router.recheck()
                     appScope.launch { appLock.onForeground() }
                 }
 
@@ -210,6 +213,17 @@ class AppContainer(val context: Context) {
                 }
             })
         }
+    }
+
+    /**
+     * Switches the signed-in account to its home address ([useLocal]) or its public address, because the
+     * user asked to, and waits until requests go there. The app never calls this on its own.
+     */
+    suspend fun useAddress(useLocal: Boolean) {
+        val acc = sessions.active.value?.account ?: return
+        val target = useLocal && acc.localUrl != null
+        sessions.useLocalAddress(acc.key, target)
+        withTimeoutOrNull(3_000) { router.usingLocal.first { it == target } }
     }
 
     /** Client for the signed-in account. Screens are only shown while signed in. */
