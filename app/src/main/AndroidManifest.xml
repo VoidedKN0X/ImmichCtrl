@@ -111,10 +111,17 @@
                 android:resource="@xml/widget_random" />
         </receiver>
 
-        <!-- Google Cast: photos and videos to a TV (Default Media Receiver). -->
-        <meta-data
-            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-            android:value="com.vknxworks.immichctrl.ui.viewer.CastOptionsProvider" />
+        <!-- No downloadable emoji font: androidx.emoji2 would ask Google Play services for one on start.
+             Emoji use the phone's own font. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
 
         <!-- Backups run as WorkManager jobs; long ones show a progress notification. -->
         <service

@@ -4,11 +4,34 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
-## Unreleased
+## 0.3.0
+
+Released 2026-10-19. ImmichCtrl is now completely Google-free, and you decide which server address it uses.
+
+### New
+
+- **You choose which address the app uses.** If you've saved a home network address for your server, **Settings > Networking** now has an **Address in use** section with two choices: **Use public address** and **Use home address**. The app uses the one you pick for everything (photos, videos, backup, live updates) and stays on it, even after you leave Wi-Fi or restart the app, until you pick the other one
+- **Switch from your profile page.** When a home address is saved, the page behind your profile picture shows which address you're on under **Server**, with a **Use home address** or **Use public address** row to switch in one tap
+- **Switch from an error.** When something fails to load and you have a home address saved, the error now says which address you're connected through and offers **Use home address** or **Use public address** next to **Retry**. Tapping it switches and tries again straight away. The app never switches on its own
 
 ### Changed
 
-- **README brought up to date with 0.2.13.** The feature list now mentions the **Show maps** switch, that maps follow your server's map setting, **Remove location when sharing**, and that Cast needs Google Play services and only starts once you tap the Cast button. The home network address is now described exactly: on Wi-Fi, the app uses it whenever it answers. **Getting started** explains that Backup and Settings are behind your profile picture (the You tab is gone), with the current button names, and the read-only tip now says how to turn it on from the profile picture and that leaving it asks for your phone's fingerprint, face or screen lock. **Usage stats** now also lists turning automatic backup on or off, Quick Settings tile backups and whether search filters were on, matching what the app sends. Nothing in the app has changed.
+- **No more automatic switching between addresses.** The app used to check, whenever you were on Wi-Fi or Ethernet, whether your home address answered, and switch to it (and back to the public address when it stopped answering) by itself. It no longer watches your network or tests addresses in the background. If you're at home and want the faster home address, pick it once; pick the public address again before you leave your home network, or the app won't be able to reach your server
+- **After updating, you're on your public address.** Accounts with a home address saved start on the public address (the one you signed in with). Your home address is kept: pick **Use home address** in **Settings > Networking** or on your profile page if you want it
+- **Removing the home address** (clearing it in **Settings > Networking** and saving) moves you back to the public address
+- The **Check the home address again** button is gone, since there's nothing to check any more
+- The warning shown when you save a home address that uses plain HTTP now explains that the app doesn't check which network you're on, so you should pick the public address before leaving home
+- The **Networking** entry in Settings now reads "Public or home address, custom headers, client certificate"
+- **README brought up to date.** It now says ImmichCtrl is Google-free, describes how picking an address works, and no longer mentions casting. Earlier README updates since 0.2.13 are included too: the feature list mentions the **Show maps** switch, that maps follow your server's map setting and **Remove location when sharing**; **Getting started** explains that Backup and Settings are behind your profile picture, with the current button names; the read-only tip says how to turn it on from the profile picture and that leaving it asks for your phone's fingerprint, face or screen lock; and **Usage stats** lists turning automatic backup on or off, Quick Settings tile backups and whether search filters were on, matching what the app sends
+
+### Removed
+
+- **Casting to Chromecast and Google TV.** The Cast button in the photo viewer is gone. Casting needed Google's Cast library from Google Play services, which reports Cast usage to Google, so it doesn't fit a Google-free app. There's no replacement for now
+
+### Privacy
+
+- **Google-free.** ImmichCtrl no longer contains any Google Play services code (the Cast library was the last part) and never talks to Google. It also no longer asks Google Play services for an emoji font when it starts: emoji now use your phone's own emoji font
+- **No network watching.** The app no longer registers for Wi-Fi and network changes or sends test requests to your home address in the background
 
 ## 0.2.13
 

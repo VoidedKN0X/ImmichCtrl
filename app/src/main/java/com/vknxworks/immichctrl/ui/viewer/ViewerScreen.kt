@@ -300,7 +300,6 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                         Icon(if (playLive) Icons.Outlined.MotionPhotosPaused else Icons.Outlined.MotionPhotosOn, "Live photo", tint = Color.White)
                     }
                 }
-                if (current?.isRemote == true) CastButton(current, Color.White)
             }
         }
 

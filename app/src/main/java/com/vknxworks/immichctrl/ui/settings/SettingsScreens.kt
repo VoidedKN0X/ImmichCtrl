@@ -195,7 +195,7 @@ fun SettingsScreen() {
                 }
             }
             Group("Connection and help") {
-                GroupRow("Networking", "Local address, custom headers, client certificate", icon = Icons.Outlined.Wifi, showChevron = true, onClick = { nav.navigate(NetworkingRoute) })
+                GroupRow("Networking", "Public or home address, custom headers, client certificate", icon = Icons.Outlined.Wifi, showChevron = true, onClick = { nav.navigate(NetworkingRoute) })
                 GroupRow("Logs", "What the app has been doing, to help track down problems", icon = Icons.Outlined.BugReport, showChevron = true, onClick = { nav.navigate(LogsRoute) })
             }
             Group("Storage on this phone", footer = "Thumbnails and previews are kept so the grid scrolls fast offline. Takes effect next time the app starts.") {

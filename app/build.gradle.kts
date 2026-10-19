@@ -34,8 +34,8 @@ android {
         minSdk = 33
         targetSdk = 36
         // Bump both to publish a new release (see CHANGELOG.md).
-        versionCode = 13
-        versionName = "0.2.13"
+        versionCode = 14
+        versionName = "0.3.0"
 
         buildConfigField("String", "APTABASE_KEY", "\"${aptabaseKey.replace("\"", "")}\"")
         buildConfigField("String", "APTABASE_HOST", "\"$aptabaseHost\"")
@@ -142,7 +142,4 @@ dependencies {
     implementation(libs.haze)
     implementation(libs.maplibre)
     implementation(libs.androidx.biometric)
-    implementation(libs.cast.framework)
-    implementation(libs.androidx.mediarouter)
-    implementation(libs.androidx.appcompat)
 }

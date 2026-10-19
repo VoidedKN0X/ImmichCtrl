@@ -26,7 +26,6 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Stacks**: browse, choose the cover photo, unstack
 - **Change the date, time and location** of one photo or many
 - Full details with a mini map and the photo's owner
-- **Cast** photos and videos to a Chromecast or Google TV (needs Google Play services, which only start once you tap the Cast button)
 - Share at full size or as a smaller file, share a link with an expiry date, password and download options
 
 **Library**
@@ -56,7 +55,8 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Read-only mode** for handing the phone to a child: just the timeline, nothing can be changed
 - **Remove location when sharing**: takes the GPS position out of JPEG, PNG and WebP photos you send to other apps (videos and HEIC photos keep theirs)
 - **Show maps** switch: turn off the mini map and Map screen so no map tiles are loaded
-- **Home network address**: on Wi-Fi, the app uses your local server address whenever it answers, and the public one otherwise
+- **Home network address**: save your server's local address next to the public one and pick which one the app uses (**Use home address** / **Use public address**). It sticks to your choice and never switches by itself
+- **Google-free**: no Google Play services, Firebase, Cast or other proprietary Google code, and the app never contacts Google (emoji use your phone's own font)
 - **Custom headers** (Cloudflare Access, auth proxies) and **client certificates** (mutual TLS)
 
 **Everything else**
@@ -72,7 +72,6 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - Android 13 or newer
 - An Immich server, version 2.x or 3.x
 - Access to your photos and videos, only if you back up or show this phone's photos in the timeline
-- Google Play services, only for casting
 
 ## Install
 
@@ -102,7 +101,9 @@ Your account, backup, **Settings** and sign out are all on that same page behind
 - **OAuth** uses the same redirect as Immich's official app, so servers already set up for it work. If both apps are installed, Android may ask which one should finish the sign-in.
 - **Plain HTTP** works, but the app warns you first because your password would be sent unencrypted.
 - **Server behind Cloudflare Access or another proxy?** Tap **Advanced: custom headers** on the sign-in screen and add the headers there. You can change them later in **Settings → Networking**.
-- **Home network address and client certificates** are in **Settings → Networking**. For a client certificate, install it in Android's settings first (Security → Encryption & credentials), then pick it in the app.
+- **Home network address:** add it in **Settings → Networking**, then pick **Use home address** under **Address in use**. The app stays on the address you picked, even away from home, so pick **Use public address** before you leave (also on your profile page, or from the button on a "Couldn't load this" error). After updating from 0.2.x, the app starts on the public address.
+- **Client certificates** are in **Settings → Networking** too. Install the certificate in Android's settings first (Security → Encryption & credentials), then pick it in the app.
+- **Casting isn't supported.** It would need Google Play services, and ImmichCtrl is Google-free.
 - **Quick Settings tile:** pull down the notification shade, tap the pencil and drag **Back up photos** into your tiles.
 - **Widgets:** long-press your home screen, choose **Widgets** and look for ImmichCtrl.
 - **Backup stops in the background?** Open **Backup** and follow the battery warning to let ImmichCtrl run without restrictions.
@@ -126,7 +127,8 @@ Builds from source don't include the stats key, so they can't send anything and 
 Apart from your own Immich server (and the opt-in stats above), ImmichCtrl only contacts:
 
 - **Your server's map provider**, for the mini map in a photo's details and the Map screen: Immich's tile server (`tiles.immich.cloud`) unless your admin chose another map style. It sees your IP address and the area shown. Maps only load when the map is turned on in your server's settings, and you can turn them off in **Settings > Privacy > Show maps**.
-- **Google Play services**, only after you tap the Cast button. Google's Cast library reports Cast usage to Google.
+
+Nothing else: no Google services, no ads, no other analytics.
 
 ## Build from source
 

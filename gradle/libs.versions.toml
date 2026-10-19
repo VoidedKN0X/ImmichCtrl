@@ -19,9 +19,6 @@ exifinterface = "1.4.1"
 haze = "1.6.10"
 maplibre = "11.8.0"
 biometric = "1.1.0"
-cast = "21.5.0"
-mediarouter = "1.7.0"
-appcompat = "1.7.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -54,9 +51,6 @@ media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 maplibre = { module = "org.maplibre.gl:android-sdk", version.ref = "maplibre" }
 androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
-cast-framework = { module = "com.google.android.gms:play-services-cast-framework", version.ref = "cast" }
-androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
-androidx-mediarouter = { module = "androidx.mediarouter:mediarouter", version.ref = "mediarouter" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

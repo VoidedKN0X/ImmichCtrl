@@ -570,9 +570,6 @@ data class DuplicateGroupDto(
 )
 
 @Serializable
-data class SessionTokenDto(val id: String = "", val token: String, val expiresAt: String? = null)
-
-@Serializable
 data class VersionCheckDto(val checkedAt: String? = null, val releaseVersion: String? = null)
 
 @Serializable

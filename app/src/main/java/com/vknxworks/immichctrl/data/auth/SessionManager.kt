@@ -50,8 +50,13 @@ data class Account(
     val secretEnc: String,
     val isAdmin: Boolean = false,
     val serverVersion: String? = null,
-    /** Address used instead of [serverUrl] while it answers on Wi-Fi (e.g. http://192.168.1.10:2283). */
+    /** The server's address on the home network (e.g. http://192.168.1.10:2283), used only while [useLocalUrl] is on. */
     val localUrl: String? = null,
+    /**
+     * The user picked [localUrl] as the address to use. Never changed by the app itself; accounts saved by
+     * older versions (which switched automatically) start on the public address.
+     */
+    val useLocalUrl: Boolean = false,
     /** Extra headers sent with every request to this server (proxy tokens and the like). */
     val headers: Map<String, String> = emptyMap(),
     /** Alias of a client certificate in Android's certificate store, for servers that require one. */
@@ -290,10 +295,24 @@ class SessionManager(
     /** Saves connection settings for an account (home address, headers, client certificate). */
     suspend fun updateNetworking(key: String, localUrl: String?, headers: Map<String, String>, clientCert: String?) {
         val acc = _accounts.value.firstOrNull { it.key == key } ?: return
-        val updated = acc.copy(localUrl = localUrl?.trim()?.ifBlank { null }, headers = headers, clientCert = clientCert)
-        persist(_accounts.value.map { if (it.key == key) updated else it }, _active.value?.account?.key)
+        val home = localUrl?.trim()?.ifBlank { null }
+        // Removing the home address goes back to the public one; otherwise the user's choice stays.
+        val updated = acc.copy(localUrl = home, useLocalUrl = acc.useLocalUrl && home != null, headers = headers, clientCert = clientCert)
+        replace(updated)
+    }
+
+    /** Which saved address the account uses: the home address ([useLocal]) or the public one. Only the user changes it. */
+    suspend fun useLocalAddress(key: String, useLocal: Boolean) {
+        val acc = _accounts.value.firstOrNull { it.key == key } ?: return
+        val updated = acc.copy(useLocalUrl = useLocal && acc.localUrl != null)
+        if (updated == acc) return
+        replace(updated)
+    }
+
+    private suspend fun replace(updated: Account) {
+        persist(_accounts.value.map { if (it.key == updated.key) updated else it }, _active.value?.account?.key)
         val s = _active.value
-        if (s != null && s.account.key == key) _active.value = ActiveSession(updated, s.client)
+        if (s != null && s.account.key == updated.key) _active.value = ActiveSession(updated, s.client)
     }
 
     /** Refreshes name, admin flag and server version for the active account. */

@@ -34,6 +34,8 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Settings
@@ -71,6 +73,7 @@ import com.vknxworks.immichctrl.ui.components.UserAvatar
 import com.vknxworks.immichctrl.ui.components.formatBytes
 import com.vknxworks.immichctrl.ui.components.rememberLoader
 import com.vknxworks.immichctrl.ui.components.runTask
+import com.vknxworks.immichctrl.ui.components.toast
 import com.vknxworks.immichctrl.ui.nav.AccountsRoute
 import com.vknxworks.immichctrl.ui.nav.AdminRoute
 import com.vknxworks.immichctrl.ui.nav.BackupRoute
@@ -205,6 +208,22 @@ fun YouScreen() {
                     ).joinToString("  ·  ").ifEmpty { null },
                     icon = Icons.Filled.Dns,
                 )
+                // Two saved addresses: switching is always the user's choice, never automatic.
+                val home = acc.localUrl
+                if (home != null) {
+                    val onHome = acc.useLocalUrl
+                    GroupRow(
+                        if (onHome) "Use public address" else "Use home address",
+                        "Now using the ${if (onHome) "home" else "public"} address: ${if (onHome) home else acc.serverUrl}",
+                        icon = if (onHome) Icons.Filled.Public else Icons.Filled.Home,
+                        onClick = {
+                            scope.launch {
+                                c.useAddress(!onHome)
+                                c.toast(if (onHome) "Using the public address" else "Using the home address")
+                            }
+                        },
+                    )
+                }
                 GroupRow("Open in browser", icon = Icons.Filled.OpenInBrowser, onClick = {
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(acc.serverUrl))) }
                 })
