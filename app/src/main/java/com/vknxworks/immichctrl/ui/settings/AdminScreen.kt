@@ -148,7 +148,7 @@ fun AdminScreen() {
                 }
             }
             about.value?.let { a ->
-                Group("About") {
+                Group("Server") {
                     GroupRow("Immich ${a.version}", if (a.licensed) "Licensed" else null, icon = Icons.Outlined.Info)
                 }
             }
