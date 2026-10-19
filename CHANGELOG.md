@@ -4,6 +4,12 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Changed
+
+- **README brought up to date with 0.2.13.** The feature list now mentions the **Show maps** switch, that maps follow your server's map setting, **Remove location when sharing**, and that Cast needs Google Play services and only starts once you tap the Cast button. The home network address is now described exactly: on Wi-Fi, the app uses it whenever it answers. **Getting started** explains that Backup and Settings are behind your profile picture (the You tab is gone), with the current button names, and the read-only tip now says how to turn it on from the profile picture and that leaving it asks for your phone's fingerprint, face or screen lock. **Usage stats** now also lists turning automatic backup on or off, Quick Settings tile backups and whether search filters were on, matching what the app sends. Nothing in the app has changed.
+
 ## 0.2.13
 
 Released 2026-10-19. Fourth security and privacy review, focused on what the app sends to anyone other than your own server.
