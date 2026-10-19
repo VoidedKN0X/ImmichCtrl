@@ -105,6 +105,14 @@ class AdminAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
                 .setContentText(text)
                 .setContentIntent(open)
                 .setAutoCancel(true)
+                // The server's name and details stay off the lock screen.
+                .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+                .setPublicVersion(
+                    NotificationCompat.Builder(applicationContext, CHANNEL)
+                        .setSmallIcon(R.drawable.ic_notification)
+                        .setContentTitle("Immich server alert")
+                        .build(),
+                )
                 .build(),
         )
         AppLog.i("Admin", title)

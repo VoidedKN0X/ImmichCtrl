@@ -4,13 +4,26 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
-## Unreleased
+## 0.2.13
 
-Not in a release yet; this goes out with the next version.
+Released 2026-10-19. Fourth security and privacy review, focused on what the app sends to anyone other than your own server.
+
+### Security
+
+- **Maps follow your server's map setting.** If your Immich admin turned the map off (Administration > Settings > Map), ImmichCtrl still showed the photo's mini map and the Map screen, loading map tiles for the photo's location from Immich's tile server (`tiles.immich.cloud`). Maps now only load when the server's map is on, just like in Immich's own apps. Map styles that aren't https are never loaded
+- **New "Show maps" switch.** Map tiles come from your server's map provider (Immich's tile server unless your admin picked another), which sees your IP address and the area of the map, so roughly where a photo was taken. You can now turn maps off in **Settings > Privacy > Show maps**: the mini map in a photo's details disappears and the Map screen says maps are off. It's on by default, as before
+- **Map tiles are removed when you sign out.** The map tiles the app keeps for faster loading (which show the places your photos were taken) are now deleted along with the rest of that account's cached photos when you sign out
+- **Cast only starts when you tap the Cast button.** Casting uses Google's Cast library from Google Play services, which reports Cast usage to Google. It used to start whenever you opened a photo or video; now it only starts once you tap the Cast icon. Casting itself works as before. On phones without Google Play services, the icon disappears after the first tap
+- **Copied logs are marked as sensitive.** **Settings > Logs > Copy** now marks the log as sensitive, like shared links and text from photos already were, so Android doesn't show it in the clipboard preview and keyboards don't keep it in their clipboard history. The log can include your server's name and error details
+- **Server alerts stay off the lock screen.** Admin alerts (failed jobs, disk space, new Immich versions) include your server's name and details; on a locked phone they now only say "Immich server alert"
+- **No settings carried over between accounts.** When you switched to an account on another server, the previous server's settings (such as its map provider and the public address used for shared links) were kept until the new server answered, or for good if it didn't. They're now cleared on every switch, so a shared link can't use the other server's address
+- **Switching usage stats off takes effect straight away.** Turning off **Settings > Usage stats** now also throws away any stats still waiting to be sent and stops one being sent at that moment, and switching them on again starts a new random session
 
 ### Changed
 
-- **All Ctrl apps in the README.** The README's Ctrl series table now lists all 14 apps. New in the table: [ArrCtrl](https://github.com/VoidedKN0X/ArrCtrl) (Radarr, Sonarr, Prowlarr, Bazarr, qBittorrent, autobrr and Cleanuparr in one app), [PaperCtrl](https://github.com/VoidedKN0X/PaperCtrl) (scan and browse documents on Paperless-ngx), [ProxCtrl](https://github.com/VoidedKN0X/ProxCtrl) (manage your Proxmox VE server) and [TrueCtrl](https://github.com/VoidedKN0X/TrueCtrl) (monitor and manage your TrueNAS server). Every app in the table is also in the [CtrlF-Droid repo](https://voidedkn0x.github.io/CtrlF-Droid/) for automatic updates. No change to the app itself.
+- **Usage stats share less.** Turning automatic backup on or off no longer says whether you back up everything or chosen albums, and sharing photos is now just "share", without whether you picked the smaller or the original size. The stats now match exactly what the README promises
+- **The README says which other servers the app talks to:** Immich's tile server (or your admin's map provider) for maps, and Google Play services when you cast
+- **All Ctrl apps in the README.** The README's Ctrl series table now lists all 14 apps. New in the table: [ArrCtrl](https://github.com/VoidedKN0X/ArrCtrl) (Radarr, Sonarr, Prowlarr, Bazarr, qBittorrent, autobrr and Cleanuparr in one app), [PaperCtrl](https://github.com/VoidedKN0X/PaperCtrl) (scan and browse documents on Paperless-ngx), [ProxCtrl](https://github.com/VoidedKN0X/ProxCtrl) (manage your Proxmox VE server) and [TrueCtrl](https://github.com/VoidedKN0X/TrueCtrl) (monitor and manage your TrueNAS server). Every app in the table is also in the [CtrlF-Droid repo](https://voidedkn0x.github.io/CtrlF-Droid/) for automatic updates.
 
 ## 0.2.12
 

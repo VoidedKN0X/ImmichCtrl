@@ -67,6 +67,7 @@ import com.vknxworks.immichctrl.ui.components.rememberLoader
 import com.vknxworks.immichctrl.ui.components.runTask
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import com.vknxworks.immichctrl.ui.nav.MapRoute
+import com.vknxworks.immichctrl.ui.viewer.rememberMapStyleUrl
 import com.vknxworks.immichctrl.ui.nav.PlaceRoute
 import com.vknxworks.immichctrl.ui.photos.SelectionContext
 import com.vknxworks.immichctrl.ui.photos.SourceGrid
@@ -154,7 +155,6 @@ fun MapScreen() {
     val context = LocalContext.current
     val c = context.container
     val nav = LocalNavigator.current
-    val config by c.serverConfig.collectAsStateWithLifecycle()
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     var favoritesOnly by rememberSaveable { mutableStateOf(false) }
     var years by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -164,10 +164,7 @@ fun MapScreen() {
         val after = years?.let { java.time.Instant.now().minusSeconds(it * 365L * 86_400L).toString() }
         c.api.mapMarkersBetween(settings.withPartners, if (favoritesOnly) true else null, after, null, if (archived) null else false)
     }
-    val dark = isSystemInDarkTheme()
-    val styleUrl = (if (dark) config.mapDarkStyleUrl else config.mapLightStyleUrl).ifBlank {
-        if (dark) "https://tiles.immich.cloud/v1/style/dark.json" else "https://tiles.immich.cloud/v1/style/light.json"
-    }
+    val styleUrl = rememberMapStyleUrl()
     val accent = MaterialTheme.colorScheme.primary.toArgb()
     val onAccent = MaterialTheme.colorScheme.onPrimary.toArgb()
 
@@ -201,7 +198,13 @@ fun MapScreen() {
                 modifier = Modifier.padding(horizontal = Gutter, vertical = 2.dp),
             )
         }
-        when (val s = markers.state) {
+        if (styleUrl == null) {
+            MessageView(
+                Icons.Outlined.Map,
+                "Maps are off",
+                "Turn on Show maps in Settings, or ask your server's admin to turn on the map.",
+            )
+        } else when (val s = markers.state) {
             is Load.Loading -> LoadingView()
             is Load.Err -> ErrorView(s.message) { markers.reload() }
             is Load.Ok -> {

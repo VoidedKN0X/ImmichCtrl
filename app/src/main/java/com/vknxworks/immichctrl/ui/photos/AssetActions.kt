@@ -232,7 +232,7 @@ fun AppContainer.removeFromAlbum(albumId: String, assets: Collection<Asset>) {
 }
 
 fun AppContainer.share(assets: Collection<Asset>, large: Boolean) {
-    trackAction(if (large) "share_large" else "share_original", assets.size)
+    trackAction("share", assets.size)
     val remote = assets.filter { it.isRemote }.map { it.id }
     val phone = phoneUris(assets.filter { it.isLocalOnly })
     if (remote.isNotEmpty()) toast(if (assets.size == 1) "Preparing to share…" else "Preparing ${assets.size} items to share…")

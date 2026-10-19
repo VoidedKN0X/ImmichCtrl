@@ -179,13 +179,12 @@ fun NetworkingScreen() {
 fun LogsScreen() {
     val c = LocalContext.current.container
     val entries by AppLog.entries.collectAsStateWithLifecycle()
-    val clipboard = LocalClipboardManager.current
     val state = rememberLazyListState()
     LaunchedEffect(entries.size) { if (entries.isNotEmpty()) state.scrollToItem(entries.lastIndex) }
 
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar("Logs") {
-            IconButton(onClick = { clipboard.setText(AnnotatedString(AppLog.text())); c.toast("Copied") }) { Icon(Icons.Outlined.ContentCopy, "Copy") }
+            IconButton(onClick = { com.vknxworks.immichctrl.data.security.copySensitive(c.context, AppLog.text(), "ImmichCtrl log"); c.toast("Copied") }) { Icon(Icons.Outlined.ContentCopy, "Copy") }
             IconButton(onClick = {
                 val send = Intent(Intent.ACTION_SEND).setType("text/plain")
                     .putExtra(Intent.EXTRA_SUBJECT, "ImmichCtrl log")

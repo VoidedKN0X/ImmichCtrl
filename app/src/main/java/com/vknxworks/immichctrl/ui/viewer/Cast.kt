@@ -56,13 +56,21 @@ object CastController {
     private var tokenAccount: String? = null
     private var expires: Instant = Instant.EPOCH
 
+    /**
+     * Starts Google's Cast library. Only called once the user taps the Cast button: starting it talks to
+     * Google Play services, which reports Cast usage to Google.
+     */
     fun context(ctx: Context): CastContext? = runCatching { CastContext.getSharedInstance(ctx) }.getOrNull()
 
-    fun connected(ctx: Context): Boolean = context(ctx)?.sessionManager?.currentCastSession?.isConnected == true
+    /** The Cast library if it was already started in this run of the app (never starts it). */
+    @Suppress("DEPRECATION")
+    fun started(): CastContext? = runCatching { CastContext.getSharedInstance() }.getOrNull()
+
+    fun connected(): Boolean = started()?.sessionManager?.currentCastSession?.isConnected == true
 
     suspend fun show(ctx: Context, asset: Asset) {
         val c = ctx.container
-        val session = context(ctx)?.sessionManager?.currentCastSession ?: return
+        val session = started()?.sessionManager?.currentCastSession ?: return
         if (!session.isConnected || !asset.isRemote) return
         val client = c.api
         val account = c.sessions.active.value?.account?.key
@@ -98,7 +106,7 @@ object CastController {
     }
 
     fun stop(ctx: Context) {
-        context(ctx)?.sessionManager?.endCurrentSession(true)
+        started()?.sessionManager?.endCurrentSession(true)
         revoke(ctx)
     }
 
@@ -118,14 +126,21 @@ object CastController {
     }
 }
 
-/** The Cast icon: pick a device, or (when casting) see and stop the session. */
+/**
+ * The Cast icon: pick a device, or (when casting) see and stop the session. Google's Cast library is only
+ * started when the icon is tapped, so just opening a photo never involves Google Play services.
+ */
 @Composable
 fun CastButton(current: Asset?, tint: Color) {
     val ctx = LocalContext.current
-    val cast = remember { CastController.context(ctx) } ?: return
-    var connected by remember { mutableStateOf(CastController.connected(ctx)) }
+    var cast by remember { mutableStateOf(CastController.started()) }
+    // No Google Play services (or Cast failed to start): the icon goes away.
+    var unavailable by remember { mutableStateOf(false) }
+    if (unavailable) return
+    var connected by remember { mutableStateOf(CastController.connected()) }
 
     DisposableEffect(cast) {
+        val castContext = cast ?: return@DisposableEffect onDispose { }
         val listener = object : SessionManagerListener<CastSession> {
             override fun onSessionStarted(session: CastSession, sessionId: String) { connected = true }
             override fun onSessionResumed(session: CastSession, wasSuspended: Boolean) { connected = true }
@@ -137,8 +152,8 @@ fun CastButton(current: Asset?, tint: Color) {
             override fun onSessionResumeFailed(session: CastSession, error: Int) { connected = false }
             override fun onSessionSuspended(session: CastSession, reason: Int) = Unit
         }
-        cast.sessionManager.addSessionManagerListener(listener, CastSession::class.java)
-        onDispose { cast.sessionManager.removeSessionManagerListener(listener, CastSession::class.java) }
+        castContext.sessionManager.addSessionManagerListener(listener, CastSession::class.java)
+        onDispose { castContext.sessionManager.removeSessionManagerListener(listener, CastSession::class.java) }
     }
 
     // Follow the viewer: whatever is on screen is on the TV.
@@ -149,11 +164,17 @@ fun CastButton(current: Asset?, tint: Color) {
     }
 
     IconButton(onClick = {
+        val started = cast ?: CastController.context(ctx)
+        if (started == null) {
+            unavailable = true
+            return@IconButton
+        }
+        cast = started
         val themed = ContextThemeWrapper(ctx, androidx.appcompat.R.style.Theme_AppCompat_DayNight_Dialog)
         if (connected) {
             MediaRouteControllerDialog(themed).show()
         } else {
-            val selector = cast.mergedSelector ?: return@IconButton
+            val selector = started.mergedSelector ?: return@IconButton
             MediaRouteChooserDialog(themed).apply { routeSelector = selector }.show()
         }
     }) {

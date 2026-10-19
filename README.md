@@ -115,6 +115,13 @@ ImmichCtrl can share anonymous usage stats, **only if you say yes**. It asks onc
 
 Builds from source don't include the stats key, so they can't send anything and the setting is hidden. The code is in [`Telemetry.kt`](app/src/main/java/com/vknxworks/immichctrl/data/telemetry/Telemetry.kt).
 
+### Other servers the app talks to
+
+Apart from your own Immich server (and the opt-in stats above), ImmichCtrl only contacts:
+
+- **Your server's map provider**, for the mini map in a photo's details and the Map screen: Immich's tile server (`tiles.immich.cloud`) unless your admin chose another map style. It sees your IP address and the area shown. Maps only load when the map is turned on in your server's settings, and you can turn them off in **Settings > Privacy > Show maps**.
+- **Google Play services**, only after you tap the Cast button. Google's Cast library reports Cast usage to Google.
+
 ## Build from source
 
 You need [Android Studio](https://developer.android.com/studio), or JDK 17 and the Android SDK.

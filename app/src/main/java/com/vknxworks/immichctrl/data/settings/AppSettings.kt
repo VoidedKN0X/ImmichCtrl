@@ -66,6 +66,8 @@ data class AppSettings(
     val appLockTimeout: Int = 0,
     /** Unlock the locked folder with a fingerprint once its PIN has been entered here. */
     val lockedFolderBiometric: Boolean = false,
+    /** Show maps (the photo's mini map and the Map screen); tiles come from the server's map style. */
+    val showMaps: Boolean = true,
 
     // Admin alerts
     val adminAlerts: Boolean = true,
@@ -118,6 +120,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val appLock = booleanPreferencesKey("app_lock")
         val appLockTimeout = intPreferencesKey("app_lock_timeout")
         val lockedBio = booleanPreferencesKey("locked_folder_biometric")
+        val showMaps = booleanPreferencesKey("show_maps")
         val adminAlerts = booleanPreferencesKey("admin_alerts")
         val adminDisk = intPreferencesKey("admin_disk_percent")
         val backup = booleanPreferencesKey("backup_enabled")
@@ -165,6 +168,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         appLock = this[K.appLock] ?: false,
         appLockTimeout = this[K.appLockTimeout] ?: 0,
         lockedFolderBiometric = this[K.lockedBio] ?: false,
+        showMaps = this[K.showMaps] ?: true,
         adminAlerts = this[K.adminAlerts] ?: true,
         adminDiskPercent = this[K.adminDisk] ?: 90,
         backupEnabled = this[K.backup] ?: false,
@@ -210,6 +214,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.appLock] = s.appLock
             p[K.appLockTimeout] = s.appLockTimeout
             p[K.lockedBio] = s.lockedFolderBiometric
+            p[K.showMaps] = s.showMaps
             p[K.adminAlerts] = s.adminAlerts
             p[K.adminDisk] = s.adminDiskPercent
             p[K.backup] = s.backupEnabled
