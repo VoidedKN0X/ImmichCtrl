@@ -67,6 +67,10 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - Sign in with email and password, OAuth or an API key; tablet and foldable layout
 - Built-in log viewer, and a warning when the server's Immich version isn't supported
 
+## Screenshots
+
+Coming soon.
+
 ## Requirements
 
 - Android 13 or newer
