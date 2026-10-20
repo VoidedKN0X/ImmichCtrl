@@ -4,6 +4,12 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.7
+
+### Fixed
+
+- **Selection bar is frosted glass again.** When you selected photos, the bar at the bottom (with Share, Favourite, Add to album, Delete and the rest) was completely see-through, so the photos underneath showed straight through its buttons. It now blurs and tints the photos behind it like the tab bar does. This applies everywhere you can select photos: Photos, albums, partners' galleries, search results, favourites, archive, trash, the locked folder and your phone's albums.
+
 ## 0.3.6
 
 ### New
