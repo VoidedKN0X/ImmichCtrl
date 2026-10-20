@@ -111,7 +111,7 @@
                 android:resource="@xml/widget_random" />
         </receiver>
 
-        <!-- No downloadable emoji font: androidx.emoji2 would ask Google Play services for one on start.
+        <!-- No downloadable emoji font: androidx.emoji2 would look one up from a font provider on start.
              Emoji use the phone's own font. -->
         <provider
             android:name="androidx.startup.InitializationProvider"
