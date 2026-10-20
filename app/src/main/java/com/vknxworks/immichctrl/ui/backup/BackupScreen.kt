@@ -163,10 +163,7 @@ fun BackupScreen() {
                         }
                         PillButton(
                             "Back up now",
-                            onClick = {
-                                c.backup.backupNow()
-                                c.telemetry.track("backup_run", mapOf("trigger" to "button"))
-                            },
+                            onClick = { c.backup.backupNow() },
                             enabled = settings.backupAlbums.isNotEmpty() || settings.backupEverything,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -220,7 +217,6 @@ fun BackupScreen() {
                 ) { on ->
                     // Backups only ever go to the account they were turned on for.
                     update { it.copy(backupEnabled = on, backupAccount = if (on) me else null) }
-                    c.telemetry.track("backup_toggled", mapOf("enabled" to on.toString()))
                     if (on) askPermissions()
                 }
                 GroupSwitch("Only on Wi-Fi", null, settings.backupWifiOnly, Icons.Outlined.Wifi) { on -> update { it.copy(backupWifiOnly = on) } }

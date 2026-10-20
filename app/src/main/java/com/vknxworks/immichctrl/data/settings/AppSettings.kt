@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 enum class ThemeChoice(val label: String) { SYSTEM("Follow system"), DARK("Dark"), LIGHT("Light"), BLACK("Pure black") }
 
@@ -86,12 +87,6 @@ data class AppSettings(
     val backupVideos: Boolean = true,
     /** Mirror phone albums to server albums with the same names. */
     val albumSync: Boolean = false,
-
-    // Usage stats
-    /** Opt-in anonymous usage stats (off until the user says yes). */
-    val usageStats: Boolean = false,
-    /** Whether the one-time usage stats question has been answered. */
-    val usageStatsAsked: Boolean = false,
 )
 
 class SettingsRepository(private val context: Context, scope: CoroutineScope) {
@@ -132,13 +127,18 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val charging = booleanPreferencesKey("backup_charging_only")
         val videos = booleanPreferencesKey("backup_videos")
         val albumSync = booleanPreferencesKey("album_sync")
-        val usageStats = booleanPreferencesKey("usage_stats")
-        val usageStatsAsked = booleanPreferencesKey("usage_stats_asked")
+        /** Left over from the optional stats removed in 0.3.3; deleted on the next save and at start. */
+        val legacy = listOf(booleanPreferencesKey("usage_stats"), booleanPreferencesKey("usage_stats_asked"))
     }
 
     val settings: StateFlow<AppSettings> = context.appDataStore.data
         .map { it.toSettings() }
         .stateIn(scope, SharingStarted.Eagerly, AppSettings())
+
+    init {
+        // Delete what the removed optional stats stored, so nothing of them stays on the phone.
+        scope.launch { context.appDataStore.edit { p -> K.legacy.forEach { p.remove(it) } } }
+    }
 
     /** The stored settings as they're read and changed, without [settings]' placeholder defaults at start-up. */
     val stored: Flow<AppSettings> = context.appDataStore.data.map { it.toSettings() }
@@ -180,8 +180,6 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         backupChargingOnly = this[K.charging] ?: false,
         backupVideos = this[K.videos] ?: true,
         albumSync = this[K.albumSync] ?: false,
-        usageStats = this[K.usageStats] ?: false,
-        usageStatsAsked = this[K.usageStatsAsked] ?: false,
     )
 
     /** The stored settings, read fresh (for background work started before [settings] has loaded). */
@@ -226,8 +224,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.charging] = s.backupChargingOnly
             p[K.videos] = s.backupVideos
             p[K.albumSync] = s.albumSync
-            p[K.usageStats] = s.usageStats
-            p[K.usageStatsAsked] = s.usageStatsAsked
+            K.legacy.forEach { p.remove(it) }
         }
     }
 
