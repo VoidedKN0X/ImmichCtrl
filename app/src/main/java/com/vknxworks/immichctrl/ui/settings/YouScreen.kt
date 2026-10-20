@@ -134,6 +134,7 @@ fun YouScreen() {
                     DropdownMenu(avatarMenu, onDismissRequest = { avatarMenu = false }) {
                         DropdownMenuItem(text = { Text("Choose a new picture") }, onClick = {
                             avatarMenu = false
+                            com.vknxworks.immichctrl.data.security.expectAppReturn(context)
                             pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         })
                         if (!m?.profileImagePath.isNullOrBlank()) DropdownMenuItem(text = { Text("Remove picture") }, onClick = {

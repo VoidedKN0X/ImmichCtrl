@@ -88,14 +88,17 @@ fun BackupScreen() {
     var confirmReset by remember { mutableStateOf(false) }
 
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissionTick++ }
-    fun askPermissions() = permissions.launch(
-        arrayOf(
-            Manifest.permission.READ_MEDIA_IMAGES,
-            Manifest.permission.READ_MEDIA_VIDEO,
-            Manifest.permission.ACCESS_MEDIA_LOCATION,
-            Manifest.permission.POST_NOTIFICATIONS,
-        ),
-    )
+    fun askPermissions() {
+        com.vknxworks.immichctrl.data.security.expectAppReturn(context)
+        permissions.launch(
+            arrayOf(
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.ACCESS_MEDIA_LOCATION,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ),
+        )
+    }
     fun update(t: (AppSettings) -> AppSettings) { scope.launch { c.settings.update(t) } }
 
     val albums = rememberLoader("local-albums:$permissionTick") { withContext(Dispatchers.IO) { if (hasAccess) LocalMedia.albums(context) else emptyList() } }
@@ -116,6 +119,7 @@ fun BackupScreen() {
                 actionLabel = "Allow",
                 onAction = {
                     if (partial) {
+                        com.vknxworks.immichctrl.data.security.expectAppReturn(context)
                         context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")))
                     } else {
                         askPermissions()
@@ -188,6 +192,7 @@ fun BackupScreen() {
                             showChevron = true,
                             onClick = {
                                 runCatching {
+                                    com.vknxworks.immichctrl.data.security.expectAppReturn(context)
                                     context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}")))
                                 }
                             },

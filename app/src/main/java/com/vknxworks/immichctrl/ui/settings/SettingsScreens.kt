@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.LocationOff
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.PhoneAndroid
@@ -65,6 +66,8 @@ import com.vknxworks.immichctrl.ui.components.ScreenTopBar
 import com.vknxworks.immichctrl.ui.nav.AddAccountRoute
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import kotlinx.coroutines.launch
+import com.vknxworks.immichctrl.data.security.LockVault
+import com.vknxworks.immichctrl.data.security.PinRequest
 
 @Composable
 fun SettingsScreen() {
@@ -75,7 +78,6 @@ fun SettingsScreen() {
     val context = LocalContext.current
     val nav = LocalNavigator.current
     val session by c.sessions.active.collectAsStateWithLifecycle()
-    val canLock = remember { c.appLock.canLock() }
 
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar("Settings")
@@ -131,21 +133,58 @@ fun SettingsScreen() {
                 GroupSwitch("Shuffle", null, s.slideShuffle, Icons.Outlined.Shuffle) { v -> update { it.copy(slideShuffle = v) } }
                 GroupSwitch("Start again at the end", null, s.slideLoop, Icons.Outlined.Repeat) { v -> update { it.copy(slideLoop = v) } }
             }
-            Group("Privacy", footer = if (canLock) "App lock uses your phone's fingerprint, face or screen lock." else "Set up a screen lock on the phone to use app lock.") {
-                GroupSwitch("App lock", "Ask for your fingerprint or screen lock to open the app", s.appLock && canLock, Icons.Outlined.Lock) { v ->
-                    if (!canLock) return@GroupSwitch
-                    val activity = context.findActivity() ?: return@GroupSwitch
-                    c.appLock.prompt(activity, if (v) "Turn on app lock" else "Turn off app lock", allowCredential = true) { ok ->
-                        if (ok) {
-                            c.appLock.markUnlocked()
-                            update { it.copy(appLock = v) }
+            Group(
+                "Privacy",
+                footer = "While automatic backup (or admin alerts on an admin account) is on, that account's login stays usable in the background for backups and alerts. Every other login stays encrypted with the PIN while the app is locked.",
+            ) {
+                val lockOn = c.vault.enabled
+                GroupSwitch(
+                    "App lock",
+                    "Ask for an app PIN (and optionally your fingerprint) to open the app. While locked, your login is encrypted with the PIN.",
+                    lockOn,
+                    Icons.Outlined.Lock,
+                ) { v -> c.appLock.request = if (v) PinRequest.ENABLE else PinRequest.DISABLE }
+                if (lockOn) {
+                    GroupRow(
+                        "Change app PIN",
+                        "At least ${LockVault.PIN_MIN} digits, separate from your phone's PIN",
+                        icon = Icons.Outlined.Password,
+                        onClick = { c.appLock.request = PinRequest.CHANGE },
+                    )
+                    val bioAvailable = remember { c.appLock.biometricAvailable() }
+                    GroupSwitch(
+                        "Unlock with fingerprint",
+                        if (bioAvailable || c.vault.biometricEnabled)
+                            "Only strong biometrics such as your fingerprint, checked by the phone's secure hardware. The PIN is still needed after a restart and every 72 hours."
+                        else "Set up a fingerprint on this phone first",
+                        c.vault.biometricEnabled,
+                        Icons.Outlined.Fingerprint,
+                    ) { v ->
+                        if (!v) {
+                            c.vault.disableBiometric()
+                        } else if (bioAvailable) {
+                            val activity = context.findActivity() ?: return@GroupSwitch
+                            val cipher = c.vault.biometricEnrolCipher() ?: run {
+                                android.widget.Toast.makeText(context, "Couldn't set up fingerprint unlock", android.widget.Toast.LENGTH_SHORT).show()
+                                return@GroupSwitch
+                            }
+                            c.appLock.biometricPrompt(activity, "Turn on fingerprint unlock", cipher) { unlocked ->
+                                if (!c.vault.finishBiometricEnrol(unlocked)) {
+                                    android.widget.Toast.makeText(context, "Couldn't set up fingerprint unlock", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         }
                     }
-                }
-                if (s.appLock) {
                     GroupChoice(
-                        "Lock again after",
-                        listOf(0 to "Immediately", 30 to "30 seconds", 60 to "1 minute", 300 to "5 minutes", 900 to "15 minutes"),
+                        "Lock again",
+                        listOf(
+                            0 to "As soon as you leave the app",
+                            60 to "After 1 minute away",
+                            300 to "After 5 minutes away",
+                            900 to "After 15 minutes away",
+                            3600 to "After 1 hour away",
+                            -1 to "Only when the app restarts",
+                        ),
                         s.appLockTimeout,
                         Icons.Outlined.Timer,
                     ) { v -> update { it.copy(appLockTimeout = v) } }

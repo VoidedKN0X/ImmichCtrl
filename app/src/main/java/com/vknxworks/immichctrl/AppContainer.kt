@@ -27,6 +27,7 @@ import com.vknxworks.immichctrl.data.net.NetworkRouter
 import com.vknxworks.immichctrl.data.offline.OfflineStore
 import com.vknxworks.immichctrl.data.offline.OfflineWorker
 import com.vknxworks.immichctrl.data.security.AppLock
+import com.vknxworks.immichctrl.data.security.LockVault
 import com.vknxworks.immichctrl.data.settings.SettingsRepository
 import com.vknxworks.immichctrl.data.timeline.Sources
 import com.vknxworks.immichctrl.ui.widget.WidgetWorker
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -102,14 +104,40 @@ class AppContainer(val context: Context) {
         .addNetworkInterceptor(router.credentialScope)
         .build()
 
-    val sessions = SessionManager(context, http, appScope)
     val settings = SettingsRepository(context, appScope)
+
+    /** The app lock's PIN, fingerprint key and the key that seals logins while the app is locked. */
+    val vault = LockVault(context, "immichctrl")
+    val sessions = SessionManager(context, http, appScope, vault)
     val backupDb = BackupDb(context)
     val backup = BackupManager(context, settings, sessions, backupDb, appScope)
     val local = LocalLibrary(context, backupDb, sessions, settings)
     val device = DeviceActions(context)
     val offline = OfflineStore(context)
-    val appLock = AppLock(context, settings)
+    val appLock = AppLock(context, settings, vault)
+
+    /** Turns the app lock on: the PIN seals the logins from now on (except the one backups need). */
+    suspend fun enableLock(pin: String) {
+        withContext(Dispatchers.Default) { vault.setUp(pin) }
+        settings.update { it.copy(appLock = true) }
+        sessions.reseal()
+        appLock.unlocked()
+    }
+
+    /** Turns the app lock off (after the PIN was confirmed): logins go back to Keystore-only encryption. */
+    suspend fun disableLock() {
+        sessions.unsealAll()
+        settings.update { it.copy(appLock = false) }
+        vault.disable()
+    }
+
+    /** "Forgot PIN?": the sealed logins can't be decrypted any more, so sign out everywhere and start over. */
+    suspend fun forgetEverything() {
+        sessions.forgetAll()
+        settings.update { it.copy(appLock = false) }
+        vault.disable()
+        appLock.unlocked()
+    }
     val live = LiveUpdates(http, appScope)
 
     /** Server capabilities for the active account (smart search, map, OAuth...). */
@@ -129,6 +157,22 @@ class AppContainer(val context: Context) {
 
     init {
         createChannels()
+        // The login automatic backup (and admin alerts) use stays usable while the app is locked;
+        // every other one is sealed by the app lock.
+        sessions.backgroundUse = { acc ->
+            val s = settings.settings.value
+            (s.backupEnabled && (s.backupAccount == null || s.backupAccount == acc.key)) || (s.adminAlerts && acc.isAdmin)
+        }
+        appLock.onLocked = { appScope.launch { sessions.onLocked() } }
+        appLock.onUnlocking = { sessions.onUnlocked() }
+        appScope.launch {
+            settings.settings.map { it.appLock }.distinctUntilChanged().collect { WidgetWorker.refreshAll(context) }
+        }
+        appScope.launch {
+            settings.settings.map { Triple(it.backupEnabled, it.backupAccount, it.adminAlerts) }
+                .distinctUntilChanged()
+                .collect { sessions.reseal() }
+        }
         // Share and upload copies of photos never stay in the app's cache for long.
         appScope.launch(Dispatchers.IO) { runCatching { com.vknxworks.immichctrl.data.share.Exporter.cleanUp(context) } }
         // Signing out leaves nothing of that account's photos on the phone.

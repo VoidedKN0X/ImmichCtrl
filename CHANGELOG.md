@@ -4,6 +4,29 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.9
+
+The app lock now works the same way as in every other Ctrl app, with the strongest protection of the options compared.
+
+### Changed
+
+- **App lock now has its own PIN**, separate from your phone's screen lock. It needs 6 to 12 digits, and very obvious ones (like 111111 or 123456) are refused. Someone who knows or has seen your phone's PIN can't open ImmichCtrl with it.
+- **Updating with the app lock already on:** the first time you open ImmichCtrl, unlock once more with your fingerprint, face or screen lock as before (skipped if the phone no longer has a screen lock), then choose your app PIN. You can't skip this step.
+- **Fingerprint unlock is optional** (**Settings → Privacy → Unlock with fingerprint**). It only accepts strong biometrics such as the fingerprint sensor, not face unlock that only uses the camera, which a photo can sometimes fool. The PIN is still needed after the phone restarts and at least every 72 hours, the same as Android does for your screen lock.
+- **"Lock again"** now offers: as soon as you leave the app (the default), after 1, 5 or 15 minutes, after 1 hour, or only when the app restarts. "30 seconds" is gone; if you had it, the app now locks as soon as you leave.
+- **Sharing, picking photos, permission pages, the map app, the sign-in page and Android's delete and trash confirmations no longer count as leaving the app**, so coming back from them doesn't ask for the PIN, even with "As soon as you leave the app". Going to the home screen or another app yourself still does. (This replaces the old few seconds of grace after leaving.)
+- **Change app PIN** is in Settings and asks for your current PIN first. Turning the app lock off also asks for the PIN.
+- **Photo widgets show "ImmichCtrl is locked"** instead of your photos while the app lock is on, so the home screen doesn't show your photos to anyone holding the phone.
+
+### Security
+
+- **Your login is encrypted with your PIN while ImmichCtrl is locked.** The key that decrypts it only exists in memory while the app is unlocked, and is wiped the moment it locks; the signed-in session is closed with it. A locked app, or a copy of its files, can't use your access token or API key. Proxy headers saved for your server are protected the same way.
+- **While automatic backup is on, your login stays usable in the background for backups.** The account automatic backup runs for keeps a login that's only encrypted by the phone's Keystore (as before), so photos keep backing up while the app is locked. The same goes for an admin account with admin alerts on, so alerts keep arriving. Turning those off seals that login too. The app's screens are locked either way.
+- **The PIN can't be guessed off the phone.** It's never stored. It's stretched with 600,000 rounds of PBKDF2 and mixed with a secret held in the phone's secure hardware (StrongBox where available), so copying ImmichCtrl's files to a computer isn't enough to try PINs there.
+- **Wrong PINs lock the screen**: after 5 tries you wait 30 seconds, doubling with every further 5 wrong tries up to 15 minutes. Restarting the app or the phone, or changing the clock, doesn't reset the wait.
+- **Fingerprint unlock can't be faked**: the fingerprint has to unlock a key in the phone's secure hardware, so a tampered "success" on a rooted phone doesn't open the app. Adding a new fingerprint turns fingerprint unlock off until you turn it on again with your PIN.
+- **Forgot your PIN?** The lock screen offers to sign out of every account and remove offline albums, cached photos and backup history from the phone. Because the PIN encrypts your login, there's no way around it. Your photos on the Immich server and on the phone stay.
+
 ## 0.3.8
 
 ### Fixed

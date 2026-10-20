@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.fragment.app.FragmentActivity
+import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.data.appDataStore
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -23,7 +24,12 @@ import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
 import javax.crypto.spec.PSource
+import com.vknxworks.immichctrl.data.settings.AppSettings
 import com.vknxworks.immichctrl.data.settings.SettingsRepository
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,11 +37,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
+/** What a PIN screen on top of the app is for. */
+enum class PinRequest { ENABLE, CHANGE, DISABLE }
+
 /**
- * Locks the app behind the phone's fingerprint, face or screen lock when it opens, and again after
- * it has been in the background for the chosen time.
+ * The app lock (the shared Ctrl series lock): an app PIN of its own, optional fingerprint, and a
+ * "Lock again" time. The secrets live in [LockVault]; locking wipes its key from memory.
  */
-class AppLock(private val context: Context, private val settings: SettingsRepository) {
+class AppLock(private val context: Context, private val settings: SettingsRepository, val vault: LockVault) {
     // Starts locked so nothing shows before the first check; screens only honour it while app lock is on.
     private val _locked = MutableStateFlow(true)
     val locked: StateFlow<Boolean> = _locked.asStateFlow()
@@ -43,43 +52,142 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
     @Volatile private var startChecked = false
     /** The system prompt is up; its screen-lock page takes the app to the background, which mustn't re-lock. */
     @Volatile private var prompting = false
+    @Volatile private var expectReturnAt = 0L
+
+    /** A PIN screen shown on top of the app: turning the lock on or off, or changing the PIN. */
+    var request by mutableStateOf<PinRequest?>(null)
+
+    /** Goes up every time the app locks, so the lock screen offers the fingerprint once per lock. */
+    var lockCount by mutableIntStateOf(0)
+        private set
+
+    /** Set by the app: wipe what the vault key opened. */
+    var onLocked: () -> Unit = {}
+
+    /** Set by the app: reopen what the vault key opened. Runs before the app is shown again. */
+    var onUnlocking: suspend () -> Unit = {}
+
+    /** Set by an open screen with unsaved input: keeps it before locking closes the screen. */
+    var saveBeforeLock: (() -> Unit)? = null
+
+    /** The lock is on: with an app PIN, or still the old phone-screen-lock lock until a PIN is chosen. */
+    fun enabled(s: AppSettings = settings.settings.value): Boolean = vault.enabled || s.appLock
 
     /** Whether the phone has a fingerprint, face or screen lock the app can use. */
     fun canLock(): Boolean =
         BiometricManager.from(context).canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL) == BiometricManager.BIOMETRIC_SUCCESS
 
+    /** Only class 3 ("strong") biometrics: camera-only face unlock can be fooled by a photo. */
+    fun biometricAvailable(): Boolean =
+        BiometricManager.from(context).canAuthenticate(BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
+
+    /**
+     * The app itself is opening another app (share sheet, editor, picker, a system confirmation).
+     * That trip doesn't count as leaving, so you don't have to unlock again when you come back.
+     */
+    fun expectReturn() {
+        expectReturnAt = SystemClock.elapsedRealtime()
+    }
+
     suspend fun onForeground() {
         val s = settings.current()
-        if (!s.appLock) {
+        val away = backgroundedAt?.let { SystemClock.elapsedRealtime() - it }
+        backgroundedAt = null
+        expectReturnAt = 0L
+        prompting = false
+        if (!enabled(s)) {
+            startChecked = true
             _locked.value = false
             return
         }
-        val away = backgroundedAt?.let { SystemClock.elapsedRealtime() - it }
-        // A few seconds' grace, so system dialogs (delete confirmations, the photo picker) don't lock the app.
-        if (!startChecked || (away != null && away >= maxOf(s.appLockTimeout * 1000L, 5_000L))) _locked.value = true
-        startChecked = true
-        backgroundedAt = null
-        prompting = false
-    }
-
-    /** After the user has just proved it's them (e.g. turning app lock on). */
-    fun markUnlocked() {
-        _locked.value = false
+        // -1: only when the app restarts.
+        val timeout = s.appLockTimeout
+        if (!startChecked || (away != null && timeout >= 0 && away >= timeout * 1000L)) lock()
         startChecked = true
     }
 
     fun onBackground() {
         if (prompting) return
+        // Only right after the app opened something itself; leaving later still counts.
+        if (expectReturnAt > 0 && SystemClock.elapsedRealtime() - expectReturnAt < 5_000) {
+            expectReturnAt = 0L
+            backgroundedAt = null
+            return
+        }
         backgroundedAt = SystemClock.elapsedRealtime()
+        // "As soon as you leave" locks right away, so the key is gone while the app is in the background.
+        val s = settings.settings.value
+        if (enabled(s) && !_locked.value && s.appLockTimeout == 0) lock()
     }
 
-    fun unlockWith(activity: FragmentActivity) {
-        // The phone's screen lock was removed: there's nothing to unlock with, so don't trap the user.
+    fun lock() {
+        saveBeforeLock?.let { runCatching(it) }
+        val wasLocked = _locked.value
+        _locked.value = true
+        request = null
+        // Already showing the lock screen (e.g. at start-up): don't ask for the fingerprint twice.
+        if (!wasLocked) lockCount++
+        vault.close()
+        onLocked()
+    }
+
+    /** After the PIN or fingerprint opened the vault (or the lock was just turned on or reset). */
+    suspend fun unlocked() {
+        startChecked = true
+        backgroundedAt = null
+        runCatching { onUnlocking() }
+        _locked.value = false
+    }
+
+    /**
+     * The old lock (the phone's own screen lock). Only used once, by people updating from it, to prove
+     * it's them before they choose an app PIN. With no screen lock on the phone any more there's nothing
+     * to confirm with, so it goes straight on.
+     */
+    fun unlockLegacy(activity: FragmentActivity) {
         if (!canLock()) {
             _locked.value = false
             return
         }
         prompt(activity, "Unlock ImmichCtrl", allowCredential = true) { ok -> if (ok) _locked.value = false }
+    }
+
+    /**
+     * Shows the fingerprint prompt for [cipher], a Keystore key that only works after a strong match.
+     * [onSuccess] gets the unlocked cipher; [onError] gets a message, or null when cancelled.
+     */
+    fun biometricPrompt(
+        activity: FragmentActivity,
+        title: String,
+        cipher: Cipher,
+        onError: (String?) -> Unit = {},
+        onSuccess: (Cipher) -> Unit,
+    ) {
+        val prompt = BiometricPrompt(
+            activity,
+            ContextCompat.getMainExecutor(activity),
+            object : BiometricPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    prompting = false
+                    val c = result.cryptoObject?.cipher
+                    if (c != null) onSuccess(c) else onError("Fingerprint didn't unlock the key")
+                }
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    prompting = false
+                    val cancelled = errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
+                        errorCode == BiometricPrompt.ERROR_CANCELED ||
+                        errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON
+                    onError(if (cancelled) null else errString.toString())
+                }
+            },
+        )
+        val info = BiometricPrompt.PromptInfo.Builder()
+            .setTitle(title)
+            .setAllowedAuthenticators(BIOMETRIC_STRONG)
+            .setNegativeButtonText("Use PIN")
+            .build()
+        runCatching { prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher)) }
+            .onFailure { prompting = false; onError(it.message ?: "Couldn't show the fingerprint prompt") }
     }
 
     /** Shows the system's fingerprint/face/screen-lock prompt. */
@@ -241,4 +349,12 @@ private object BiometricPinCrypto {
 
     fun decrypt(cipher: Cipher, encoded: String): String =
         String(cipher.doFinal(Base64.decode(encoded, Base64.NO_WRAP)), Charsets.UTF_8)
+}
+
+/**
+ * Call right before the app opens another app itself (share sheet, picker, permission page, map, a
+ * system confirmation): coming back from it doesn't ask to unlock again.
+ */
+fun expectAppReturn(context: Context) {
+    runCatching { context.container.appLock.expectReturn() }
 }

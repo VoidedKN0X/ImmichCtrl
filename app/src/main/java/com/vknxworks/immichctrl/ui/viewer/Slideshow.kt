@@ -364,6 +364,7 @@ fun ExternalViewScreen() {
                 }
                 IconButton(onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType(mime.ifBlank { "*/*" }).putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    com.vknxworks.immichctrl.data.security.expectAppReturn(context)
                     context.startActivity(Intent.createChooser(send, null))
                 }) { Icon(Icons.Outlined.Share, "Share") }
             }
