@@ -73,7 +73,7 @@ Coming soon.
 
 ## Requirements
 
-- Android 13 or newer
+- Android 13 or newer, on a 64-bit ARM phone (nearly every phone from the last several years)
 - An Immich server, version 2.x or 3.x
 - Access to your photos and videos, only if you back up or show this phone's photos in the timeline
 

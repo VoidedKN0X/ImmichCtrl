@@ -4,6 +4,13 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.5
+
+### Changed
+
+- **64-bit ARM phones only.** ImmichCtrl now ships only the 64-bit ARM (arm64-v8a) build that nearly every phone from the last several years uses, like every Ctrl app, so the download is smaller. Old 32-bit phones and x86 devices (emulators, some Chromebooks) are no longer supported.
+- **README**: Requirements say 64-bit ARM phones only
+
 ## 0.3.4
 
 Released 2026-10-20. ImmichCtrl is now Google-free and de-Googled. Nothing changes in how you use it.
