@@ -164,6 +164,8 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
     val pager = rememberPagerState(initialPage = initial) { source.total }
     val haze = rememberHazeState()
     val shareFlow = remember { ShareFlow() }
+    // The player of the video on screen, for the seekbar above the island.
+    var videoPlayer by remember { mutableStateOf<androidx.media3.common.Player?>(null) }
     // Names of the other users on the server, to say whose photo this is.
     val ownerNames = rememberLoader("user-names") {
         runCatching { c.api.users().associate { it.id to it.name.ifBlank { it.email } } }.getOrDefault(emptyMap())
@@ -251,6 +253,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                         loop = settings.loopVideos,
                         showControls = chrome,
                         onTap = { chrome = !chrome },
+                        onPlayer = { p, on -> if (on) videoPlayer = p else if (videoPlayer === p) videoPlayer = null },
                     )
                 } else {
                     Box(Modifier.fillMaxSize()) {
@@ -343,11 +346,22 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
         ) {
             val a = current ?: return@AnimatedVisibility
             Column(
-                Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = if (a.isVideo) 64.dp else 16.dp),
+                Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 stack?.let { s ->
                     StackStrip(s, a.id, onPick = { picked -> stackShown = if (picked.id == pageAsset?.id) null else picked })
+                    Spacer(Modifier.height(10.dp))
+                }
+                // Videos: the seekbar sits on its own glass bar above the island.
+                val vp = videoPlayer
+                if (a.isVideo && vp != null) {
+                    CompositionLocalProvider(LocalHazeState provides haze) {
+                        VideoControls(
+                            vp,
+                            Modifier.fillMaxWidth().padding(horizontal = 16.dp).glass(RoundedCornerShape(28.dp)).padding(horizontal = 4.dp),
+                        )
+                    }
                     Spacer(Modifier.height(10.dp))
                 }
                 CompositionLocalProvider(LocalHazeState provides haze) {

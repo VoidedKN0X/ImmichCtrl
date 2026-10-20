@@ -4,6 +4,16 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.8
+
+### Fixed
+
+- **Video seekbar no longer hidden behind the island.** When watching a video, the glass island at the bottom (Share, Favourite, Delete and the rest) partly covered the seekbar. The seekbar now has its own frosted glass bar directly above the island, so both are fully visible and never overlap.
+
+### Changed
+
+- **New video controls.** The seekbar bar has a play/pause button, the current position, a seekbar you can drag to jump anywhere in the video, and the video's length. Like the island, it shows and hides when you tap the video. Live photos are unchanged.
+
 ## 0.3.7
 
 ### Fixed
