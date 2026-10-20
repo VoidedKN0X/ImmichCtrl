@@ -154,6 +154,7 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
             try {
                 val url = c.sessions.startOAuth(p)
                 waitingForOAuth = true
+                com.vknxworks.immichctrl.data.security.expectAppReturn(context)
                 CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(context, Uri.parse(url))
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e

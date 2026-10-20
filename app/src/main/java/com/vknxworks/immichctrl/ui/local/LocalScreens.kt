@@ -102,7 +102,7 @@ fun LocalAlbumsScreen() {
                 "Allow access to your photos",
                 "ImmichCtrl needs to see the photos on this phone to show and upload them.",
                 actionLabel = "Allow",
-                onAction = { permission.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO, Manifest.permission.ACCESS_MEDIA_LOCATION)) },
+                onAction = { com.vknxworks.immichctrl.data.security.expectAppReturn(context); permission.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO, Manifest.permission.ACCESS_MEDIA_LOCATION)) },
             )
             return@Column
         }

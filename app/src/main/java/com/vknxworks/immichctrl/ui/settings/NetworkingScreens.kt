@@ -210,6 +210,7 @@ fun LogsScreen() {
                 val send = Intent(Intent.ACTION_SEND).setType("text/plain")
                     .putExtra(Intent.EXTRA_SUBJECT, "ImmichCtrl log")
                     .putExtra(Intent.EXTRA_TEXT, AppLog.text())
+                com.vknxworks.immichctrl.data.security.expectAppReturn(c.context)
                 runCatching { c.context.startActivity(Intent.createChooser(send, "Share log").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
             }) { Icon(Icons.Outlined.Share, "Share") }
             IconButton(onClick = { AppLog.clear() }) { Icon(Icons.Outlined.DeleteOutline, "Clear") }

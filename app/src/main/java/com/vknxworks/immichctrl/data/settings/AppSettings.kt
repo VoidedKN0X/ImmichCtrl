@@ -63,7 +63,7 @@ data class AppSettings(
 
     // App lock
     val appLock: Boolean = false,
-    /** Seconds in the background before the app locks again. */
+    /** Seconds in the background before the app locks again; 0 = as soon as you leave, -1 = only when the app restarts. */
     val appLockTimeout: Int = 0,
     /** Unlock the locked folder with a fingerprint once its PIN has been entered here. */
     val lockedFolderBiometric: Boolean = false,
@@ -166,7 +166,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         slideLoop = this[K.slideLoop] ?: true,
         readOnly = this[K.readOnly] ?: false,
         appLock = this[K.appLock] ?: false,
-        appLockTimeout = this[K.appLockTimeout] ?: 0,
+        // 30 seconds isn't offered any more: it becomes "as soon as you leave" rather than longer.
+        appLockTimeout = (this[K.appLockTimeout] ?: 0).let { if (it == 30) 0 else it },
         lockedFolderBiometric = this[K.lockedBio] ?: false,
         showMaps = this[K.showMaps] ?: true,
         adminAlerts = this[K.adminAlerts] ?: true,

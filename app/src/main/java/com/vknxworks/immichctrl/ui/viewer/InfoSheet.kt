@@ -225,6 +225,7 @@ private fun InfoContent(
                 onClick = if (lat != null && lon != null) {
                     {
                         runCatching {
+                            com.vknxworks.immichctrl.data.security.expectAppReturn(context)
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:$lat,$lon?q=$lat,$lon")))
                         }
                     }

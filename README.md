@@ -52,7 +52,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - Share photos from any app to upload them, or open them with ImmichCtrl to view them
 
 **Privacy and control**
-- **App lock** with your fingerprint, face or screen lock
+- **App lock** with its own PIN and optional fingerprint unlock; your login stays encrypted while the app is locked (except the one automatic backup needs)
 - **Read-only mode** for handing the phone to a child: just the timeline, nothing can be changed
 - **Remove location when sharing**: takes the GPS position out of JPEG, PNG and WebP photos you send to other apps (videos and HEIC photos keep theirs)
 - **Show maps** switch: turn off the mini map and Map screen so no map tiles are loaded

@@ -115,26 +115,37 @@ fun AppRoot() {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         val settings by c.settings.settings.collectAsStateWithLifecycle()
         val locked by c.appLock.locked.collectAsStateWithLifecycle()
-        val showLock = ready && active != null && settings.appLock && locked
+        val lockOn = settings.appLock || c.vault.enabled
+        // Updated from the old app lock (the phone's screen lock): no PIN chosen yet.
+        val legacy = settings.appLock && !c.vault.enabled
+        val showLock = ready && lockOn && locked
+        val request = c.appLock.request
         when {
             !ready -> LoadingView()
+            // The lock comes before everything else: with the login sealed there may be no session yet.
+            showLock -> Unit
+            legacy -> Unit
             active == null -> SignInScreen(onDone = {}, onCancel = null)
             // While locked the app's screens aren't composed at all, not just covered: dialogs, menus and
             // sheets are windows of their own that would stay above (and usable over) the lock screen, and
             // covered screens would keep playing video and stay readable by accessibility services.
             // Their state is saved and comes back on unlock.
-            showLock -> Unit
             else -> key(active!!.account.key) {
                 screens.SaveableStateProvider(active!!.account.key) { MainScaffold() }
             }
         }
-        if (showLock) LockScreen()
+        when {
+            showLock && legacy -> com.vknxworks.immichctrl.ui.lock.LegacyLockScreen()
+            showLock -> com.vknxworks.immichctrl.ui.lock.PinLockScreen()
+            ready && legacy -> com.vknxworks.immichctrl.ui.lock.MandatoryPinScreen()
+            ready && request != null -> com.vknxworks.immichctrl.ui.lock.PinRequestScreen(request)
+        }
 
         // Photos another app shared to ImmichCtrl are only uploaded once the user says so.
         val pending by c.pendingUploads.collectAsStateWithLifecycle()
         val context = LocalContext.current
         val uploads = pending
-        if (ready && !showLock && !uploads.isNullOrEmpty()) {
+        if (ready && !showLock && !legacy && !uploads.isNullOrEmpty()) {
             val acc = active?.account
             if (acc == null) {
                 LaunchedEffect(uploads) {
@@ -153,32 +164,6 @@ fun AppRoot() {
                     (context.findActivity() as? com.vknxworks.immichctrl.MainActivity)?.uploadShared(uploads)
                 }
             }
-        }
-    }
-}
-
-/** Covers the app until the phone's fingerprint, face or screen lock is given. */
-@Composable
-private fun LockScreen() {
-    val context = LocalContext.current
-    val c = context.container
-    fun unlock() { context.findActivity()?.let { c.appLock.unlockWith(it) } }
-    LaunchedEffect(Unit) { unlock() }
-    // Nothing behind the cover may end up in a screenshot or screen recording.
-    com.vknxworks.immichctrl.data.security.SecureScreen()
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            // Swallow touches so nothing underneath can be used.
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Icon(Icons.Outlined.Lock, null, Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
-            Text("ImmichCtrl is locked", style = MaterialTheme.typography.headlineSmall)
-            Spacer(Modifier.height(4.dp))
-            PillButton("Unlock", onClick = ::unlock)
         }
     }
 }

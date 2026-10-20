@@ -67,6 +67,11 @@ class WidgetWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         if (ids.isEmpty()) return Result.success()
         val c = applicationContext.container
         c.sessions.ready.first { it }
+        // With the app lock on, the home screen doesn't show your photos.
+        if (c.appLock.enabled(c.settings.current())) {
+            show(manager, ids, null, "ImmichCtrl is locked", null)
+            return Result.success()
+        }
         val client = c.sessions.active.value?.client
         if (client == null) {
             show(manager, ids, null, "Sign in to ImmichCtrl", null)

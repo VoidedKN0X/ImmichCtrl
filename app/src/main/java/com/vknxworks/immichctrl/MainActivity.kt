@@ -74,6 +74,7 @@ class MainActivity : FragmentActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 c.device.requests.collect { req ->
                     pendingDevice = req
+                    com.vknxworks.immichctrl.data.security.expectAppReturn(this@MainActivity)
                     runCatching { deviceRequest.launch(IntentSenderRequest.Builder(req.sender).build()) }
                         .onFailure { req.onResult(false); pendingDevice = null }
                 }

@@ -164,6 +164,7 @@ object Exporter {
         intent.clipData = ClipData.newRawUri(null, uris.first()).apply { uris.drop(1).forEach { addItem(ClipData.Item(it)) } }
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         withContext(Dispatchers.Main) {
+            com.vknxworks.immichctrl.data.security.expectAppReturn(context)
             context.startActivity(Intent.createChooser(intent, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }
@@ -252,6 +253,7 @@ object Exporter {
 
     fun shareText(context: Context, text: String) {
         val intent = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+        com.vknxworks.immichctrl.data.security.expectAppReturn(context)
         context.startActivity(Intent.createChooser(intent, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 

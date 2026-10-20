@@ -205,6 +205,7 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
                 ActionItem(Icons.Outlined.PhotoLibrary, "From your Immich library") { addMenu = false; nav.navigate(PickAssetsRoute(a.id)) }
                 ActionItem(Icons.Outlined.Smartphone, "Upload from this phone") {
                     addMenu = false
+                    com.vknxworks.immichctrl.data.security.expectAppReturn(c.context)
                     picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                 }
             }

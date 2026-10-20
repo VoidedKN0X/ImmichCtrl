@@ -25,6 +25,7 @@ import com.vknxworks.immichctrl.data.api.serverVersion
 import com.vknxworks.immichctrl.data.appDataStore
 import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.net.CleartextPolicy
+import com.vknxworks.immichctrl.data.security.LockVault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -94,7 +95,14 @@ class SessionManager(
     private val context: Context,
     private val http: OkHttpClient,
     private val scope: CoroutineScope,
+    private val vault: LockVault,
 ) {
+    /**
+     * Whether an account's login must stay usable while the app is locked: set by the app for the
+     * account automatic backup (or admin alerts) runs for. Every other login is sealed by the app lock.
+     */
+    var backgroundUse: (Account) -> Boolean = { false }
+
     private val accountsKey = stringPreferencesKey("accounts")
     private val activeKey = stringPreferencesKey("active_account")
 
@@ -122,6 +130,11 @@ class SessionManager(
     }
 
     private suspend fun load() {
+        loadAccounts()
+        _ready.value = true
+    }
+
+    private suspend fun loadAccounts() {
         val prefs = context.appDataStore.data.first()
         val stored = prefs[accountsKey]?.let {
             runCatching { ApiJson.decodeFromString(ListSerializer(Account.serializer()), it) }.getOrNull()
@@ -131,8 +144,91 @@ class SessionManager(
         // Accounts saved by older versions kept their headers in plain text: re-save them encrypted.
         if (stored.any { it.headers.isNotEmpty() }) persist(list, prefs[activeKey])
         val acc = list.firstOrNull { it.key == prefs[activeKey] } ?: list.firstOrNull()
-        if (acc != null) activate(acc)
-        _ready.value = true
+        if (acc != null) activate(acc) else _active.value = null
+    }
+
+    // ---------------- App lock ----------------
+
+    /** The app lock seals this account's login (it isn't needed in the background). */
+    private fun sealed(acc: Account): Boolean = vault.enabled && !unsealing && !backgroundUse(acc)
+
+    /** Set while the lock is being turned off: everything is saved Keystore-only again. */
+    @Volatile private var unsealing = false
+
+    /** The app lock is being turned off (while unlocked): go back to Keystore-only encryption. */
+    suspend fun unsealAll() {
+        unsealing = true
+        try {
+            reseal()
+        } finally {
+            unsealing = false
+        }
+    }
+
+    /** Encrypts a secret for saving: with the Keystore, and also with the app lock's key when it seals [acc]. */
+    private fun storeSecret(acc: Account, plain: String): String {
+        val inner = if (sealed(acc)) vault.seal(plain) ?: plain else plain
+        return KeystoreCrypto.encrypt(inner)
+    }
+
+    /** The secret of [acc], or null while it's sealed and the app is locked. */
+    private fun secretOf(enc: String): String? {
+        val plain = KeystoreCrypto.decrypt(enc) ?: return null
+        return if (LockVault.isSealed(plain)) vault.open(plain) else plain
+    }
+
+    /**
+     * The app locked: logins sealed by the app lock are dropped from memory. The account automatic
+     * backup runs for stays signed in, so backups keep working.
+     */
+    suspend fun onLocked() {
+        if (!vault.enabled) return
+        val active = _active.value
+        // Re-read from disk: what was decrypted for the screens (proxy headers) is forgotten again.
+        val prefs = context.appDataStore.data.first()
+        val stored = prefs[accountsKey]?.let {
+            runCatching { ApiJson.decodeFromString(ListSerializer(Account.serializer()), it) }.getOrNull()
+        }.orEmpty()
+        _accounts.value = stored.map { it.withHeadersDecrypted() }
+        if (active != null && KeystoreCrypto.decrypt(active.account.secretEnc)?.let(LockVault::isSealed) == true) {
+            _active.value = null
+        }
+    }
+
+    /** The app unlocked: decrypt the logins again and seal or unseal them for what's needed now. */
+    suspend fun onUnlocked() {
+        val kept = _active.value
+        if (kept == null) {
+            loadAccounts()
+        } else {
+            // The backup account stayed signed in while locked: keep its session, refresh the list.
+            val stored = context.appDataStore.data.first()[accountsKey]?.let {
+                runCatching { ApiJson.decodeFromString(ListSerializer(Account.serializer()), it) }.getOrNull()
+            }.orEmpty()
+            _accounts.value = stored.map { it.withHeadersDecrypted() }
+        }
+        reseal()
+    }
+
+    /**
+     * Brings every saved login in line with the lock: sealed unless it's needed in the background,
+     * Keystore-only when the lock is off. Only while unlocked.
+     */
+    suspend fun reseal() {
+        // Nothing to do without the lock, while locked, or before the saved accounts are loaded.
+        if (!vault.enabled || !vault.isOpen || !_ready.value) return
+        val list = _accounts.value.map { acc ->
+            val secret = secretOf(acc.secretEnc) ?: return@map acc
+            acc.copy(secretEnc = storeSecret(acc, secret))
+        }
+        persist(list, context.appDataStore.data.first()[activeKey])
+        val s = _active.value
+        if (s != null) list.firstOrNull { it.key == s.account.key }?.let { _active.value = ActiveSession(it, s.client) }
+    }
+
+    /** "Forgot PIN?": every account is signed out and its data on the phone removed. */
+    suspend fun forgetAll() {
+        _accounts.value.map { it.key }.forEach { signOut(it) }
     }
 
     /**
@@ -189,17 +285,18 @@ class SessionManager(
         } catch (e: ApiException) {
             if (e.code == 401) throw ApiException("That API key wasn't accepted. It needs at least the user.read permission.") else throw e
         }
-        val account = Account(
+        val draft = Account(
             serverUrl = client.baseUrl,
             userId = me.id,
             email = me.email,
             name = me.name,
             authType = AuthType.API_KEY,
-            secretEnc = KeystoreCrypto.encrypt(apiKey.trim()),
+            secretEnc = "",
             isAdmin = me.isAdmin,
             serverVersion = probe.version,
             headers = probe.headers,
         )
+        val account = draft.copy(secretEnc = storeSecret(draft, apiKey.trim()))
         save(account, client)
         return account
     }
@@ -251,17 +348,18 @@ class SessionManager(
     private suspend fun finishLogin(probe: ServerProbe, login: LoginResponse, type: AuthType): Account {
         val client = ImmichClient(probe.baseUrl, login.accessToken, type, http).also { it.extraHeaders = probe.headers }
         val me = runCatching { client.me() }.getOrNull()
-        val account = Account(
+        val draft = Account(
             serverUrl = client.baseUrl,
             userId = login.userId,
             email = me?.email ?: login.userEmail,
             name = me?.name ?: login.name,
             authType = type,
-            secretEnc = KeystoreCrypto.encrypt(login.accessToken),
+            secretEnc = "",
             isAdmin = me?.isAdmin ?: login.isAdmin,
             serverVersion = probe.version,
             headers = probe.headers,
         )
+        val account = draft.copy(secretEnc = storeSecret(draft, login.accessToken))
         save(account, client)
         return account
     }
@@ -328,7 +426,7 @@ class SessionManager(
     }
 
     private fun clientFor(acc: Account): ImmichClient? {
-        val secret = KeystoreCrypto.decrypt(acc.secretEnc) ?: return null
+        val secret = secretOf(acc.secretEnc) ?: return null
         // Reconnects always use the saved address and scheme; never switch an https account to http.
         CleartextPolicy.allowServer(acc.serverUrl)
         return ImmichClient(acc.serverUrl, secret, acc.authType, http).also {
@@ -349,16 +447,23 @@ class SessionManager(
         }
     }
 
-    private fun Account.withHeadersEncrypted(): Account = copy(
-        headers = emptyMap(),
-        headersEnc = headers.takeIf { it.isNotEmpty() }?.let {
-            KeystoreCrypto.encrypt(ApiJson.encodeToString(MapSerializer(String.serializer(), String.serializer()), it))
-        },
-    )
+    private fun Account.withHeadersEncrypted(): Account {
+        // Still sealed (the app is locked): keep what's saved.
+        if (headersEnc != null) return copy(headers = emptyMap())
+        return copy(
+            headers = emptyMap(),
+            headersEnc = headers.takeIf { it.isNotEmpty() }?.let {
+                storeSecret(this, ApiJson.encodeToString(MapSerializer(String.serializer(), String.serializer()), it))
+            },
+        )
+    }
 
+    /** Decrypts the extra headers; sealed ones stay encrypted (in [Account.headersEnc]) while the app is locked. */
     private fun Account.withHeadersDecrypted(): Account {
         val enc = headersEnc ?: return this
-        val map = KeystoreCrypto.decrypt(enc)?.let {
+        val plain = KeystoreCrypto.decrypt(enc)
+        if (plain != null && LockVault.isSealed(plain) && !vault.isOpen) return copy(headers = emptyMap())
+        val map = secretOf(enc)?.let {
             runCatching { ApiJson.decodeFromString(MapSerializer(String.serializer(), String.serializer()), it) }.getOrNull()
         }
         return copy(headers = map ?: headers, headersEnc = null)
