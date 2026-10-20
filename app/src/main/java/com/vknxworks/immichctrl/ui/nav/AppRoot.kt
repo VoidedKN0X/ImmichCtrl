@@ -100,7 +100,6 @@ import com.vknxworks.immichctrl.ui.search.SearchScreen
 import com.vknxworks.immichctrl.ui.settings.AccountsScreen
 import com.vknxworks.immichctrl.ui.settings.AdminScreen
 import com.vknxworks.immichctrl.ui.settings.SettingsScreen
-import com.vknxworks.immichctrl.ui.settings.UsageStatsPrompt
 import com.vknxworks.immichctrl.ui.settings.YouScreen
 import com.vknxworks.immichctrl.ui.viewer.ViewerScreen
 import dev.chrisbanes.haze.hazeSource
@@ -184,13 +183,6 @@ private fun LockScreen() {
     }
 }
 
-/**
- * "com.vknxworks.immichctrl.ui.nav.AlbumRoute/{id}" -> "Album". Only the route's class name: arguments (photo and
- * album IDs, people, place and tag names, folder paths) are dropped.
- */
-private fun screenName(route: String): String =
-    route.substringBefore('/').substringBefore('?').substringAfterLast('.').removeSuffix("Route")
-
 /** Screens read-only mode never shows: they change the account, its settings or what's on the server. */
 private fun androidx.navigation.NavDestination.blockedInReadOnly(): Boolean =
     hasRoute(YouRoute::class) || hasRoute(SettingsRoute::class) || hasRoute(AccountsRoute::class) ||
@@ -242,14 +234,6 @@ private fun MainScaffold() {
     val offLimits = selectedIndex > 0 || dest?.blockedInReadOnly() == true
     LaunchedEffect(readOnly, offLimits) { if (readOnly && offLimits) navController.navigate(PhotosRoute) { popUpTo(0) } }
 
-    // Usage stats (only if the user opted in): the kind of screen, never the photo, album, person or place it shows.
-    val entryId = backStack?.id
-    val screen = dest?.route?.let(::screenName)
-    LaunchedEffect(entryId) {
-        if (screen != null) c.telemetry.track("screen_viewed", mapOf("screen" to screen))
-    }
-    // Not in read-only mode: whoever the phone was handed to shouldn't be the one answering.
-    if (!readOnly) UsageStatsPrompt()
 
     fun selectTab(i: Int) {
         navController.navigate(topDestinations[i].route) {

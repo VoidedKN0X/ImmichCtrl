@@ -128,7 +128,6 @@ import com.vknxworks.immichctrl.ui.photos.setFavorite
 import com.vknxworks.immichctrl.ui.photos.setLocation
 import com.vknxworks.immichctrl.ui.photos.setVisibility
 import com.vknxworks.immichctrl.ui.photos.shareLink
-import com.vknxworks.immichctrl.ui.photos.trackAction
 import com.vknxworks.immichctrl.ui.photos.trash
 import com.vknxworks.immichctrl.ui.photos.upload
 import dev.chrisbanes.haze.hazeSource
@@ -445,10 +444,9 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
         AlbumPickerSheet(onDismiss = { pickAlbum = false }) { id, name ->
             pickAlbum = false
             if (id == null) {
-                c.trackAction("create_album", 1)
                 c.runTask {
                     val album = c.api.createAlbum(name, if (a.isRemote) listOf(a.id) else emptyList())
-                    if (a.isLocalOnly) c.addToAlbum(album.id, name, listOf(a), track = false)
+                    if (a.isLocalOnly) c.addToAlbum(album.id, name, listOf(a))
                     c.toast("Created $name")
                     Sources.refreshAll()
                 }

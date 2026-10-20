@@ -4,11 +4,16 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
-## Unreleased
+## 0.3.3
+
+### Privacy
+
+- **No more usage stats: ImmichCtrl is now telemetry-free.** The optional anonymous usage stats are gone completely, along with the Usage stats setting and the one-time question. The app no longer contacts VKNXWorks' stats server at all, and the settings it used are deleted from your phone when you update. ImmichCtrl now only talks to your Immich server and, when maps are on, your server's map provider.
 
 ### Changed
 
 - **README**: a Screenshots section (screenshots are coming soon), and a link preview image (`.github/assets/social-preview.png`) with ImmichCtrl's icon, name and summary, for when the repo is shared on Reddit, Discord or elsewhere
+- **README**: a Privacy section and a Telemetry-free badge replace the Usage stats section, and the link preview image has a Telemetry-free tag
 
 ## 0.3.2
 

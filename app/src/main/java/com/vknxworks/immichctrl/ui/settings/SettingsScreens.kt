@@ -15,7 +15,6 @@ import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.Fingerprint
-import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.LocationOff
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Map
@@ -171,16 +170,6 @@ fun SettingsScreen() {
                     s.showMaps,
                     Icons.Outlined.Map,
                 ) { v -> update { it.copy(showMaps = v) } }
-            }
-            if (c.telemetry.available) {
-                Group("Usage stats", footer = USAGE_STATS_DESCRIPTION) {
-                    GroupSwitch(
-                        "Share anonymous usage stats",
-                        "Helps decide what to improve next",
-                        s.usageStats,
-                        Icons.Outlined.Insights,
-                    ) { v -> update { it.copy(usageStats = v, usageStatsAsked = true) } }
-                }
             }
             if (session?.account?.isAdmin == true) {
                 Group("Admin alerts", footer = "Checked about once an hour. Only shown on admin accounts.") {

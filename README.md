@@ -2,7 +2,7 @@
 
 **Your Immich photo library and backup, in a native Android app.**
 
-[![Latest release](https://img.shields.io/github/v/release/VoidedKN0X/ImmichCtrl?label=download)](https://github.com/VoidedKN0X/ImmichCtrl/releases/latest) ![Android 13+](https://img.shields.io/badge/Android-13%2B-3DDC84?logo=android&logoColor=white) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE) [![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/VoidedKN0X)
+[![Latest release](https://img.shields.io/github/v/release/VoidedKN0X/ImmichCtrl?label=download)](https://github.com/VoidedKN0X/ImmichCtrl/releases/latest) ![Android 13+](https://img.shields.io/badge/Android-13%2B-3DDC84?logo=android&logoColor=white) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE) ![Telemetry-free](https://img.shields.io/badge/telemetry-none-brightgreen) [![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/VoidedKN0X)
 
 ImmichCtrl is an Android app for self-hosted [Immich](https://immich.app/) photo servers. Browse your timeline, back up your phone, edit and organise your photos, and keep albums for offline viewing. Works with Immich 2.x and 3.x.
 
@@ -116,23 +116,17 @@ Your account, backup, **Settings** and sign out are all on that same page behind
 - **Something not working?** **Settings → Logs** shows what the app has been doing; copy or share it when reporting a bug.
 - See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
-## Usage stats
+## Privacy
 
-ImmichCtrl can share anonymous usage stats, **only if you say yes**. It asks once after you sign in, and you can change it any time in **Settings > Usage stats**.
-
-- **Shared:** which screens you open (the kind of screen, never which album, person or place), whether automatic backup is on, when you turn it on or off and when a backup is started (from the app or the Quick Settings tile), which kind of search you use and whether filters were on, which photo actions you use (share, share a link, save, add to an album, new album) with a rough number of photos like "2-10", the app version, Android version, phone model, language, and phone or tablet.
-- **Never shared:** your server address, email, username or passwords, your photos or anything about them (IDs, file names, locations), album, people, place or tag names, what you search for, exact counts, or any ID that stays the same between sessions.
-- **Where:** VKNXWorks' own self-hosted [Aptabase](https://aptabase.com) server. Nothing goes to Google or analytics companies. Like any website, the server sees your IP address; Aptabase uses it only to work out the country and doesn't store it.
-
-Builds from source don't include the stats key, so they can't send anything and the setting is hidden. The code is in [`Telemetry.kt`](app/src/main/java/com/vknxworks/immichctrl/data/telemetry/Telemetry.kt).
+**Telemetry-free.** ImmichCtrl has no analytics, crash reporting, usage stats or tracking of any kind. It only talks to the servers you add, plus the map provider below when maps are on.
 
 ### Other servers the app talks to
 
-Apart from your own Immich server (and the opt-in stats above), ImmichCtrl only contacts:
+Apart from your own Immich server, ImmichCtrl only contacts:
 
 - **Your server's map provider**, for the mini map in a photo's details and the Map screen: Immich's tile server (`tiles.immich.cloud`) unless your admin chose another map style. It sees your IP address and the area shown. Maps only load when the map is turned on in your server's settings, and you can turn them off in **Settings > Privacy > Show maps**.
 
-Nothing else: no Google services, no ads, no other analytics.
+Nothing else: no Google services, no ads, no analytics.
 
 ## Build from source
 
