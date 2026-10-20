@@ -4,6 +4,12 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Changed
+
+- **Store listing for IzzyOnDroid**: the app's name, short and full description, icon and feature graphic are now in the repo (`fastlane/metadata/android/en-US`), so app stores like IzzyOnDroid can show them. Screenshots are coming soon
+
 ## 0.3.5
 
 ### Changed
