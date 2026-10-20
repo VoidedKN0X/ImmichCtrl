@@ -1,5 +1,9 @@
 package com.vknxworks.immichctrl.ui.photos
 
+import androidx.compose.runtime.CompositionLocalProvider
+import com.vknxworks.immichctrl.ui.components.LocalHazeState
+import dev.chrisbanes.haze.rememberHazeState
+import dev.chrisbanes.haze.hazeSource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -99,8 +103,11 @@ fun SourceGrid(
         onDispose { hideTabs.value = false }
     }
 
+    // The selection bar blurs the grid behind it. It needs its own haze source: the app-wide one
+    // wraps this whole screen, and a glass surface inside its own source draws nothing (see-through).
+    val haze = rememberHazeState()
     Box(modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().hazeSource(haze)) {
             topBar?.invoke()
             AssetGrid(
                 source = source,
@@ -120,13 +127,15 @@ fun SourceGrid(
             )
         }
         if (selection.active) {
-            SelectionBar(
-                selection,
-                context,
-                Modifier.align(Alignment.BottomCenter),
-                albumId = albumId,
-                canEditAlbum = canEditAlbum,
-            )
+            CompositionLocalProvider(LocalHazeState provides haze) {
+                SelectionBar(
+                    selection,
+                    context,
+                    Modifier.align(Alignment.BottomCenter),
+                    albumId = albumId,
+                    canEditAlbum = canEditAlbum,
+                )
+            }
         }
     }
 }
