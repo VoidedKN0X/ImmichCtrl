@@ -1,5 +1,11 @@
 package com.vknxworks.immichctrl.ui.viewer
 
+import com.vknxworks.immichctrl.data.api.users
+import com.vknxworks.immichctrl.ui.components.rememberLoader
+import com.vknxworks.immichctrl.ui.components.UserAvatar
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -158,6 +164,10 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
     val pager = rememberPagerState(initialPage = initial) { source.total }
     val haze = rememberHazeState()
     val shareFlow = remember { ShareFlow() }
+    // Names of the other users on the server, to say whose photo this is.
+    val ownerNames = rememberLoader("user-names") {
+        runCatching { c.api.users().associate { it.id to it.name.ifBlank { it.email } } }.getOrDefault(emptyMap())
+    }.value.orEmpty()
     var chrome by remember { mutableStateOf(true) }
     var zoomed by remember { mutableStateOf(false) }
     var info by remember { mutableStateOf(false) }
@@ -292,6 +302,28 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
+                        // Someone else's photo (a partner's, or from a shared album): say whose.
+                        if (current.isRemote && current.ownerId.isNotBlank() && current.ownerId != c.me) {
+                            val owner = ownerNames[current.ownerId]
+                            Row(
+                                Modifier
+                                    .padding(top = 4.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color.White.copy(alpha = 0.18f))
+                                    .padding(start = 3.dp, end = 10.dp, top = 3.dp, bottom = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                UserAvatar(current.ownerId, owner ?: "?", true, null, null, Modifier.size(18.dp))
+                                Text(
+                                    if (owner != null) "$owner's photo" else "Shared with you",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(start = 6.dp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
                     }
                 }
                 if (current?.livePhotoVideoId != null) {
