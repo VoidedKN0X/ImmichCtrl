@@ -428,7 +428,7 @@ fun PartnersScreen() {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
         ScreenTopBar("Partners")
         Text(
-            "Partners see all of each other's photos (not archived or locked ones). Shared photos can also show up in your Photos tab.",
+            "Partners share their whole library (not archived or locked photos). Tap someone to see just their photos. Turn on \"Also in Photos\" only if you want their photos mixed into your own timeline.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp),
@@ -446,7 +446,7 @@ fun PartnersScreen() {
                             Switch(p.inTimeline == true, onCheckedChange = { on ->
                                 c.runTask { c.api.updatePartner(p.id, on); withMe.reload(silent = true); Sources.refreshAll() }
                             })
-                            Text("In Photos", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Also in Photos", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     },
                 )
@@ -499,12 +499,32 @@ fun PartnersScreen() {
     }
 }
 
+/** One partner's library on its own, never mixed with yours. */
 @Composable
 fun PartnerScreen(userId: String, name: String) {
+    val c = LocalContext.current.container
+    val partner = rememberLoader("partners-with") { c.api.partners("shared-with") }.value?.firstOrNull { it.id == userId }
     SourceGrid(
         rememberTimeline("partner:$userId", TimelineQuery(userId = userId, visibility = "timeline", withStacked = true)),
         SelectionContext.SHARED,
-        topBar = { ScreenTopBar(name) },
+        topBar = { ScreenTopBar("$name's photos") },
+        header = {
+            item(key = "partner-header") {
+                androidx.compose.foundation.layout.Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    UserAvatar(userId, name, partner?.profileImagePath?.isNotBlank() == true, partner?.profileChangedAt, null, Modifier.size(44.dp))
+                    Text(
+                        if (partner?.inTimeline == true) "Shared with you by $name. Also shown in your Photos tab; turn that off in Partners."
+                        else "Shared with you by $name. Only their photos are here; yours aren't mixed in.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 14.dp),
+                    )
+                }
+            }
+        },
         empty = { MessageView(Icons.Outlined.People, "$name hasn't shared any photos yet") },
     )
 }

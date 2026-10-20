@@ -36,7 +36,8 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - Favourites, archive, trash, recently added (by upload date on Immich 3), videos, tags and folders
 - **Locked folder** with PIN or fingerprint; moving a photo there also removes the copy on the phone
 - **People** (including people shared with you), **places** and a **map** with date and favourite filters (maps follow your server's map setting, and you can turn them off)
-- **Partner sharing** and shared links you can edit later
+- **Partner sharing**: people who share with you appear at the top of Library; tap one to see only their photos, kept separate from yours
+- Shared links you can edit later
 
 **Search**
 - **Smart search** ("dog on a beach") plus file name, description and text-in-photo search

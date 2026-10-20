@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.library
 
+import com.vknxworks.immichctrl.data.api.partners
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -117,6 +118,8 @@ fun LibraryScreen() {
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     val offline by c.offline.albums.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val partners = rememberLoader("partners-with") { c.api.partners("shared-with") }
+    val partnersWithMe = partners.value.orEmpty()
 
     if (creating) {
         TextInputDialog("New album", "Album name", "Create", onDismiss = { creating = false }) { name ->
@@ -138,6 +141,7 @@ fun LibraryScreen() {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             fullWidth("title") { TabTitle("Library", padded = false) }
+            if (partnersWithMe.isNotEmpty()) fullWidth("partners") { PartnerRow(partnersWithMe) }
             fullWidth("tiles") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TileRow(
@@ -374,5 +378,36 @@ fun AlbumCard(a: AlbumDto, onClick: () -> Unit) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(start = 2.dp, bottom = 4.dp),
         )
+    }
+}
+
+/** People who share their library with you: tap one to see only their photos. */
+@Composable
+private fun PartnerRow(partners: List<com.vknxworks.immichctrl.data.api.PartnerDto>) {
+    val nav = LocalNavigator.current
+    Column(Modifier.padding(bottom = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Shared with you", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            androidx.compose.material3.TextButton(onClick = { nav.navigate(PartnersRoute) }) { Text("Manage") }
+        }
+        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            items(partners.size, key = { partners[it].id }) { i ->
+                val p = partners[i]
+                Column(
+                    Modifier.width(80.dp).clip(MaterialTheme.shapes.medium).clickable { nav.navigate(com.vknxworks.immichctrl.ui.nav.PartnerRoute(p.id, p.name.ifBlank { p.email })) }.padding(vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    com.vknxworks.immichctrl.ui.components.UserAvatar(p.id, p.name.ifBlank { p.email }, p.profileImagePath.isNotBlank(), p.profileChangedAt, null, Modifier.size(60.dp))
+                    Text(
+                        p.name.ifBlank { p.email },
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
+            }
+        }
     }
 }

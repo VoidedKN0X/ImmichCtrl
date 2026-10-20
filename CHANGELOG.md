@@ -4,6 +4,19 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.6
+
+### New
+
+- **Partners at the top of Library.** Everyone who shares their photos with you now shows up automatically at the top of the Library tab, with their profile picture and name under "Shared with you". Tap someone to open their gallery: only their photos, never mixed with yours. "Manage" takes you to the Partners screen. The row only appears when someone shares with you.
+- **Whose photo is this?** When you open a photo that belongs to someone else (a partner's, or one from a shared album), the viewer shows their picture and "Name's photo" under the date.
+
+### Changed
+
+- **Partner galleries** are titled "Name's photos" and start with a short note that the photos are theirs and that yours aren't mixed in (or that they also appear in your Photos tab, if you turned that on).
+- **Partners screen**: the switch next to each person is now labelled "Also in Photos", and the explanation says it's only for mixing their photos into your own timeline. It stays off unless you turn it on.
+- **README**: partner sharing describes the new Library row.
+
 ## 0.3.5
 
 ### Changed
