@@ -4,6 +4,19 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.4
+
+Released 2026-10-20. ImmichCtrl is now Google-free and de-Googled. Nothing changes in how you use it.
+
+### Privacy
+
+- **No mention of Google left in the app's own code.** ImmichCtrl has no Google Play services, Firebase or other Google services and never contacts Google: it only talks to your Immich server and your server's map provider when maps are on. The last mention of Google in ImmichCtrl's own files, a technical note in its setup file, is gone. It works the same on de-Googled phones such as GrapheneOS, CalyxOS, /e/OS and LineageOS without Google apps.
+
+### Changed
+
+- **README**: the Google-free line now reads "Google-free and de-Googled": no Google Play services, Firebase or other Google services, the app never contacts Google, and it works the same on de-Googled phones (GrapheneOS, CalyxOS, /e/OS, LineageOS without Google apps). It's the only place Google is mentioned in the README.
+- **README**: the tip about casting now just says casting isn't supported, and the Privacy section ends with "Nothing else: no ads, no analytics."
+
 ## 0.3.3
 
 ### Privacy

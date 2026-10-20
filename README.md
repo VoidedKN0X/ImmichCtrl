@@ -56,7 +56,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Remove location when sharing**: takes the GPS position out of JPEG, PNG and WebP photos you send to other apps (videos and HEIC photos keep theirs)
 - **Show maps** switch: turn off the mini map and Map screen so no map tiles are loaded
 - **Home network address**: save your server's local address next to the public one and pick which one the app uses (**Use home address** / **Use public address**). It sticks to your choice and never switches by itself
-- **Google-free**: no Google Play services, Firebase, Cast or other proprietary Google code, and the app never contacts Google (emoji use your phone's own font)
+- **Google-free and de-Googled:** no Google Play services, Firebase or other Google services, and the app never contacts Google. It works the same on de-Googled phones (GrapheneOS, CalyxOS, /e/OS, LineageOS without Google apps).
 - **Custom headers** (Cloudflare Access, auth proxies) and **client certificates** (mutual TLS)
 
 **Everything else**
@@ -107,7 +107,7 @@ Your account, backup, **Settings** and sign out are all on that same page behind
 - **Server behind Cloudflare Access or another proxy?** Tap **Advanced: custom headers** on the sign-in screen and add the headers there. You can change them later in **Settings → Networking**.
 - **Home network address:** add it in **Settings → Networking**, then pick **Use home address** under **Address in use**. The app stays on the address you picked, even away from home, so pick **Use public address** before you leave (also on your profile page, or from the button on a "Couldn't load this" error). After updating from 0.2.x, the app starts on the public address.
 - **Client certificates** are in **Settings → Networking** too. Install the certificate in Android's settings first (Security → Encryption & credentials), then pick it in the app.
-- **Casting isn't supported.** It would need Google Play services, and ImmichCtrl is Google-free.
+- **Casting isn't supported.**
 - **Quick Settings tile:** pull down the notification shade, tap the pencil and drag **Back up photos** into your tiles.
 - **Widgets:** long-press your home screen, choose **Widgets** and look for ImmichCtrl.
 - **Backup stops in the background?** Open **Backup** and follow the battery warning to let ImmichCtrl run without restrictions.
@@ -126,7 +126,7 @@ Apart from your own Immich server, ImmichCtrl only contacts:
 
 - **Your server's map provider**, for the mini map in a photo's details and the Map screen: Immich's tile server (`tiles.immich.cloud`) unless your admin chose another map style. It sees your IP address and the area shown. Maps only load when the map is turned on in your server's settings, and you can turn them off in **Settings > Privacy > Show maps**.
 
-Nothing else: no Google services, no ads, no analytics.
+Nothing else: no ads, no analytics.
 
 ## Build from source
 
