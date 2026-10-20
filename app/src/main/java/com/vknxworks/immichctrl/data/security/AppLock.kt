@@ -92,7 +92,9 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
     suspend fun onForeground() {
         val s = settings.current()
         val away = backgroundedAt?.let { SystemClock.elapsedRealtime() - it }
+        val exempt = exemptTrip
         backgroundedAt = null
+        exemptTrip = false
         expectReturnAt = 0L
         prompting = false
         if (!enabled(s)) {
@@ -102,19 +104,23 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
         }
         // -1: only when the app restarts.
         val timeout = s.appLockTimeout
-        if (!startChecked || (away != null && timeout >= 0 && away >= timeout * 1000L)) lock()
+        // A trip the app started still locks if you stay away long: after 5 minutes, or the chosen time if longer.
+        val limit = if (exempt) maxOf(timeout * 1000L, 5 * 60_000L) else timeout * 1000L
+        if (!startChecked || (away != null && timeout >= 0 && away >= limit)) lock()
         startChecked = true
     }
 
+    /** The current trip away was started by the app itself (share sheet, editor, picker …). */
+    @Volatile private var exemptTrip = false
+
     fun onBackground() {
         if (prompting) return
+        val now = SystemClock.elapsedRealtime()
+        backgroundedAt = now
         // Only right after the app opened something itself; leaving later still counts.
-        if (expectReturnAt > 0 && SystemClock.elapsedRealtime() - expectReturnAt < 5_000) {
-            expectReturnAt = 0L
-            backgroundedAt = null
-            return
-        }
-        backgroundedAt = SystemClock.elapsedRealtime()
+        exemptTrip = expectReturnAt > 0 && now - expectReturnAt < 5_000
+        expectReturnAt = 0L
+        if (exemptTrip) return
         // "As soon as you leave" locks right away, so the key is gone while the app is in the background.
         val s = settings.settings.value
         if (enabled(s) && !_locked.value && s.appLockTimeout == 0) lock()
