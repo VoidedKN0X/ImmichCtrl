@@ -4,6 +4,12 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.10
+
+### Security
+
+- **Trips out of the app no longer skip the lock if you stay away.** Sharing, photo pickers, editing in another app, the map app and Android's confirmations still don't count as leaving the app, but if you don't come back within 5 minutes (or your "Lock again" time, if that's longer), ImmichCtrl locks anyway. Before, such a trip never locked, however long you were gone.
+
 ## 0.3.9
 
 The app lock now works the same way as in every other Ctrl app, with the strongest protection of the options compared.
