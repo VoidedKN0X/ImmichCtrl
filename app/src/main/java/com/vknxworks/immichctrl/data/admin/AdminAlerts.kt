@@ -52,7 +52,7 @@ class AdminAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
             val last = stored[lastKey] ?: 0L
             if (total > last) {
                 val which = failed.filterValues { it > 0 }.keys.joinToString(", ")
-                notify(nm, 1, Strings.plural(R.plurals.background_jobs_failed, total - last, total - last), Strings.str(R.string.on, s.account.serverName, which))
+                notify(nm, 1, Strings.plural(R.plurals.background_jobs_failed, (total - last).toInt(), total - last), Strings.str(R.string.on, s.account.serverName, which))
             }
             prefs.edit { it[lastKey] = total }
         }.onFailure { AppLog.w("Admin", "Couldn't check job queues: ${it.message}") }

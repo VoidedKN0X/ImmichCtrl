@@ -223,7 +223,7 @@ fun PersonScreen(id: String) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(p.name.ifBlank { Strings.str(R.string.unnamed_person) })
                 ActionItem(Icons.Outlined.Edit, if (p.name.isBlank()) stringResource(R.string.add_a_name) else stringResource(R.string.rename)) { menu = false; naming = true }
-                ActionItem(Icons.Outlined.Cake, if (p.birthDate == null) stringResource(R.string.add_birthday) else stringResource(R.string.change_birthday, shortDate(p.birthDate))) { menu = false; birthday = true }
+                ActionItem(Icons.Outlined.Cake, if (p.birthDate == null) stringResource(R.string.add_birthday) else stringResource(R.string.change_birthday, shortDate(p.birthDate).orEmpty())) { menu = false; birthday = true }
                 ActionItem(if (p.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, if (p.isFavorite) stringResource(R.string.remove_from_favourites) else stringResource(R.string.add_to_favourites)) {
                     menu = false
                     c.runTask { c.api.updatePerson(p.id, "isFavorite" to !p.isFavorite); changed() }
