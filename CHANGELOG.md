@@ -4,6 +4,15 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.12
+
+### Changed
+
+- **Hide in screenshots** and **Hide in recent apps** are now two separate switches in Settings › Privacy and security, both off by default, the same in every Ctrl app. Hide in screenshots makes screenshots, screen recordings and casting show a blank screen; Hide in recent apps shows a blank card in the recent-apps view instead of the app (screenshots still work). Before, 0.3.11's single "Hide in screenshots and recent apps" setting blocked screenshots, and the recent-apps view always showed a blank card. **What changes for you:** if you had turned that setting on, both new switches are on. If you never turned it on, both are off, so the recent-apps view now shows ImmichCtrl's preview; turn Hide in recent apps on if you want the old blank card. With the app lock on, the recent-apps view always shows a blank card.
+- **Always protected, whatever the switches say:** sign-in, Networking (Settings → Networking, where custom headers often hold a reverse proxy's secrets), the locked folder, the lock screen and the PIN screens are never in screenshots, screen recordings or casting. Sign-in and Networking are new to this list.
+- The app lock's text and the Privacy and security rows now come from the app's translatable text resources, with the same wording as the other Ctrl apps. Nothing else changes in how they work.
+- **README**: the App lock section now uses the same wording as the other Ctrl apps and describes the two switches.
+
 ## 0.3.11
 
 Settings and the app lock now match the other Ctrl apps, with a new setting to keep ImmichCtrl out of screenshots.

@@ -42,15 +42,16 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Recents shows a blank card instead of a snapshot of your photos.
-        setRecentsScreenshotEnabled(false)
         enableEdgeToEdge()
         val c = container
         setContent {
             val settings by c.settings.settings.collectAsStateWithLifecycle()
-            // FLAG_SECURE with "Hide in screenshots and recent apps", and always while the locked folder,
+            // FLAG_SECURE with "Hide in screenshots", and always while sign-in, Networking, the locked folder,
             // the lock screen or a PIN screen is showing.
-            val secure = settings.hideContent || ScreenPrivacy.secure
+            val secure = settings.hideScreenshots || ScreenPrivacy.secure
+            // "Hide in recent apps", and always with the app lock on: a blank card instead of a snapshot.
+            val blankRecents = settings.hideRecents || settings.appLock || c.vault.enabled
+            LaunchedEffect(blankRecents) { setRecentsScreenshotEnabled(!blankRecents) }
             LaunchedEffect(secure) {
                 if (secure) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)

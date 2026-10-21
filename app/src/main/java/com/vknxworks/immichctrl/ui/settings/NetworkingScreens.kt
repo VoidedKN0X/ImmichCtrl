@@ -66,6 +66,8 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun NetworkingScreen() {
+    // Custom headers often hold proxy secrets: never in screenshots, recordings or casting.
+    com.vknxworks.immichctrl.data.security.SecureScreen()
     val context = LocalContext.current
     val c = context.container
     val scope = rememberCoroutineScope()

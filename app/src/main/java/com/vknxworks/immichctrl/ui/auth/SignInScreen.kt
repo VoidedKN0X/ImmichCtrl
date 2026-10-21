@@ -71,6 +71,8 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
+    // Passwords, API keys and proxy headers are typed here: never in screenshots, recordings or casting.
+    com.vknxworks.immichctrl.data.security.SecureScreen()
     val context = LocalContext.current
     val c = context.container
     val scope = rememberCoroutineScope()
