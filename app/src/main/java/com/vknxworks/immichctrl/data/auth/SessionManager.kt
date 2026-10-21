@@ -25,7 +25,7 @@ import com.vknxworks.immichctrl.data.api.serverVersion
 import com.vknxworks.immichctrl.data.appDataStore
 import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.net.CleartextPolicy
-import com.vknxworks.immichctrl.data.security.LockVault
+import com.vknxworks.immichctrl.data.lock.LockVault
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

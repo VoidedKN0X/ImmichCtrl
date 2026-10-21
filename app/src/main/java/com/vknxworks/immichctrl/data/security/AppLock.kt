@@ -1,6 +1,7 @@
 package com.vknxworks.immichctrl.data.security
 
 import android.content.Context
+import com.vknxworks.immichctrl.data.lock.LockVault
 import android.os.SystemClock
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
@@ -166,6 +167,7 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
         activity: FragmentActivity,
         title: String,
         cipher: Cipher,
+        subtitle: String? = null,
         onError: (String?) -> Unit = {},
         onSuccess: (Cipher) -> Unit,
     ) {
@@ -189,6 +191,7 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
         )
         val info = BiometricPrompt.PromptInfo.Builder()
             .setTitle(title)
+            .apply { if (subtitle != null) setSubtitle(subtitle) }
             .setAllowedAuthenticators(BIOMETRIC_STRONG)
             .setNegativeButtonText("Use PIN")
             .build()

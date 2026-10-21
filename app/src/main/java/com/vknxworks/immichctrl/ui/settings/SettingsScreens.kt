@@ -66,7 +66,8 @@ import com.vknxworks.immichctrl.ui.components.ScreenTopBar
 import com.vknxworks.immichctrl.ui.nav.AddAccountRoute
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import kotlinx.coroutines.launch
-import com.vknxworks.immichctrl.data.security.LockVault
+import com.vknxworks.immichctrl.data.lock.LockVault
+import androidx.compose.material.icons.outlined.VisibilityOff
 import com.vknxworks.immichctrl.data.security.PinRequest
 
 @Composable
@@ -84,9 +85,109 @@ fun SettingsScreen() {
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
             Group("Appearance") {
                 GroupChoice("Theme", ThemeChoice.entries.map { it to it.label }, s.theme, Icons.Outlined.DarkMode) { v -> update { it.copy(theme = v) } }
-                GroupSwitch("Colours from your wallpaper", "Material You instead of ImmichCtrl's periwinkle", s.dynamicColor, Icons.Outlined.Palette) { v ->
+                GroupSwitch("Use wallpaper colours", "Replaces ImmichCtrl's periwinkle with colours from your wallpaper", s.dynamicColor, Icons.Outlined.Palette) { v ->
                     update { it.copy(dynamicColor = v) }
                 }
+            }
+            if (session?.account?.isAdmin == true) {
+                Group("Notifications", footer = "Server alerts are checked about once an hour. Only shown on admin accounts.") {
+                    GroupSwitch("Notify me about the server", "Failed jobs, low disk space and new Immich releases", s.adminAlerts, Icons.Outlined.NotificationsActive) { v ->
+                        update { it.copy(adminAlerts = v) }
+                    }
+                    if (s.adminAlerts) {
+                        GroupChoice("Warn when the disk is", listOf(75, 80, 85, 90, 95).map { it to "$it% full" }, s.adminDiskPercent, Icons.Outlined.SdStorage) { v ->
+                            update { it.copy(adminDiskPercent = v) }
+                        }
+                    }
+                }
+            }
+            Group(
+                "Privacy and security",
+                footer = "ImmichCtrl has no analytics or tracking. It only talks to your own Immich server (and its map tiles when maps are on). " +
+                    "While automatic backup (or admin alerts on an admin account) is on, that account's login stays usable in the background " +
+                    "for backups and alerts. Every other login stays encrypted with the PIN while the app is locked.",
+            ) {
+                val lockOn = c.vault.enabled
+                GroupSwitch(
+                    "App lock",
+                    "Ask for an app PIN (and optionally your fingerprint) when opening ImmichCtrl. While locked, your login stays " +
+                        "encrypted with the PIN, and the photo widgets hide your photos.",
+                    lockOn,
+                    Icons.Outlined.Lock,
+                ) { v -> c.appLock.request = if (v) PinRequest.ENABLE else PinRequest.DISABLE }
+                if (lockOn) {
+                    GroupRow(
+                        "Change app PIN",
+                        "At least ${LockVault.PIN_MIN} digits, separate from your phone's PIN",
+                        icon = Icons.Outlined.Password,
+                        showChevron = true,
+                        onClick = { c.appLock.request = PinRequest.CHANGE },
+                    )
+                    val bioAvailable = remember { c.appLock.biometricAvailable() }
+                    GroupSwitch(
+                        "Unlock with fingerprint",
+                        if (bioAvailable || c.vault.biometricEnabled)
+                            "Only strong biometrics such as your fingerprint, checked by the phone's secure hardware. The PIN is still needed after a restart and every 72 hours."
+                        else "Set up a fingerprint on this phone first",
+                        c.vault.biometricEnabled,
+                        Icons.Outlined.Fingerprint,
+                        enabled = bioAvailable || c.vault.biometricEnabled,
+                    ) { v ->
+                        if (!v) {
+                            c.vault.disableBiometric()
+                        } else if (bioAvailable) {
+                            val activity = context.findActivity() ?: return@GroupSwitch
+                            val cipher = c.vault.biometricEnrolCipher() ?: run {
+                                android.widget.Toast.makeText(context, "Couldn't set up fingerprint unlock", android.widget.Toast.LENGTH_SHORT).show()
+                                return@GroupSwitch
+                            }
+                            c.appLock.biometricPrompt(activity, "Turn on fingerprint unlock", cipher, subtitle = "Confirm your fingerprint") { unlocked ->
+                                if (!c.vault.finishBiometricEnrol(unlocked)) {
+                                    android.widget.Toast.makeText(context, "Couldn't set up fingerprint unlock", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }
+                    GroupChoice(
+                        "Lock again",
+                        listOf(
+                            0 to "As soon as you leave the app",
+                            60 to "After 1 minute away",
+                            300 to "After 5 minutes away",
+                            900 to "After 15 minutes away",
+                            3600 to "After 1 hour away",
+                            -1 to "Only when the app restarts",
+                        ),
+                        s.appLockTimeout,
+                        Icons.Outlined.Timer,
+                    ) { v -> update { it.copy(appLockTimeout = v) } }
+                }
+                GroupSwitch(
+                    "Hide in screenshots and recent apps",
+                    "Screenshots, screen recordings and the recent apps view show a blank screen. The locked folder and the lock screen are always hidden",
+                    s.hideContent,
+                    Icons.Outlined.VisibilityOff,
+                ) { v -> update { it.copy(hideContent = v) } }
+                val canBioPin = remember { c.appLock.canUseBiometricPin() }
+                GroupSwitch(
+                    "Fingerprint for the locked folder",
+                    if (canBioPin) "Remembers your locked-folder PIN on this phone, protected by the fingerprint" else "Needs a fingerprint (or secure face unlock) set up on the phone",
+                    s.lockedFolderBiometric && canBioPin,
+                    Icons.Outlined.Fingerprint,
+                ) { v ->
+                    if (!canBioPin) return@GroupSwitch
+                    update { it.copy(lockedFolderBiometric = v) }
+                    if (!v) scope.launch { session?.account?.key?.let { c.appLock.forgetPin(it) } }
+                }
+                GroupSwitch("Read-only mode", "Only the timeline, nothing can be changed. Good for handing the phone to a child.", s.readOnly, Icons.Outlined.ChildCare) { v ->
+                    update { it.copy(readOnly = v) }
+                }
+                GroupSwitch(
+                    "Show maps",
+                    "Map tiles come from your server's map provider (Immich's tile server unless your admin chose another), which sees your IP address and the area shown",
+                    s.showMaps,
+                    Icons.Outlined.Map,
+                ) { v -> update { it.copy(showMaps = v) } }
             }
             Group("Photos", footer = "Pinch the grid to change how many photos fit in a row.") {
                 GroupChoice(
@@ -132,95 +233,6 @@ fun SettingsScreen() {
                 }
                 GroupSwitch("Shuffle", null, s.slideShuffle, Icons.Outlined.Shuffle) { v -> update { it.copy(slideShuffle = v) } }
                 GroupSwitch("Start again at the end", null, s.slideLoop, Icons.Outlined.Repeat) { v -> update { it.copy(slideLoop = v) } }
-            }
-            Group(
-                "Privacy",
-                footer = "While automatic backup (or admin alerts on an admin account) is on, that account's login stays usable in the background for backups and alerts. Every other login stays encrypted with the PIN while the app is locked.",
-            ) {
-                val lockOn = c.vault.enabled
-                GroupSwitch(
-                    "App lock",
-                    "Ask for an app PIN (and optionally your fingerprint) to open the app. While locked, your login is encrypted with the PIN.",
-                    lockOn,
-                    Icons.Outlined.Lock,
-                ) { v -> c.appLock.request = if (v) PinRequest.ENABLE else PinRequest.DISABLE }
-                if (lockOn) {
-                    GroupRow(
-                        "Change app PIN",
-                        "At least ${LockVault.PIN_MIN} digits, separate from your phone's PIN",
-                        icon = Icons.Outlined.Password,
-                        onClick = { c.appLock.request = PinRequest.CHANGE },
-                    )
-                    val bioAvailable = remember { c.appLock.biometricAvailable() }
-                    GroupSwitch(
-                        "Unlock with fingerprint",
-                        if (bioAvailable || c.vault.biometricEnabled)
-                            "Only strong biometrics such as your fingerprint, checked by the phone's secure hardware. The PIN is still needed after a restart and every 72 hours."
-                        else "Set up a fingerprint on this phone first",
-                        c.vault.biometricEnabled,
-                        Icons.Outlined.Fingerprint,
-                    ) { v ->
-                        if (!v) {
-                            c.vault.disableBiometric()
-                        } else if (bioAvailable) {
-                            val activity = context.findActivity() ?: return@GroupSwitch
-                            val cipher = c.vault.biometricEnrolCipher() ?: run {
-                                android.widget.Toast.makeText(context, "Couldn't set up fingerprint unlock", android.widget.Toast.LENGTH_SHORT).show()
-                                return@GroupSwitch
-                            }
-                            c.appLock.biometricPrompt(activity, "Turn on fingerprint unlock", cipher) { unlocked ->
-                                if (!c.vault.finishBiometricEnrol(unlocked)) {
-                                    android.widget.Toast.makeText(context, "Couldn't set up fingerprint unlock", android.widget.Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-                    }
-                    GroupChoice(
-                        "Lock again",
-                        listOf(
-                            0 to "As soon as you leave the app",
-                            60 to "After 1 minute away",
-                            300 to "After 5 minutes away",
-                            900 to "After 15 minutes away",
-                            3600 to "After 1 hour away",
-                            -1 to "Only when the app restarts",
-                        ),
-                        s.appLockTimeout,
-                        Icons.Outlined.Timer,
-                    ) { v -> update { it.copy(appLockTimeout = v) } }
-                }
-                val canBioPin = remember { c.appLock.canUseBiometricPin() }
-                GroupSwitch(
-                    "Fingerprint for the locked folder",
-                    if (canBioPin) "Remembers your locked-folder PIN on this phone, protected by the fingerprint" else "Needs a fingerprint (or secure face unlock) set up on the phone",
-                    s.lockedFolderBiometric && canBioPin,
-                    Icons.Outlined.Fingerprint,
-                ) { v ->
-                    if (!canBioPin) return@GroupSwitch
-                    update { it.copy(lockedFolderBiometric = v) }
-                    if (!v) scope.launch { session?.account?.key?.let { c.appLock.forgetPin(it) } }
-                }
-                GroupSwitch("Read-only mode", "Only the timeline, nothing can be changed. Good for handing the phone to a child.", s.readOnly, Icons.Outlined.ChildCare) { v ->
-                    update { it.copy(readOnly = v) }
-                }
-                GroupSwitch(
-                    "Show maps",
-                    "Map tiles come from your server's map provider (Immich's tile server unless your admin chose another), which sees your IP address and the area shown",
-                    s.showMaps,
-                    Icons.Outlined.Map,
-                ) { v -> update { it.copy(showMaps = v) } }
-            }
-            if (session?.account?.isAdmin == true) {
-                Group("Admin alerts", footer = "Checked about once an hour. Only shown on admin accounts.") {
-                    GroupSwitch("Notify me about the server", "Failed jobs, low disk space and new Immich releases", s.adminAlerts, Icons.Outlined.NotificationsActive) { v ->
-                        update { it.copy(adminAlerts = v) }
-                    }
-                    if (s.adminAlerts) {
-                        GroupChoice("Warn when the disk is", listOf(75, 80, 85, 90, 95).map { it to "$it% full" }, s.adminDiskPercent, Icons.Outlined.SdStorage) { v ->
-                            update { it.copy(adminDiskPercent = v) }
-                        }
-                    }
-                }
             }
             Group("Connection and help") {
                 GroupRow("Networking", "Public or home address, custom headers, client certificate", icon = Icons.Outlined.Wifi, showChevron = true, onClick = { nav.navigate(NetworkingRoute) })

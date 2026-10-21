@@ -47,13 +47,14 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         val c = container
         setContent {
-            // FLAG_SECURE while the locked folder or the app-lock cover is showing.
-            val secure = ScreenPrivacy.secure
+            val settings by c.settings.settings.collectAsStateWithLifecycle()
+            // FLAG_SECURE with "Hide in screenshots and recent apps", and always while the locked folder,
+            // the lock screen or a PIN screen is showing.
+            val secure = settings.hideContent || ScreenPrivacy.secure
             LaunchedEffect(secure) {
                 if (secure) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             }
-            val settings by c.settings.settings.collectAsStateWithLifecycle()
             val dark = when (settings.theme) {
                 ThemeChoice.SYSTEM -> isSystemInDarkTheme()
                 ThemeChoice.LIGHT -> false

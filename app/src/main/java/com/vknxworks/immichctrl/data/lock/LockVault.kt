@@ -1,4 +1,4 @@
-package com.vknxworks.immichctrl.data.security
+package com.vknxworks.immichctrl.data.lock
 
 import android.content.Context
 import android.content.pm.PackageManager

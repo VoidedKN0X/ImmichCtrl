@@ -27,7 +27,7 @@ import com.vknxworks.immichctrl.data.net.NetworkRouter
 import com.vknxworks.immichctrl.data.offline.OfflineStore
 import com.vknxworks.immichctrl.data.offline.OfflineWorker
 import com.vknxworks.immichctrl.data.security.AppLock
-import com.vknxworks.immichctrl.data.security.LockVault
+import com.vknxworks.immichctrl.data.lock.LockVault
 import com.vknxworks.immichctrl.data.settings.SettingsRepository
 import com.vknxworks.immichctrl.data.timeline.Sources
 import com.vknxworks.immichctrl.ui.widget.WidgetWorker

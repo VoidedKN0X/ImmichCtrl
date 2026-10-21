@@ -53,7 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.vknxworks.immichctrl.container
-import com.vknxworks.immichctrl.data.security.LockVault
+import com.vknxworks.immichctrl.data.lock.LockVault
 import com.vknxworks.immichctrl.data.security.PinRequest
 import com.vknxworks.immichctrl.data.security.SecureScreen
 import com.vknxworks.immichctrl.ui.components.ConfirmDialog
@@ -146,7 +146,7 @@ fun PinLockScreen() {
             if (!vault.biometricEnabled) message = "A fingerprint was added or removed. Unlock with your PIN, then turn fingerprint unlock on again."
             return
         }
-        lock.biometricPrompt(a, "Unlock ImmichCtrl", cipher, onError = { message = it }) { unlocked ->
+        lock.biometricPrompt(a, "Unlock ImmichCtrl", cipher, subtitle = "Confirm it's you to see your photos", onError = { message = it }) { unlocked ->
             if (vault.unlockWithBiometric(unlocked)) scope.launch { lock.unlocked() }
             else message = "Couldn't unlock with your fingerprint. Use your PIN."
         }

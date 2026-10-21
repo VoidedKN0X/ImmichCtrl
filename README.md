@@ -112,10 +112,25 @@ Your account, backup, **Settings** and sign out are all on that same page behind
 - **Quick Settings tile:** pull down the notification shade, tap the pencil and drag **Back up photos** into your tiles.
 - **Widgets:** long-press your home screen, choose **Widgets** and look for ImmichCtrl.
 - **Backup stops in the background?** Open **Backup** and follow the battery warning to let ImmichCtrl run without restrictions.
-- **Read-only mode** is in **Settings → Privacy**, or long-press your profile picture on the Photos tab. To leave it, long-press the picture again and unlock with your phone's fingerprint, face or screen lock (if the phone has one).
+- **Read-only mode** is in **Settings → Privacy and security**, or long-press your profile picture on the Photos tab. To leave it, long-press the picture again and unlock with your phone's fingerprint, face or screen lock (if the phone has one).
 - **Duplicate review** needs Immich's duplicate detection, which needs smart search (machine learning) on the server.
 - **Something not working?** **Settings → Logs** shows what the app has been doing; copy or share it when reporting a bug.
 - See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
+
+## App lock
+
+Turn it on in **Settings → Privacy and security → App lock** (tap your profile picture, then Settings). It's off until you turn it on.
+
+- **An app PIN of its own**, at least 6 digits and separate from your phone's. Very obvious PINs, like 111111 or 123456, are refused. The PIN is never stored: it's stretched with 600,000 rounds of PBKDF2 and mixed with a key that never leaves the phone's secure hardware, so a copy of the app's files isn't enough to guess it somewhere else.
+- **Unlock with fingerprint** (optional): strong biometrics only, checked by the phone's secure hardware. Adding a fingerprint to the phone turns it off until you turn it on again. The PIN is still needed after the phone restarts and at least every 72 hours.
+- **Wrong PINs make you wait**: 30 seconds after 5 wrong tries, doubling up to 15 minutes. Restarting the app or the phone, or changing the clock, doesn't end the wait.
+- **Your logins stay encrypted while ImmichCtrl is locked**, with a key that only exists in memory while the app is unlocked and is wiped the moment it locks. The photo widgets hide your photos while the lock is on.
+- **Backups keep working while locked**: while automatic backup (or admin alerts on an admin account) is on, that account's login stays usable in the background, encrypted with the Android Keystore as without the app lock. Every other login stays sealed with your PIN.
+- **Lock again**: as soon as you leave the app (the default), after 1, 5 or 15 minutes or 1 hour away, or only when the app restarts. Sharing, photo pickers, editing in another app, the map app and Android's confirmations don't count as leaving, unless you're away for more than 5 minutes.
+- **Hide in screenshots and recent apps** (off by default): screenshots, screen recordings and casting show a blank screen. The recent apps view never shows your photos, and the locked folder and the lock screen are always hidden.
+- **Forgot PIN?** on the lock screen signs out of every account and removes ImmichCtrl's offline albums, cached photos and backup history from this phone, so you can sign in again. Your photos on the Immich server and on this phone stay.
+
+Updating from a version before 0.3.9 with the old app lock (your phone's screen lock): unlock once the old way, then choose an app PIN. This step can't be skipped.
 
 ## Privacy
 
@@ -125,7 +140,7 @@ Your account, backup, **Settings** and sign out are all on that same page behind
 
 Apart from your own Immich server, ImmichCtrl only contacts:
 
-- **Your server's map provider**, for the mini map in a photo's details and the Map screen: Immich's tile server (`tiles.immich.cloud`) unless your admin chose another map style. It sees your IP address and the area shown. Maps only load when the map is turned on in your server's settings, and you can turn them off in **Settings > Privacy > Show maps**.
+- **Your server's map provider**, for the mini map in a photo's details and the Map screen: Immich's tile server (`tiles.immich.cloud`) unless your admin chose another map style. It sees your IP address and the area shown. Maps only load when the map is turned on in your server's settings, and you can turn them off in **Settings > Privacy and security > Show maps**.
 
 Nothing else: no ads, no analytics.
 
@@ -157,6 +172,7 @@ Native Android apps for self-hosted services and everyday tools, all with the sa
 
 | App | What it's for |
 | --- | --- |
+| [AdCtrl](https://github.com/VoidedKN0X/AdCtrl) | Control your AdGuard Home DNS server |
 | [ArrCtrl](https://github.com/VoidedKN0X/ArrCtrl) | Radarr, Sonarr, Prowlarr, Bazarr, qBittorrent, autobrr and Cleanuparr in one app |
 | [BeamCtrl](https://github.com/VoidedKN0X/BeamCtrl) | TV remote for phones with an IR blaster |
 | [CraftyCtrl](https://github.com/VoidedKN0X/CraftyCtrl) | Manage Minecraft servers on Crafty Controller |
@@ -165,6 +181,7 @@ Native Android apps for self-hosted services and everyday tools, all with the sa
 | [FrigateCtrl](https://github.com/VoidedKN0X/FrigateCtrl) | Watch and review your Frigate NVR cameras |
 | **ImmichCtrl** (this app) | Photos and backup for your Immich server |
 | [JellyCtrl](https://github.com/VoidedKN0X/JellyCtrl) | Movies, shows, music and Live TV from Jellyfin |
+| [MemoCtrl](https://github.com/VoidedKN0X/MemoCtrl) | Notes on your Memos server |
 | [NaviCtrl](https://github.com/VoidedKN0X/NaviCtrl) | Music player for Navidrome servers |
 | [PaperCtrl](https://github.com/VoidedKN0X/PaperCtrl) | Scan and browse documents on Paperless-ngx |
 | [PrintCtrl](https://github.com/VoidedKN0X/PrintCtrl) | Bambu Lab printers through Bambuddy, and Spoolman spools |
