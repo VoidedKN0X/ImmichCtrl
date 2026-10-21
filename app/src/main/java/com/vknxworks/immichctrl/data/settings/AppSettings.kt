@@ -67,6 +67,8 @@ data class AppSettings(
     val appLockTimeout: Int = 0,
     /** Unlock the locked folder with a fingerprint once its PIN has been entered here. */
     val lockedFolderBiometric: Boolean = false,
+    /** FLAG_SECURE on the whole app: blank screenshots, screen recordings and casting. */
+    val hideContent: Boolean = false,
     /** Show maps (the photo's mini map and the Map screen); tiles come from the server's map style. */
     val showMaps: Boolean = true,
 
@@ -115,6 +117,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val appLock = booleanPreferencesKey("app_lock")
         val appLockTimeout = intPreferencesKey("app_lock_timeout")
         val lockedBio = booleanPreferencesKey("locked_folder_biometric")
+        val hideContent = booleanPreferencesKey("hide_content")
         val showMaps = booleanPreferencesKey("show_maps")
         val adminAlerts = booleanPreferencesKey("admin_alerts")
         val adminDisk = intPreferencesKey("admin_disk_percent")
@@ -168,6 +171,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         appLock = this[K.appLock] ?: false,
         // 30 seconds isn't offered any more: it becomes "as soon as you leave" rather than longer.
         appLockTimeout = (this[K.appLockTimeout] ?: 0).let { if (it == 30) 0 else it },
+        hideContent = this[K.hideContent] ?: false,
         lockedFolderBiometric = this[K.lockedBio] ?: false,
         showMaps = this[K.showMaps] ?: true,
         adminAlerts = this[K.adminAlerts] ?: true,
@@ -212,6 +216,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.readOnly] = s.readOnly
             p[K.appLock] = s.appLock
             p[K.appLockTimeout] = s.appLockTimeout
+            p[K.hideContent] = s.hideContent
             p[K.lockedBio] = s.lockedFolderBiometric
             p[K.showMaps] = s.showMaps
             p[K.adminAlerts] = s.adminAlerts

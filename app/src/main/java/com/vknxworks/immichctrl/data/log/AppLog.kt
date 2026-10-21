@@ -1,13 +1,18 @@
 package com.vknxworks.immichctrl.data.log
 
 import android.util.Log
+import com.vknxworks.immichctrl.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-/** In-app log of what happened (connections, backups, errors), viewable and shareable in Settings > Logs. */
+/**
+ * In-app log of what happened (connections, backups, errors), viewable and shareable in Settings > Logs. It only
+ * lives in memory. Release builds don't copy it to Android's system log, where other tools could read file names,
+ * album names and server addresses.
+ */
 object AppLog {
     enum class Level { INFO, WARN, ERROR }
 
@@ -29,17 +34,17 @@ object AppLog {
     }
 
     fun i(tag: String, message: String) {
-        Log.i("ImmichCtrl/$tag", message)
+        if (BuildConfig.DEBUG) Log.i("ImmichCtrl/$tag", message)
         add(Level.INFO, tag, message)
     }
 
     fun w(tag: String, message: String) {
-        Log.w("ImmichCtrl/$tag", message)
+        if (BuildConfig.DEBUG) Log.w("ImmichCtrl/$tag", message)
         add(Level.WARN, tag, message)
     }
 
     fun e(tag: String, message: String, t: Throwable? = null) {
-        Log.e("ImmichCtrl/$tag", message, t)
+        if (BuildConfig.DEBUG) Log.e("ImmichCtrl/$tag", message, t)
         add(Level.ERROR, tag, if (t != null) "$message: ${t.message ?: t::class.simpleName}" else message)
     }
 

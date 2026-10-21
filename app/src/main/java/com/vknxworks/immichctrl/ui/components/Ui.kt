@@ -199,9 +199,16 @@ fun GroupRow(
 }
 
 @Composable
-fun GroupSwitch(title: String, subtitle: String? = null, checked: Boolean, icon: ImageVector? = null, onChange: (Boolean) -> Unit) {
-    GroupRow(title, subtitle, icon, onClick = { onChange(!checked) }) {
-        Switch(checked, onCheckedChange = onChange)
+fun GroupSwitch(
+    title: String,
+    subtitle: String? = null,
+    checked: Boolean,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+    onChange: (Boolean) -> Unit,
+) {
+    GroupRow(title, subtitle, icon, onClick = if (enabled) ({ onChange(!checked) }) else null) {
+        Switch(checked, onCheckedChange = onChange, enabled = enabled)
     }
 }
 

@@ -4,6 +4,26 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.11
+
+Settings and the app lock now match the other Ctrl apps, with a new setting to keep ImmichCtrl out of screenshots.
+
+### New
+
+- **Hide in screenshots and recent apps** (**Settings → Privacy and security**, off by default): screenshots, screen recordings and casting show a blank screen. The recent apps view never shows your photos, and the locked folder, the lock screen and the PIN screens are always hidden, whatever this setting says.
+
+### Changed
+
+- **"Privacy" is now "Privacy and security"**, with the same rows, order, wording and icons as every Ctrl app: **App lock**, **Change app PIN**, **Unlock with fingerprint**, **Lock again** and **Hide in screenshots and recent apps**, then ImmichCtrl's own Fingerprint for the locked folder, Read-only mode and Show maps. Change app PIN now shows an arrow like the other rows that open a screen, and Unlock with fingerprint is greyed out until the phone has a fingerprint set up. The note under the section also says what ImmichCtrl connects to.
+- **Settings are in the same order as the other Ctrl apps**: Appearance, then **Notifications** (formerly "Admin alerts", only on admin accounts), Privacy and security, and then Photos, Viewer, On this phone, Slideshow, Connection and help and Storage on this phone.
+- **"Colours from your wallpaper" is now called "Use wallpaper colours"**, as in the other Ctrl apps.
+- **The fingerprint prompts** now say what they're for ("Confirm it's you to see your photos" when unlocking, "Confirm your fingerprint" when turning fingerprint unlock on).
+- **README**: a new App lock section that explains the PIN, fingerprint unlock, the wrong-PIN wait, how backups keep working while locked, Lock again, hiding the app in screenshots and recent apps, Forgot PIN and the one-time step when updating from the old lock. Settings paths now say "Privacy and security", and the Ctrl series table lists AdCtrl and MemoCtrl.
+
+### Security
+
+- **The in-app log stays in the app.** Settings → Logs keeps working as before, but release builds no longer also copy each entry to Android's system log, where file names, album names and server addresses could be read with developer tools.
+
 ## 0.3.10
 
 ### Security
