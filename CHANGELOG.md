@@ -4,6 +4,16 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.16
+
+### Fixed
+
+- **Fingerprint unlock works again after you leave the app.** Once you'd left ImmichCtrl with the back gesture or by swiping home, the lock screen no longer asked for your fingerprint when you came back, and tapping **Use fingerprint** could do nothing either; only the PIN worked until the app was force-closed. The fingerprint prompt was asked for while ImmichCtrl was still going to the background or coming back on screen, the phone dropped it without answering, and the lock screen only asked once per lock. Now the prompt only opens once ImmichCtrl is fully back on screen, a prompt that never answered can't block the next one (tapping **Use fingerprint** always opens a fresh one), and the lock screen offers your fingerprint again every time you come back to it. The same applies to the prompt for turning on fingerprint unlock in **Settings** and to the one-time screen-lock check after updating from the old app lock.
+
+### Security
+
+- **A prompt that never answered can no longer keep the app lock from engaging.** While the phone's screen-lock prompt is open (for example the one for leaving read-only mode), leaving ImmichCtrl doesn't lock it right away, because that prompt can open the phone's own screen-lock page. If the phone dropped such a prompt without answering, ImmichCtrl still treated it as open, so the next time you left the app it didn't lock as soon as you left. Now an unanswered prompt stops counting after a minute and a new prompt always replaces it. Time away during a prompt is still counted as before.
+
 ## 0.3.15
 
 ### Security

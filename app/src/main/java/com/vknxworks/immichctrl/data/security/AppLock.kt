@@ -3,11 +3,14 @@ package com.vknxworks.immichctrl.data.security
 import android.content.Context
 import com.vknxworks.immichctrl.R
 import com.vknxworks.immichctrl.data.lock.LockVault
+import android.os.CancellationSignal
 import android.os.SystemClock
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
+import android.hardware.biometrics.BiometricManager.Authenticators as PlatformAuthenticators
+import android.hardware.biometrics.BiometricPrompt as PlatformPrompt
 import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -52,15 +55,39 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
     val locked: StateFlow<Boolean> = _locked.asStateFlow()
     @Volatile private var backgroundedAt: Long? = null
     @Volatile private var startChecked = false
-    /** The system prompt is up; its screen-lock page takes the app to the background, which mustn't re-lock. */
-    @Volatile private var prompting = false
     @Volatile private var expectReturnAt = 0L
+
+    /** The prompt (fingerprint, or the system prompt that can open the phone's screen lock) open right now, if any. */
+    @Volatile private var promptSignal: CancellationSignal? = null
+    @Volatile private var promptStartedAt = 0L
+    @Volatile private var promptGeneration = 0
+    /** The open prompt can open the phone's screen-lock page, which takes the app to the background. */
+    @Volatile private var promptMayLeave = false
+
+    /**
+     * The system prompt is up; its screen-lock page takes the app to the background, which mustn't re-lock.
+     * Some phones drop a prompt without ever answering (for example one asked for while the app was still
+     * coming back on screen); such a prompt stops counting after a minute, and a new prompt always replaces
+     * it, so it can never keep the lock from engaging when you leave.
+     */
+    private val prompting: Boolean
+        get() = promptMayLeave && promptSignal != null && SystemClock.elapsedRealtime() - promptStartedAt < PROMPT_STALE_MS
+
+    /** The current trip away started while the system prompt was up (its screen-lock page). */
+    @Volatile private var promptTrip = false
 
     /** A PIN screen shown on top of the app: turning the lock on or off, or changing the PIN. */
     var request by mutableStateOf<PinRequest?>(null)
 
     /** Goes up every time the app locks, so the lock screen offers the fingerprint once per lock. */
     var lockCount by mutableIntStateOf(0)
+        private set
+
+    /**
+     * Goes up every time you come back to the app after really leaving it (not for the system prompt's own
+     * screen-lock page), so the lock screen offers the fingerprint again on every return, not just once per lock.
+     */
+    var returns by mutableIntStateOf(0)
         private set
 
     /** Set by the app: wipe what the vault key opened. */
@@ -95,10 +122,13 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
         val s = settings.current()
         val away = backgroundedAt?.let { SystemClock.elapsedRealtime() - it }
         val exempt = exemptTrip
+        val fromPrompt = promptTrip
         backgroundedAt = null
         exemptTrip = false
+        promptTrip = false
         expectReturnAt = 0L
-        prompting = false
+        promptMayLeave = false
+        if (away != null && !fromPrompt) returns++
         if (!enabled(s)) {
             startChecked = true
             _locked.value = false
@@ -118,7 +148,8 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
     fun onBackground() {
         val now = SystemClock.elapsedRealtime()
         backgroundedAt = now
-        if (prompting) {
+        promptTrip = prompting
+        if (promptTrip) {
             // The system prompt can open the phone's screen-lock page, which counts like a trip the app
             // started: no lock right away, but staying away long still locks when you come back.
             exemptTrip = true
@@ -167,8 +198,30 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
     }
 
     /**
+     * Starts tracking a new prompt and returns its signal, plus a finish() that is true once, and only for
+     * the newest prompt. A prompt that is still marked as open is cancelled and replaced; its late answer
+     * (if any) is ignored, so a prompt the phone dropped without answering can't block the next one.
+     */
+    private fun openPrompt(mayLeave: Boolean): Pair<CancellationSignal, () -> Boolean> {
+        promptSignal?.let { runCatching { it.cancel() } }
+        val generation = ++promptGeneration
+        val signal = CancellationSignal()
+        promptSignal = signal
+        promptStartedAt = SystemClock.elapsedRealtime()
+        promptMayLeave = mayLeave
+        val finish = finish@{
+            if (generation != promptGeneration || promptSignal !== signal) return@finish false
+            promptSignal = null
+            promptMayLeave = false
+            true
+        }
+        return signal to finish
+    }
+
+    /**
      * Shows the fingerprint prompt for [cipher], a Keystore key that only works after a strong match.
-     * [onSuccess] gets the unlocked cipher; [onError] gets a message, or null when cancelled.
+     * [onSuccess] gets the unlocked cipher; [onError] gets a message, or null when cancelled. Asking while
+     * another prompt is still marked as open replaces that one.
      */
     fun biometricPrompt(
         activity: FragmentActivity,
@@ -178,67 +231,69 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
         onError: (String?) -> Unit = {},
         onSuccess: (Cipher) -> Unit,
     ) {
-        val prompt = BiometricPrompt(
-            activity,
-            ContextCompat.getMainExecutor(activity),
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    prompting = false
-                    val c = result.cryptoObject?.cipher
-                    if (c != null) onSuccess(c) else onError(activity.getString(R.string.lock_fingerprint_failed))
+        val (signal, finish) = openPrompt(mayLeave = false)
+        try {
+            val prompt = PlatformPrompt.Builder(activity)
+                .setTitle(title)
+                .apply { if (subtitle != null) setSubtitle(subtitle) }
+                .setAllowedAuthenticators(PlatformAuthenticators.BIOMETRIC_STRONG)
+                .setNegativeButton(activity.getString(R.string.lock_use_pin), activity.mainExecutor) { _, _ ->
+                    if (finish()) onError(null)
                 }
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    prompting = false
-                    val cancelled = errorCode == BiometricPrompt.ERROR_USER_CANCELED ||
-                        errorCode == BiometricPrompt.ERROR_CANCELED ||
-                        errorCode == BiometricPrompt.ERROR_NEGATIVE_BUTTON
-                    onError(if (cancelled) null else errString.toString())
-                }
-            },
-        )
-        val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(title)
-            .apply { if (subtitle != null) setSubtitle(subtitle) }
-            .setAllowedAuthenticators(BIOMETRIC_STRONG)
-            .setNegativeButtonText(activity.getString(R.string.lock_use_pin))
-            .build()
-        runCatching { prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher)) }
-            .onFailure { prompting = false; onError(it.message ?: activity.getString(R.string.lock_prompt_failed)) }
+                .build()
+            prompt.authenticate(
+                PlatformPrompt.CryptoObject(cipher),
+                signal,
+                activity.mainExecutor,
+                object : PlatformPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: PlatformPrompt.AuthenticationResult) {
+                        if (!finish()) return
+                        val c = result.cryptoObject?.cipher
+                        if (c != null) onSuccess(c) else onError(activity.getString(R.string.lock_fingerprint_failed))
+                    }
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                        if (!finish()) return
+                        val cancelled = errorCode == PlatformPrompt.BIOMETRIC_ERROR_USER_CANCELED ||
+                            errorCode == PlatformPrompt.BIOMETRIC_ERROR_CANCELED
+                        onError(if (cancelled) null else errString.toString())
+                    }
+                },
+            )
+        } catch (e: Exception) {
+            if (finish()) onError(e.message ?: activity.getString(R.string.lock_prompt_failed))
+        }
     }
 
-    /** Shows the system's fingerprint/face/screen-lock prompt. */
+    /** Shows the system's fingerprint/face/screen-lock prompt. Replaces a prompt that is still marked as open. */
     fun prompt(activity: FragmentActivity, title: String, allowCredential: Boolean, onResult: (Boolean) -> Unit) {
-        val prompt = BiometricPrompt(
-            activity,
-            ContextCompat.getMainExecutor(activity),
-            object : BiometricPrompt.AuthenticationCallback() {
-                // backgroundedAt is left alone: onForeground() measures the time away, also for this trip.
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    prompting = false
-                    onResult(true)
-                }
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    prompting = false
-                    onResult(false)
-                }
-            },
-        )
-        val info = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(title)
-            .apply {
-                // Strong (class 3) biometrics only: weak face unlock can be fooled by a photo.
-                if (allowCredential) setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-                else {
-                    setAllowedAuthenticators(BIOMETRIC_STRONG)
-                    setNegativeButtonText(activity.getString(R.string.lock_use_pin))
+        // Only the unlock prompt (shown while already locked) can open the screen-lock page.
+        val (signal, finish) = openPrompt(mayLeave = allowCredential)
+        try {
+            val builder = PlatformPrompt.Builder(activity).setTitle(title)
+            // Strong (class 3) biometrics only: weak face unlock can be fooled by a photo.
+            if (allowCredential) {
+                builder.setAllowedAuthenticators(PlatformAuthenticators.BIOMETRIC_STRONG or PlatformAuthenticators.DEVICE_CREDENTIAL)
+            } else {
+                builder.setAllowedAuthenticators(PlatformAuthenticators.BIOMETRIC_STRONG)
+                builder.setNegativeButton(activity.getString(R.string.lock_use_pin), activity.mainExecutor) { _, _ ->
+                    if (finish()) onResult(false)
                 }
             }
-            .build()
-        // Only the unlock prompt (shown while already locked) can open the screen-lock page.
-        prompting = allowCredential
-        runCatching { prompt.authenticate(info) }.onFailure {
-            prompting = false
-            onResult(false)
+            builder.build().authenticate(
+                signal,
+                activity.mainExecutor,
+                object : PlatformPrompt.AuthenticationCallback() {
+                    // backgroundedAt is left alone: onForeground() measures the time away, also for this trip.
+                    override fun onAuthenticationSucceeded(result: PlatformPrompt.AuthenticationResult) {
+                        if (finish()) onResult(true)
+                    }
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                        if (finish()) onResult(false)
+                    }
+                },
+            )
+        } catch (e: Exception) {
+            if (finish()) onResult(false)
         }
     }
 
@@ -313,6 +368,10 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
             it.remove(pinKey(account))
             it.remove(legacyPinKey(account))
         }
+    }
+
+    private companion object {
+        const val PROMPT_STALE_MS = 60_000L
     }
 }
 

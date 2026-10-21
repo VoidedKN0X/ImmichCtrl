@@ -42,16 +42,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.platform.WindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.data.lock.LockVault
 import com.vknxworks.immichctrl.data.security.PinRequest
@@ -61,11 +66,22 @@ import com.vknxworks.immichctrl.ui.components.PillButton
 import com.vknxworks.immichctrl.ui.components.findActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 import androidx.compose.ui.res.stringResource
 import com.vknxworks.immichctrl.R
+
+/**
+ * Waits until the app is really back on screen: resumed, with its window focused. A prompt asked for earlier
+ * (while the app is still coming back from the background) is dropped by the system, on some phones without
+ * any answer, which used to leave fingerprint unlock not working until the app was closed.
+ */
+private suspend fun awaitOnScreen(lifecycle: Lifecycle, windowInfo: WindowInfo) {
+    lifecycle.currentStateFlow.first { it.isAtLeast(Lifecycle.State.RESUMED) }
+    snapshotFlow { windowInfo.isWindowFocused }.first { it }
+}
 
 /** Updated from the old app lock (the phone's screen lock): confirm once, then choose a PIN. */
 @Composable
@@ -73,7 +89,13 @@ fun LegacyLockScreen() {
     val context = LocalContext.current
     val c = context.container
     fun unlock() { context.findActivity()?.let { c.appLock.unlockLegacy(it) } }
-    LaunchedEffect(c.appLock.lockCount) { unlock() }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val windowInfo = LocalWindowInfo.current
+    // Asked on every lock and every time you come back, once the app is really on screen.
+    LaunchedEffect(c.appLock.lockCount, c.appLock.returns) {
+        awaitOnScreen(lifecycle, windowInfo)
+        unlock()
+    }
     LockCover {
         Column(
             Modifier.widthIn(max = 360.dp).padding(32.dp),
@@ -133,7 +155,7 @@ fun PinLockScreen() {
     var checking by remember { mutableStateOf(false) }
     var lockout by remember { mutableLongStateOf(vault.lockoutRemaining()) }
     var forgetting by remember { mutableStateOf(false) }
-    val bioAvailable = remember(lock.lockCount) { vault.biometricEnabled && lock.biometricAvailable() && !vault.pinRequired() }
+    val bioAvailable = remember(lock.lockCount, lock.returns) { vault.biometricEnabled && lock.biometricAvailable() && !vault.pinRequired() }
 
     LaunchedEffect(lockout > 0) {
         while (lockout > 0) {
@@ -153,7 +175,14 @@ fun PinLockScreen() {
             else message = context.getString(R.string.lock_fingerprint_failed)
         }
     }
-    LaunchedEffect(lock.lockCount) { if (bioAvailable) askFingerprint() }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val windowInfo = LocalWindowInfo.current
+    // Offered on every lock and every time you come back to the lock screen, once the app is really on screen.
+    LaunchedEffect(lock.lockCount, lock.returns) {
+        if (!bioAvailable) return@LaunchedEffect
+        awaitOnScreen(lifecycle, windowInfo)
+        askFingerprint()
+    }
 
     fun submit() {
         if (checking || lockout > 0 || pin.length < LockVault.PIN_MIN) return
