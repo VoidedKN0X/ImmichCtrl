@@ -74,6 +74,9 @@ import com.vknxworks.immichctrl.ui.theme.Gutter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 @Composable
 fun BackupScreen() {
@@ -109,14 +112,14 @@ fun BackupScreen() {
     LaunchedEffect(running != null) { if (running == null) counts.reload(silent = true) }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Backup")
+        ScreenTopBar(stringResource(R.string.backup))
         if (!hasAccess) {
             MessageView(
                 Icons.Outlined.PhotoLibrary,
-                "Allow access to your photos",
-                if (partial) "ImmichCtrl can only see the photos you picked. Allow all photos so backup can find new ones."
-                else "Backup needs to see the photos and videos on this phone. Location access keeps where photos were taken.",
-                actionLabel = "Allow",
+                stringResource(R.string.allow_access_to_your_photos),
+                if (partial) stringResource(R.string.immichctrl_can_only_see_the_photos)
+                else stringResource(R.string.backup_needs_to_see_the_photos_and),
+                actionLabel = stringResource(R.string.allow),
                 onAction = {
                     if (partial) {
                         com.vknxworks.immichctrl.data.security.expectAppReturn(context)
@@ -140,33 +143,33 @@ fun BackupScreen() {
                     if (running != null) {
                         val done = running.progress.getInt(BackupWorker.KEY_DONE, 0)
                         val total = running.progress.getInt(BackupWorker.KEY_TOTAL, 0)
-                        Text(if (total > 0) "Backing up $done of $total" else "Checking for new photos…", style = MaterialTheme.typography.titleLarge)
+                        Text(if (total > 0) stringResource(R.string.backing_up_of, done, total) else stringResource(R.string.checking_for_new_photos), style = MaterialTheme.typography.titleLarge)
                         running.progress.getString(BackupWorker.KEY_CURRENT)?.let {
                             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                         }
                         if (total > 0) LinearProgressIndicator(progress = { done.toFloat() / total }, modifier = Modifier.fillMaxWidth())
                         else LinearProgressIndicator(Modifier.fillMaxWidth())
-                        OutlinedButton(onClick = { c.backup.cancel() }) { Text("Stop") }
+                        OutlinedButton(onClick = { c.backup.cancel() }) { Text(stringResource(R.string.stop)) }
                     } else {
                         Text(
                             when {
-                                settings.backupAlbums.isEmpty() && !settings.backupEverything -> "Choose what to back up"
-                                cnt == null -> "Counting…"
-                                cnt.remaining == 0 -> "Everything is backed up"
-                                else -> "${countLabel(cnt.remaining, "item")} to back up"
+                                settings.backupAlbums.isEmpty() && !settings.backupEverything -> Strings.str(R.string.choose_what_to_back_up)
+                                cnt == null -> Strings.str(R.string.counting)
+                                cnt.remaining == 0 -> Strings.str(R.string.everything_is_backed_up)
+                                else -> Strings.str(R.string.to_back_up, countLabel(cnt.remaining, R.plurals.count_items))
                             },
                             style = MaterialTheme.typography.titleLarge,
                         )
                         if (cnt != null && (settings.backupAlbums.isNotEmpty() || settings.backupEverything)) {
                             Text(
-                                "${"%,d".format(cnt.done)} of ${"%,d".format(cnt.total)} on the server",
+                                stringResource(R.string.of_on_the_server, "%,d".format(cnt.done), "%,d".format(cnt.total)),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             if (cnt.total > 0) LinearProgressIndicator(progress = { cnt.done.toFloat() / cnt.total }, modifier = Modifier.fillMaxWidth())
                         }
                         PillButton(
-                            "Back up now",
+                            stringResource(R.string.back_up_now),
                             onClick = { c.backup.backupNow() },
                             enabled = settings.backupAlbums.isNotEmpty() || settings.backupEverything,
                             modifier = Modifier.fillMaxWidth(),
@@ -182,11 +185,11 @@ fun BackupScreen() {
                 androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
             }
             if (settings.backupEnabled && (!batteryOk || !notifyOk)) {
-                Group("Backups may stop in the background") {
+                Group(stringResource(R.string.backups_may_stop_in_the_background)) {
                     if (!batteryOk) {
                         GroupRow(
-                            "Battery optimisation is on",
-                            "Android (and ColorOS, MIUI, One UI) may stop background backups. Set ImmichCtrl to \"Unrestricted\" or \"Allow background activity\".",
+                            stringResource(R.string.battery_optimisation_is_on),
+                            stringResource(R.string.android_and_coloros_miui_one_ui_may),
                             icon = Icons.Outlined.BatteryAlert,
                             iconTint = MaterialTheme.colorScheme.error,
                             showChevron = true,
@@ -200,8 +203,8 @@ fun BackupScreen() {
                     }
                     if (!notifyOk) {
                         GroupRow(
-                            "Notifications are off",
-                            "Long backups need to show their progress to keep running.",
+                            stringResource(R.string.notifications_are_off),
+                            stringResource(R.string.long_backups_need_to_show_their),
                             icon = Icons.Outlined.NotificationsOff,
                             iconTint = MaterialTheme.colorScheme.error,
                             showChevron = true,
@@ -211,12 +214,12 @@ fun BackupScreen() {
                 }
             }
 
-            Group("Automatic backup", footer = "New photos are uploaded in the background when the conditions below are met. Photos already on the server are skipped.") {
+            Group(stringResource(R.string.automatic_backup), footer = stringResource(R.string.new_photos_are_uploaded_in_the)) {
                 val me = c.sessions.active.value?.account?.key
                 val otherAccount = settings.backupEnabled && settings.backupAccount != null && settings.backupAccount != me
                 GroupSwitch(
-                    "Back up automatically",
-                    if (otherAccount) "On for another account. Turn it off and on again to back up to this one." else "When new photos are taken and every few hours",
+                    stringResource(R.string.back_up_automatically),
+                    if (otherAccount) stringResource(R.string.on_for_another_account_turn_it_off) else stringResource(R.string.when_new_photos_are_taken_and_every),
                     settings.backupEnabled && !otherAccount,
                     Icons.Outlined.CloudSync,
                 ) { on ->
@@ -224,38 +227,38 @@ fun BackupScreen() {
                     update { it.copy(backupEnabled = on, backupAccount = if (on) me else null) }
                     if (on) askPermissions()
                 }
-                GroupSwitch("Only on Wi-Fi", null, settings.backupWifiOnly, Icons.Outlined.Wifi) { on -> update { it.copy(backupWifiOnly = on) } }
-                GroupSwitch("Only while charging", null, settings.backupChargingOnly, Icons.Outlined.BatteryChargingFull) { on -> update { it.copy(backupChargingOnly = on) } }
-                GroupSwitch("Include videos", null, settings.backupVideos, Icons.Outlined.Videocam) { on -> update { it.copy(backupVideos = on) } }
+                GroupSwitch(stringResource(R.string.only_on_wi_fi), null, settings.backupWifiOnly, Icons.Outlined.Wifi) { on -> update { it.copy(backupWifiOnly = on) } }
+                GroupSwitch(stringResource(R.string.only_while_charging), null, settings.backupChargingOnly, Icons.Outlined.BatteryChargingFull) { on -> update { it.copy(backupChargingOnly = on) } }
+                GroupSwitch(stringResource(R.string.include_videos), null, settings.backupVideos, Icons.Outlined.Videocam) { on -> update { it.copy(backupVideos = on) } }
             }
 
-            Group("Albums", footer = "Album sync puts backed-up photos into Immich albums named like the phone albums they're in, making the albums if needed. It only adds; deleting or moving on the phone doesn't change the server.") {
-                GroupSwitch("Sync albums", "Mirror phone albums to Immich albums", settings.albumSync, Icons.Outlined.PhotoAlbum) { on ->
+            Group(stringResource(R.string.albums), footer = stringResource(R.string.album_sync_puts_backed_up_photos)) {
+                GroupSwitch(stringResource(R.string.sync_albums), stringResource(R.string.mirror_phone_albums_to_immich_albums), settings.albumSync, Icons.Outlined.PhotoAlbum) { on ->
                     update { it.copy(albumSync = on) }
                 }
                 if (settings.albumSync) {
                     GroupRow(
-                        "Reorganise into albums",
-                        "Also file everything already backed up from this phone",
+                        stringResource(R.string.reorganise_into_albums),
+                        stringResource(R.string.also_file_everything_already_backed),
                         icon = Icons.Outlined.DriveFileMove,
                         onClick = {
                             c.backup.syncAlbumsNow()
-                            android.widget.Toast.makeText(context, "Filing backed-up photos into albums", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, Strings.str(R.string.filing_backed_up_photos_into_albums), android.widget.Toast.LENGTH_SHORT).show()
                         },
                     )
                 }
-                GroupRow("Photos on this phone", "Browse the phone's albums and upload single photos", icon = Icons.Outlined.PhoneAndroid, showChevron = true, onClick = { nav.navigate(LocalAlbumsRoute) })
-                GroupRow("Free up space", "Remove phone copies of photos that are backed up", icon = Icons.Outlined.CleaningServices, showChevron = true, onClick = { nav.navigate(FreeUpSpaceRoute) })
+                GroupRow(stringResource(R.string.photos_on_this_phone), stringResource(R.string.browse_the_phone_s_albums_and_upload), icon = Icons.Outlined.PhoneAndroid, showChevron = true, onClick = { nav.navigate(LocalAlbumsRoute) })
+                GroupRow(stringResource(R.string.free_up_space), stringResource(R.string.remove_phone_copies_of_photos_that), icon = Icons.Outlined.CleaningServices, showChevron = true, onClick = { nav.navigate(FreeUpSpaceRoute) })
             }
 
-            Group("What to back up") {
-                GroupSwitch("Everything on this phone", "Every album, including ones added later", settings.backupEverything, Icons.Outlined.PhotoLibrary) { on ->
+            Group(stringResource(R.string.what_to_back_up)) {
+                GroupSwitch(stringResource(R.string.everything_on_this_phone), stringResource(R.string.every_album_including_ones_added), settings.backupEverything, Icons.Outlined.PhotoLibrary) { on ->
                     update { it.copy(backupEverything = on) }
                 }
             }
-            if (!settings.backupEverything) Group("Albums on this phone", footer = "Tick the albums to back up. Camera is usually the one you want.") {
+            if (!settings.backupEverything) Group(stringResource(R.string.albums_on_this_phone), footer = stringResource(R.string.tick_the_albums_to_back_up_camera_is)) {
                 val list = albums.value.orEmpty()
-                if (list.isEmpty()) GroupRow(if (albums.value == null) "Looking for albums…" else "No photos found on this phone")
+                if (list.isEmpty()) GroupRow(if (albums.value == null) stringResource(R.string.looking_for_albums) else stringResource(R.string.no_photos_found_on_this_phone))
                 list.forEach { a ->
                     val on = a.id in settings.backupAlbums
                     Row(
@@ -267,7 +270,7 @@ fun BackupScreen() {
                         }
                         Column(Modifier.weight(1f).padding(start = 14.dp)) {
                             Text(a.name, style = MaterialTheme.typography.bodyLarge)
-                            Text(countLabel(a.count, "item"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(countLabel(a.count, R.plurals.count_items), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Checkbox(on, onCheckedChange = { checked ->
                             update { s -> s.copy(backupAlbums = if (checked) s.backupAlbums + a.id else s.backupAlbums - a.id) }
@@ -278,8 +281,8 @@ fun BackupScreen() {
 
             Group {
                 GroupRow(
-                    "Check everything again",
-                    "Forget what this phone has uploaded and re-check every photo with the server. Nothing is uploaded twice.",
+                    stringResource(R.string.check_everything_again),
+                    stringResource(R.string.forget_what_this_phone_has_uploaded),
                     icon = Icons.Outlined.Refresh,
                     onClick = { confirmReset = true },
                 )
@@ -290,9 +293,9 @@ fun BackupScreen() {
 
     if (confirmReset) {
         ConfirmDialog(
-            "Check everything again?",
-            "The next backup compares every photo on this phone with the server. It takes a while but won't make duplicates.",
-            "Check again",
+            stringResource(R.string.check_everything_again_2),
+            stringResource(R.string.the_next_backup_compares_every_photo),
+            stringResource(R.string.check_again),
             destructive = false,
             onDismiss = { confirmReset = false },
         ) {

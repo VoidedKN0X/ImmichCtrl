@@ -14,6 +14,7 @@ import com.vknxworks.immichctrl.container
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import com.vknxworks.immichctrl.Strings
 
 /** Quick Settings tile: tap to back up now; shows progress while a backup runs. */
 class BackupTileService : TileService() {
@@ -50,7 +51,7 @@ class BackupTileService : TileService() {
         val running = qsTile?.state == Tile.STATE_ACTIVE
         if (running) {
             c.backup.cancel()
-            showState(false, "Stopped")
+            showState(false, Strings.str(R.string.stopped))
             return
         }
         c.appScope.launch(Dispatchers.Main) {
@@ -61,11 +62,11 @@ class BackupTileService : TileService() {
             c.sessions.ready.first { it }
             val active = c.sessions.active.value?.account?.key
             if (active == null || (s.backupEnabled && s.backupAccount != null && s.backupAccount != active)) {
-                showState(false, if (active == null) "Not signed in" else "Set up for another account")
+                showState(false, if (active == null) Strings.str(R.string.not_signed_in) else Strings.str(R.string.set_up_for_another_account))
                 return@launch
             }
             c.backup.backupNow()
-            showState(true, "Starting…")
+            showState(true, Strings.str(R.string.starting))
         }
     }
 
@@ -84,15 +85,15 @@ class BackupTileService : TileService() {
             val running = infos.firstOrNull { it.state == WorkInfo.State.RUNNING }
             val tile = qsTile ?: return@addListener
             tile.icon = Icon.createWithResource(this, R.drawable.ic_notification)
-            tile.label = "Back up photos"
+            tile.label = Strings.str(R.string.tile_backup)
             if (running != null) {
                 val done = running.progress.getInt(BackupWorker.KEY_DONE, 0)
                 val total = running.progress.getInt(BackupWorker.KEY_TOTAL, 0)
                 tile.state = Tile.STATE_ACTIVE
-                tile.subtitle = if (total > 0) "$done of $total" else "Checking…"
+                tile.subtitle = if (total > 0) Strings.str(R.string.of, done, total) else Strings.str(R.string.checking)
             } else {
                 tile.state = Tile.STATE_INACTIVE
-                tile.subtitle = "Tap to back up"
+                tile.subtitle = Strings.str(R.string.tap_to_back_up)
             }
             tile.updateTile()
         }, ContextCompat.getMainExecutor(this))

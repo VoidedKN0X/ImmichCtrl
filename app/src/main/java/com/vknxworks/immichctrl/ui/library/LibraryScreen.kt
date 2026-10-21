@@ -101,8 +101,11 @@ import com.vknxworks.immichctrl.ui.nav.PlacesRoute
 import com.vknxworks.immichctrl.ui.nav.SharedLinksRoute
 import com.vknxworks.immichctrl.ui.nav.TagsRoute
 import com.vknxworks.immichctrl.ui.theme.Gutter
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
-private enum class AlbumFilter(val label: String) { ALL("All"), MINE("Mine"), SHARED("Shared with me") }
+private enum class AlbumFilter(val label: String) { ALL(Strings.str(R.string.all)), MINE(Strings.str(R.string.mine)), SHARED(Strings.str(R.string.shared_with_me)) }
 
 /** The Library tab: collections, then albums. */
 @Composable
@@ -122,7 +125,7 @@ fun LibraryScreen() {
     val partnersWithMe = partners.value.orEmpty()
 
     if (creating) {
-        TextInputDialog("New album", "Album name", "Create", onDismiss = { creating = false }) { name ->
+        TextInputDialog(stringResource(R.string.new_album), stringResource(R.string.album_name), stringResource(R.string.create), onDismiss = { creating = false }) { name ->
             creating = false
             c.runTask {
                 val a = c.api.createAlbum(name)
@@ -140,47 +143,47 @@ fun LibraryScreen() {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            fullWidth("title") { TabTitle("Library", padded = false) }
+            fullWidth("title") { TabTitle(stringResource(R.string.library), padded = false) }
             if (partnersWithMe.isNotEmpty()) fullWidth("partners") { PartnerRow(partnersWithMe) }
             fullWidth("tiles") {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TileRow(
-                        Tile(Icons.Outlined.FavoriteBorder, "Favourites") { nav.navigate(CollectionRoute("favorites")) },
-                        Tile(Icons.Outlined.People, "People") { nav.navigate(PeopleRoute) },
+                        Tile(Icons.Outlined.FavoriteBorder, Strings.str(R.string.favourites)) { nav.navigate(CollectionRoute("favorites")) },
+                        Tile(Icons.Outlined.People, Strings.str(R.string.people)) { nav.navigate(PeopleRoute) },
                     )
                     TileRow(
-                        Tile(Icons.Outlined.Place, "Places") { nav.navigate(PlacesRoute) },
-                        Tile(Icons.Outlined.Map, "Map") { nav.navigate(MapRoute) },
+                        Tile(Icons.Outlined.Place, Strings.str(R.string.places)) { nav.navigate(PlacesRoute) },
+                        Tile(Icons.Outlined.Map, Strings.str(R.string.map)) { nav.navigate(MapRoute) },
                     )
                     TileRow(
-                        Tile(Icons.Outlined.VideoLibrary, "Videos") { nav.navigate(CollectionRoute("videos")) },
-                        Tile(Icons.Outlined.NewReleases, "Recently added") { nav.navigate(CollectionRoute("recent")) },
+                        Tile(Icons.Outlined.VideoLibrary, Strings.str(R.string.videos)) { nav.navigate(CollectionRoute("videos")) },
+                        Tile(Icons.Outlined.NewReleases, Strings.str(R.string.recently_added)) { nav.navigate(CollectionRoute("recent")) },
                     )
                     TileRow(
-                        Tile(Icons.Outlined.Archive, "Archive") { nav.navigate(CollectionRoute("archive")) },
-                        Tile(Icons.Outlined.Lock, "Locked folder") { nav.navigate(LockedRoute) },
+                        Tile(Icons.Outlined.Archive, Strings.str(R.string.archive)) { nav.navigate(CollectionRoute("archive")) },
+                        Tile(Icons.Outlined.Lock, Strings.str(R.string.locked_folder)) { nav.navigate(LockedRoute) },
                     )
                     TileRow(
-                        Tile(Icons.Outlined.Link, "Shared links") { nav.navigate(SharedLinksRoute) },
-                        Tile(Icons.Outlined.Group, "Partners") { nav.navigate(PartnersRoute) },
+                        Tile(Icons.Outlined.Link, Strings.str(R.string.shared_links)) { nav.navigate(SharedLinksRoute) },
+                        Tile(Icons.Outlined.Group, Strings.str(R.string.partners)) { nav.navigate(PartnersRoute) },
                     )
                     TileRow(
-                        Tile(Icons.Outlined.Sell, "Tags") { nav.navigate(TagsRoute) },
-                        Tile(Icons.Outlined.Folder, "Folders") { nav.navigate(FoldersRoute()) },
+                        Tile(Icons.Outlined.Sell, Strings.str(R.string.tags)) { nav.navigate(TagsRoute) },
+                        Tile(Icons.Outlined.Folder, Strings.str(R.string.folders)) { nav.navigate(FoldersRoute()) },
                     )
                     TileRow(
-                        Tile(Icons.Outlined.PhoneAndroid, "On this device") { nav.navigate(LocalAlbumsRoute) },
-                        if (features.trash) Tile(Icons.Outlined.Delete, "Trash") { nav.navigate(CollectionRoute("trash")) } else null,
+                        Tile(Icons.Outlined.PhoneAndroid, Strings.str(R.string.on_this_device)) { nav.navigate(LocalAlbumsRoute) },
+                        if (features.trash) Tile(Icons.Outlined.Delete, Strings.str(R.string.trash)) { nav.navigate(CollectionRoute("trash")) } else null,
                     )
                     if (features.duplicateDetection) {
-                        TileRow(Tile(Icons.Outlined.ContentCopy, "Duplicates") { nav.navigate(DuplicatesRoute) }, null)
+                        TileRow(Tile(Icons.Outlined.ContentCopy, Strings.str(R.string.duplicates)) { nav.navigate(DuplicatesRoute) }, null)
                     }
                 }
             }
             fullWidth("albums-title") {
                 Column {
                     if (offline.isNotEmpty()) {
-                        Text("Available offline", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
+                        Text(stringResource(R.string.available_offline), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
                         offline.forEach { o ->
                             Row(
                                 Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { nav.navigate(OfflineAlbumRoute(o.albumId)) }.padding(vertical = 8.dp),
@@ -188,21 +191,21 @@ fun LibraryScreen() {
                             ) {
                                 Icon(Icons.Outlined.OfflinePin, null, tint = MaterialTheme.colorScheme.primary)
                                 Text(o.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                                Text(if (o.complete) countLabel(o.count, "item") else "Saving…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(if (o.complete) countLabel(o.count, R.plurals.count_items) else stringResource(R.string.saving), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
                     Row(Modifier.fillMaxWidth().padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Albums", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-                        IconButton(onClick = { sorting = true }) { Icon(Icons.AutoMirrored.Outlined.Sort, "Sort") }
+                        Text(stringResource(R.string.albums), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+                        IconButton(onClick = { sorting = true }) { Icon(Icons.AutoMirrored.Outlined.Sort, stringResource(R.string.sort)) }
                         IconButton(onClick = { scope.launch { c.settings.update { it.copy(albumGrid = !it.albumGrid) } } }) {
-                            Icon(if (settings.albumGrid) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView, if (settings.albumGrid) "List" else "Grid")
+                            Icon(if (settings.albumGrid) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView, if (settings.albumGrid) stringResource(R.string.list) else stringResource(R.string.grid))
                         }
-                        if (!settings.readOnly) IconButton(onClick = { creating = true }) { Icon(Icons.Filled.Add, "New album") }
+                        if (!settings.readOnly) IconButton(onClick = { creating = true }) { Icon(Icons.Filled.Add, stringResource(R.string.new_album)) }
                     }
                     OutlinedTextField(
                         search, { search = it },
-                        placeholder = { Text("Find an album") },
+                        placeholder = { Text(stringResource(R.string.find_an_album)) },
                         leadingIcon = { Icon(Icons.Outlined.Search, null) },
                         singleLine = true,
                         shape = CircleShape,
@@ -229,7 +232,7 @@ fun LibraryScreen() {
                     if (shown.isEmpty()) {
                         fullWidth("empty") {
                             Text(
-                                if (filter == AlbumFilter.SHARED) "No one has shared an album with you yet." else "No albums yet. Tap + to make one.",
+                                if (filter == AlbumFilter.SHARED) stringResource(R.string.no_one_has_shared_an_album_with_you) else stringResource(R.string.no_albums_yet_tap_to_make_one),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(vertical = 24.dp),
@@ -247,7 +250,7 @@ fun LibraryScreen() {
     }
     if (sorting) {
         com.vknxworks.immichctrl.ui.components.ChoiceSheet(
-            "Sort albums",
+            stringResource(R.string.sort_albums),
             AlbumSort.entries.map { it to it.label },
             settings.albumSort,
             onDismiss = { sorting = false },
@@ -278,11 +281,11 @@ private fun AlbumRow(a: AlbumDto, onClick: () -> Unit) {
             RemoteImage(a.albumThumbnailAssetId?.let { c.api.thumbnailUrl(it) }, Modifier.fillMaxSize(), placeholderIcon = Icons.Outlined.PhotoAlbum)
         }
         Column(Modifier.weight(1f).padding(start = 14.dp)) {
-            Text(a.albumName.ifBlank { "Untitled" }, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(a.albumName.ifBlank { Strings.str(R.string.untitled) }, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 listOfNotNull(
-                    countLabel(a.assetCount, "item"),
-                    if (a.ownerUserId != c.me) a.ownerUser?.name?.let { "by $it" } else if (a.shared) "Shared" else null,
+                    countLabel(a.assetCount, R.plurals.count_items),
+                    if (a.ownerUserId != c.me) a.ownerUser?.name?.let { Strings.str(R.string.by, it) } else if (a.shared) Strings.str(R.string.shared) else null,
                     shortDate(a.startDate),
                 ).joinToString("  ·  "),
                 style = MaterialTheme.typography.bodySmall,
@@ -300,7 +303,7 @@ fun AlbumsScreen(shared: Boolean) {
     val nav = LocalNavigator.current
     val albums = rememberLoader("albums-$shared") { c.api.albums().filter { if (shared) it.ownerUserId != c.me else true } }
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar(if (shared) "Shared with me" else "Albums")
+        ScreenTopBar(if (shared) stringResource(R.string.shared_with_me) else stringResource(R.string.albums))
         when (val s = albums.state) {
             is Load.Loading -> LoadingView()
             is Load.Err -> ErrorView(s.message) { albums.reload() }
@@ -360,7 +363,7 @@ fun AlbumCard(a: AlbumDto, onClick: () -> Unit) {
             )
         }
         Text(
-            a.albumName.ifBlank { "Untitled" },
+            a.albumName.ifBlank { Strings.str(R.string.untitled) },
             style = MaterialTheme.typography.titleSmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -368,8 +371,8 @@ fun AlbumCard(a: AlbumDto, onClick: () -> Unit) {
         )
         Text(
             listOfNotNull(
-                countLabel(a.assetCount, "item"),
-                if (a.ownerUserId != c.me) a.ownerUser?.name?.let { "by $it" } else if (a.shared) "Shared" else null,
+                countLabel(a.assetCount, R.plurals.count_items),
+                if (a.ownerUserId != c.me) a.ownerUser?.name?.let { Strings.str(R.string.by, it) } else if (a.shared) Strings.str(R.string.shared) else null,
                 if (a.ownerUserId == c.me && !a.shared) shortDate(a.startDate) else null,
             ).joinToString("  ·  "),
             style = MaterialTheme.typography.bodySmall,
@@ -387,8 +390,8 @@ private fun PartnerRow(partners: List<com.vknxworks.immichctrl.data.api.PartnerD
     val nav = LocalNavigator.current
     Column(Modifier.padding(bottom = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Shared with you", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            androidx.compose.material3.TextButton(onClick = { nav.navigate(PartnersRoute) }) { Text("Manage") }
+            Text(stringResource(R.string.shared_with_you), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            androidx.compose.material3.TextButton(onClick = { nav.navigate(PartnersRoute) }) { Text(stringResource(R.string.manage)) }
         }
         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             items(partners.size, key = { partners[it].id }) { i ->

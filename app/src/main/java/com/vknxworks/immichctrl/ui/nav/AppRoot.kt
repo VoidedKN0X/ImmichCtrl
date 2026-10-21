@@ -104,6 +104,9 @@ import com.vknxworks.immichctrl.ui.settings.YouScreen
 import com.vknxworks.immichctrl.ui.viewer.ViewerScreen
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 @Composable
 fun AppRoot() {
@@ -150,13 +153,13 @@ fun AppRoot() {
             if (acc == null) {
                 LaunchedEffect(uploads) {
                     c.pendingUploads.value = null
-                    android.widget.Toast.makeText(context, "Sign in to an Immich server first", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(context, Strings.str(R.string.sign_in_to_an_immich_server_first), android.widget.Toast.LENGTH_LONG).show()
                 }
             } else {
                 com.vknxworks.immichctrl.ui.components.ConfirmDialog(
-                    "Upload to Immich?",
-                    "${com.vknxworks.immichctrl.ui.components.countLabel(uploads.size, "item")} shared from another app will be uploaded to ${acc.name.ifBlank { acc.email }} on ${acc.serverName}.",
-                    "Upload",
+                    stringResource(R.string.upload_to_immich),
+                    stringResource(R.string.shared_from_another_app_will_be, com.vknxworks.immichctrl.ui.components.countLabel(uploads.size, R.plurals.count_items), acc.name.ifBlank { acc.email }, acc.serverName),
+                    stringResource(R.string.upload),
                     destructive = false,
                     onDismiss = { c.pendingUploads.value = null },
                 ) {
@@ -179,9 +182,9 @@ private fun androidx.navigation.NavDestination.blockedInReadOnly(): Boolean =
 private data class TopDest(val route: Any, val item: TabItem)
 
 private val topDestinations = listOf(
-    TopDest(PhotosRoute, TabItem("Photos", Icons.Outlined.Photo, Icons.Filled.Photo)),
-    TopDest(SearchRoute, TabItem("Search", Icons.Outlined.Search, Icons.Filled.Search)),
-    TopDest(LibraryRoute, TabItem("Library", Icons.Outlined.PhotoLibrary, Icons.Filled.PhotoLibrary)),
+    TopDest(PhotosRoute, TabItem(Strings.str(R.string.photos), Icons.Outlined.Photo, Icons.Filled.Photo)),
+    TopDest(SearchRoute, TabItem(Strings.str(R.string.search), Icons.Outlined.Search, Icons.Filled.Search)),
+    TopDest(LibraryRoute, TabItem(Strings.str(R.string.library), Icons.Outlined.PhotoLibrary, Icons.Filled.PhotoLibrary)),
 )
 
 @Composable

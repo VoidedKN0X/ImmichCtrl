@@ -16,19 +16,21 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 enum class ThemeChoice(@androidx.annotation.StringRes val label: Int) {
     SYSTEM(com.vknxworks.immichctrl.R.string.theme_system), DARK(com.vknxworks.immichctrl.R.string.theme_dark),
     LIGHT(com.vknxworks.immichctrl.R.string.theme_light), BLACK(com.vknxworks.immichctrl.R.string.theme_black),
 }
 
-enum class GroupBy(val label: String) { DAY("Day"), MONTH("Month") }
+enum class GroupBy(val label: String) { DAY(Strings.str(R.string.day)), MONTH(Strings.str(R.string.month)) }
 
 /** Size of photos sent to other apps. */
-enum class ShareSize(val label: String) { ASK("Ask each time"), ORIGINAL("Original"), LARGE("Large (smaller file)") }
+enum class ShareSize(val label: String) { ASK(Strings.str(R.string.ask_each_time)), ORIGINAL(Strings.str(R.string.original)), LARGE(Strings.str(R.string.large_smaller_file)) }
 
 enum class AlbumSort(val label: String) {
-    ACTIVITY("Recent activity"), NAME("Name"), CREATED("Date created"), NEWEST("Newest photo"), OLDEST("Oldest photo"), COUNT("Most items")
+    ACTIVITY(Strings.str(R.string.recent_activity)), NAME(Strings.str(R.string.name)), CREATED(Strings.str(R.string.date_created)), NEWEST(Strings.str(R.string.newest_photo)), OLDEST(Strings.str(R.string.oldest_photo)), COUNT(Strings.str(R.string.most_items))
 }
 
 data class AppSettings(

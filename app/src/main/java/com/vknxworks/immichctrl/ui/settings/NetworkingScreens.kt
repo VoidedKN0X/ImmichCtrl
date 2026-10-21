@@ -58,6 +58,9 @@ import com.vknxworks.immichctrl.ui.components.findActivity
 import com.vknxworks.immichctrl.ui.components.toast
 import com.vknxworks.immichctrl.ui.theme.Gutter
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /**
  * Per-account connection options: which saved address is in use (public or home network, picked by
@@ -83,23 +86,22 @@ fun NetworkingScreen() {
     val changed = localUrl.trim() != acc.localUrl.orEmpty() || parseHeaders(headers) != acc.headers || cert != acc.clientCert
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Networking")
+        ScreenTopBar(stringResource(R.string.networking))
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
             fun pick(home: Boolean) {
                 if (home == usingLocal) return
                 scope.launch {
                     c.useAddress(home)
-                    c.toast(if (home) "Using the home address" else "Using the public address")
+                    c.toast(if (home) Strings.str(R.string.using_the_home_address) else Strings.str(R.string.using_the_public_address))
                 }
             }
-            fun described(url: String) = if (url.startsWith("http://", ignoreCase = true)) "$url  ·  Not encrypted (HTTP)" else url
+            fun described(url: String) = if (url.startsWith("http://", ignoreCase = true)) Strings.str(R.string.not_encrypted_http, url) else url
             Group(
-                "Address in use",
-                footer = "The app always uses the address you pick here and never switches by itself. " +
-                    "Pick the public address before you leave your home network.",
+                stringResource(R.string.address_in_use),
+                footer = stringResource(R.string.address_in_use_footer),
             ) {
                 GroupRow(
-                    "Use public address",
+                    stringResource(R.string.use_public_address),
                     described(acc.serverUrl),
                     icon = Icons.Outlined.Public,
                     onClick = { pick(false) },
@@ -107,33 +109,32 @@ fun NetworkingScreen() {
                 )
                 val home = acc.localUrl
                 GroupRow(
-                    "Use home address",
-                    home?.let { described(it) } ?: "Add a home network address below first",
+                    stringResource(R.string.use_home_address),
+                    home?.let { described(it) } ?: stringResource(R.string.add_a_home_network_address_below),
                     icon = Icons.Outlined.Home,
                     onClick = if (home != null) ({ pick(true) }) else null,
                     trailing = { RadioButton(selected = usingLocal, onClick = { pick(true) }, enabled = home != null) },
                 )
             }
             Group(
-                "Home network address",
-                footer = "Your server's address on your home network, e.g. its IP and port: faster, and it works even if the internet is down. " +
-                    "Save it, then pick it under Address in use. Leave empty to remove it.",
+                stringResource(R.string.home_network_address),
+                footer = stringResource(R.string.home_address_footer),
             ) {
                 OutlinedTextField(
                     localUrl, { localUrl = it },
-                    label = { Text("e.g. http://192.168.1.20:2283") },
+                    label = { Text(stringResource(R.string.e_g_http_192_168_1_20_2283)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false),
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
                 )
             }
             Group(
-                "Custom headers",
-                footer = "One per line, as Name: value. Sent with every request to this server, for Cloudflare Access, an auth proxy and the like.",
+                stringResource(R.string.custom_headers),
+                footer = stringResource(R.string.one_per_line_as_name_value_sent_with),
             ) {
                 OutlinedTextField(
                     headers, { headers = it },
-                    label = { Text("CF-Access-Client-Id: …") },
+                    label = { Text(stringResource(R.string.cf_access_client_id)) },
                     minLines = 3,
                     textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                     keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
@@ -141,12 +142,12 @@ fun NetworkingScreen() {
                 )
             }
             Group(
-                "Client certificate",
-                footer = "For servers that ask the phone for a certificate (mutual TLS). Install the certificate in Android's settings first (Security → Encryption & credentials), then pick it here.",
+                stringResource(R.string.client_certificate),
+                footer = stringResource(R.string.for_servers_that_ask_the_phone_for_a),
             ) {
                 GroupRow(
-                    cert ?: "None",
-                    if (cert == null) "Tap to choose one" else "Tap to choose another",
+                    cert ?: stringResource(R.string.none),
+                    if (cert == null) stringResource(R.string.tap_to_choose_one) else stringResource(R.string.tap_to_choose_another),
                     icon = Icons.Outlined.VerifiedUser,
                     onClick = {
                         val activity = context.findActivity() ?: return@GroupRow
@@ -156,7 +157,7 @@ fun NetworkingScreen() {
                         }, null, null, host?.host, host?.port ?: -1, cert)
                     },
                     trailing = if (cert != null) {
-                        { IconButton(onClick = { cert = null }) { Icon(Icons.Outlined.DeleteOutline, "Don't use a certificate") } }
+                        { IconButton(onClick = { cert = null }) { Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.don_t_use_a_certificate)) } }
                     } else null,
                 )
             }
@@ -165,11 +166,11 @@ fun NetworkingScreen() {
                 scope.launch {
                     c.sessions.updateNetworking(acc.key, localUrl, parsed, cert)
                     AppLog.i("Network", "Connection settings changed")
-                    c.toast("Saved")
+                    c.toast(Strings.str(R.string.saved))
                 }
             }
             PillButton(
-                "Save",
+                stringResource(R.string.save),
                 onClick = {
                     val newHttp = localUrl.trim().startsWith("http://", ignoreCase = true) &&
                         !localUrl.trim().equals(acc.localUrl.orEmpty(), ignoreCase = true)
@@ -181,12 +182,9 @@ fun NetworkingScreen() {
             Spacer(Modifier.height(24.dp))
             if (confirmHttp) {
                 ConfirmDialog(
-                    "Use an unencrypted home address?",
-                    "This address uses plain HTTP. While you use it, the app sends your sign-in and photos to it unencrypted, " +
-                        "so anyone on that network can read them. The app doesn't check which network you're on: on another network, " +
-                        "a different device could be at the same address. Only use it on a home network you trust, and pick the " +
-                        "public address before you leave.",
-                    "Use HTTP",
+                    stringResource(R.string.use_an_unencrypted_home_address),
+                    stringResource(R.string.http_home_address_body),
+                    stringResource(R.string.use_http),
                     onDismiss = { confirmHttp = false },
                 ) {
                     confirmHttp = false
@@ -206,19 +204,19 @@ fun LogsScreen() {
     LaunchedEffect(entries.size) { if (entries.isNotEmpty()) state.scrollToItem(entries.lastIndex) }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Logs") {
-            IconButton(onClick = { com.vknxworks.immichctrl.data.security.copySensitive(c.context, AppLog.text(), "ImmichCtrl log"); c.toast("Copied") }) { Icon(Icons.Outlined.ContentCopy, "Copy") }
+        ScreenTopBar(stringResource(R.string.logs)) {
+            IconButton(onClick = { com.vknxworks.immichctrl.data.security.copySensitive(c.context, AppLog.text(), Strings.str(R.string.immichctrl_log)); c.toast(Strings.str(R.string.copied)) }) { Icon(Icons.Outlined.ContentCopy, stringResource(R.string.copy)) }
             IconButton(onClick = {
                 val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                    .putExtra(Intent.EXTRA_SUBJECT, "ImmichCtrl log")
+                    .putExtra(Intent.EXTRA_SUBJECT, Strings.str(R.string.immichctrl_log))
                     .putExtra(Intent.EXTRA_TEXT, AppLog.text())
                 com.vknxworks.immichctrl.data.security.expectAppReturn(c.context)
-                runCatching { c.context.startActivity(Intent.createChooser(send, "Share log").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            }) { Icon(Icons.Outlined.Share, "Share") }
-            IconButton(onClick = { AppLog.clear() }) { Icon(Icons.Outlined.DeleteOutline, "Clear") }
+                runCatching { c.context.startActivity(Intent.createChooser(send, Strings.str(R.string.share_log)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            }) { Icon(Icons.Outlined.Share, stringResource(R.string.share)) }
+            IconButton(onClick = { AppLog.clear() }) { Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.clear)) }
         }
         if (entries.isEmpty()) {
-            MessageView(Icons.Outlined.VerifiedUser, "Nothing logged yet", "Backup, sync and connection events show up here.")
+            MessageView(Icons.Outlined.VerifiedUser, stringResource(R.string.nothing_logged_yet), stringResource(R.string.backup_sync_and_connection_events))
         } else {
             LazyColumn(state = state, modifier = Modifier.navigationBarsPadding()) {
                 items(entries) { e ->

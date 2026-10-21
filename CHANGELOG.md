@@ -4,6 +4,18 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.13
+
+### Changed
+
+- **Your profile picture looks the same as in the other Ctrl apps**: at the top right of Photos and the other tabs it's now the series' round picture: your Immich profile picture when you have one, otherwise the first letter of your name on a softly tinted circle in the app's colour (before, a slightly smaller circle in a stronger tint).
+- **Settings › Appearance › Use wallpaper colours** now reads "Replaces the default colours with ones from your wallpaper", the same wording as every Ctrl app (before: "Replaces ImmichCtrl's periwinkle with colours from your wallpaper"). What the switch does hasn't changed.
+- **All text is now in one place, ready for translations.** About 750 pieces of text that were written straight into the code (Photos, Search and its filters, Library, albums, people, places, the viewer and its menus, the editor, slideshows, backup and Free up space, sign-in, Settings, Networking, server administration, notifications, the backup tile, widgets and error messages) now come from the app's text resources. The wording stays the same.
+
+### Fixed
+
+- **Counts read correctly in the singular and plural** everywhere they're shown, such as "1 item", "1 photo", "1 group resolved", "1 star", "Uploading 1 item to Immich" and "1 background job failed" in server alerts.
+
 ## 0.3.12
 
 ### Changed

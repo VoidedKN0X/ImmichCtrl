@@ -58,6 +58,7 @@ import com.vknxworks.immichctrl.data.api.memories
 import com.vknxworks.immichctrl.ui.components.AssetThumb
 import com.vknxworks.immichctrl.ui.components.MessageView
 import com.vknxworks.immichctrl.ui.components.UserAvatar
+import com.vknxworks.immichctrl.ui.components.ProfileAvatar
 import com.vknxworks.immichctrl.ui.components.rememberLoader
 import com.vknxworks.immichctrl.ui.components.yearsAgo
 import com.vknxworks.immichctrl.ui.nav.BackupRoute
@@ -67,6 +68,9 @@ import com.vknxworks.immichctrl.ui.nav.YouRoute
 import com.vknxworks.immichctrl.ui.theme.Gutter
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /** The Photos tab: everything on the server, newest first, with memories on top. */
 @Composable
@@ -108,9 +112,9 @@ fun PhotosScreen() {
         empty = {
             MessageView(
                 Icons.Outlined.PhotoLibrary,
-                "No photos yet",
-                "Turn on backup to upload this phone's photos, or upload from the Immich website.",
-                actionLabel = "Set up backup",
+                stringResource(R.string.no_photos_yet),
+                stringResource(R.string.turn_on_backup_to_upload_this_phone),
+                actionLabel = stringResource(R.string.set_up_backup),
                 onAction = { nav.navigate(BackupRoute) },
             )
         },
@@ -121,18 +125,18 @@ fun PhotosScreen() {
                         Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 12.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Photos", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
+                        Text(stringResource(R.string.photos), style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
                         if (settings.readOnly) {
-                            Icon(Icons.Outlined.Lock, "Read-only mode", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 4.dp))
+                            Icon(Icons.Outlined.Lock, stringResource(R.string.read_only_mode), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 4.dp))
                         } else IconButton(onClick = { nav.navigate(BackupRoute) }) {
                             Box(contentAlignment = Alignment.Center) {
                                 when {
                                     backingUp -> {
                                         CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.dp)
-                                        Icon(Icons.Outlined.CloudUpload, "Backing up", Modifier.size(16.dp))
+                                        Icon(Icons.Outlined.CloudUpload, stringResource(R.string.backing_up), Modifier.size(16.dp))
                                     }
-                                    settings.backupEnabled -> Icon(Icons.Outlined.CloudDone, "Backup is on")
-                                    else -> Icon(Icons.Outlined.CloudOff, "Backup is off", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    settings.backupEnabled -> Icon(Icons.Outlined.CloudDone, stringResource(R.string.backup_is_on))
+                                    else -> Icon(Icons.Outlined.CloudOff, stringResource(R.string.backup_is_off), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -145,7 +149,7 @@ fun PhotosScreen() {
                                 ),
                                 contentAlignment = Alignment.Center,
                             ) {
-                                UserAvatar(acc.userId, acc.name, true, null, null, Modifier.size(32.dp))
+                                ProfileAvatar(acc.userId, acc.name)
                             }
                         }
                     }
@@ -176,16 +180,16 @@ private fun ReadOnlyDialog(on: Boolean, onDismiss: () -> Unit) {
     val scope = rememberCoroutineScope()
     fun set(v: Boolean) = scope.launch { c.settings.update { it.copy(readOnly = v) } }
     ConfirmDialog(
-        if (on) "Leave read-only mode?" else "Turn on read-only mode?",
-        if (on) "Everything can be changed and deleted again." else "Only Photos can be browsed, and nothing can be deleted, moved or changed. Long-press your picture again to turn it off.",
-        if (on) "Turn off" else "Turn on",
+        if (on) stringResource(R.string.leave_read_only_mode) else stringResource(R.string.turn_on_read_only_mode),
+        if (on) stringResource(R.string.everything_can_be_changed_and) else stringResource(R.string.only_photos_can_be_browsed_and),
+        if (on) stringResource(R.string.turn_off) else stringResource(R.string.turn_on),
         destructive = false,
         onDismiss = onDismiss,
     ) {
         onDismiss()
         val activity = context as? androidx.fragment.app.FragmentActivity
         if (on && activity != null && c.appLock.canLock()) {
-            c.appLock.prompt(activity, "Leave read-only mode", allowCredential = true) { ok -> if (ok) set(false) }
+            c.appLock.prompt(activity, Strings.str(R.string.leave_read_only_mode_2), allowCredential = true) { ok -> if (ok) set(false) }
         } else {
             set(!on)
         }
@@ -207,7 +211,7 @@ private fun MemoryCard(m: MemoryDto, onClick: () -> Unit) {
             Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)))),
         )
         Text(
-            if (m.type == "on_this_day") yearsAgo(m.data.year) else m.data.personName ?: "Memory",
+            if (m.type == "on_this_day") yearsAgo(m.data.year) else m.data.personName ?: stringResource(R.string.memory),
             style = MaterialTheme.typography.titleSmall,
             color = Color.White,
             maxLines = 2,

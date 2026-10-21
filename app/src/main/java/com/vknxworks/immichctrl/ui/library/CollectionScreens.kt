@@ -107,6 +107,9 @@ import com.vknxworks.immichctrl.data.settings.GroupBy
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 // ---------------------------------------------------------------------------------------------
 // Favourites, archive, trash, videos, recently added
@@ -119,14 +122,14 @@ fun CollectionScreen(kind: String) {
         "favorites" -> SourceGrid(
             rememberTimeline("favorites", TimelineQuery(isFavorite = true, visibility = "timeline", withStacked = true)),
             SelectionContext.TIMELINE,
-            topBar = { ScreenTopBar("Favourites") },
-            empty = { MessageView(Icons.Outlined.Sell, "No favourites yet", "Tap the heart on a photo to add it here.") },
+            topBar = { ScreenTopBar(stringResource(R.string.favourites)) },
+            empty = { MessageView(Icons.Outlined.Sell, stringResource(R.string.no_favourites_yet), stringResource(R.string.tap_the_heart_on_a_photo_to_add_it)) },
         )
         "archive" -> SourceGrid(
             rememberTimeline("archive", TimelineQuery(visibility = "archive", withStacked = true)),
             SelectionContext.ARCHIVE,
-            topBar = { ScreenTopBar("Archive") },
-            empty = { MessageView(Icons.Outlined.Folder, "Nothing archived", "Archived photos are kept but hidden from Photos.") },
+            topBar = { ScreenTopBar(stringResource(R.string.archive)) },
+            empty = { MessageView(Icons.Outlined.Folder, stringResource(R.string.nothing_archived), stringResource(R.string.archived_photos_are_kept_but_hidden)) },
         )
         "trash" -> TrashScreen()
         "videos" -> SourceGrid(
@@ -135,7 +138,7 @@ fun CollectionScreen(kind: String) {
                 r.assets.items.map { it.toAsset() } to (r.assets.nextPage != null)
             },
             SelectionContext.TIMELINE,
-            topBar = { ScreenTopBar("Videos") },
+            topBar = { ScreenTopBar(stringResource(R.string.videos)) },
         )
         else -> SourceGrid(
             // Immich 3 can sort the timeline by import date; older servers get the last 30 days of uploads.
@@ -148,9 +151,9 @@ fun CollectionScreen(kind: String) {
                 r.assets.items.map { it.toAsset() } to (r.assets.nextPage != null)
             },
             SelectionContext.TIMELINE,
-            topBar = { ScreenTopBar("Recently added") },
+            topBar = { ScreenTopBar(stringResource(R.string.recently_added)) },
             groupBy = if (c.api.serverMajor >= 3) null else GroupBy.DAY,
-            empty = { MessageView(Icons.Outlined.Folder, "Nothing added recently") },
+            empty = { MessageView(Icons.Outlined.Folder, stringResource(R.string.nothing_added_recently)) },
         )
     }
 }
@@ -165,33 +168,33 @@ private fun TrashScreen() {
         source,
         SelectionContext.TRASH,
         topBar = {
-            ScreenTopBar("Trash") {
-                IconButton(onClick = { confirmRestore = true }, enabled = source.total > 0) { Icon(Icons.Outlined.RestoreFromTrash, "Restore all") }
-                IconButton(onClick = { confirmEmpty = true }, enabled = source.total > 0) { Icon(Icons.Outlined.DeleteForever, "Empty trash") }
+            ScreenTopBar(stringResource(R.string.trash)) {
+                IconButton(onClick = { confirmRestore = true }, enabled = source.total > 0) { Icon(Icons.Outlined.RestoreFromTrash, stringResource(R.string.restore_all)) }
+                IconButton(onClick = { confirmEmpty = true }, enabled = source.total > 0) { Icon(Icons.Outlined.DeleteForever, stringResource(R.string.empty_trash)) }
             }
         },
         header = {
             item(key = "trash-note") {
                 Text(
-                    "Items here are deleted for good after ${c.serverConfig.value.trashDays} days.",
+                    stringResource(R.string.items_here_are_deleted_for_good, c.serverConfig.value.trashDays),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )
             }
         },
-        empty = { MessageView(Icons.Outlined.Delete, "The trash is empty") },
+        empty = { MessageView(Icons.Outlined.Delete, stringResource(R.string.the_trash_is_empty)) },
     )
     if (confirmEmpty) {
-        ConfirmDialog("Empty the trash?", "Everything in the trash is deleted from the server for good.", "Empty trash", onDismiss = { confirmEmpty = false }) {
+        ConfirmDialog(stringResource(R.string.empty_the_trash), stringResource(R.string.everything_in_the_trash_is_deleted), stringResource(R.string.empty_trash), onDismiss = { confirmEmpty = false }) {
             confirmEmpty = false
-            c.runTask("Emptying the trash") { c.api.emptyTrash(); source.refresh() }
+            c.runTask(Strings.str(R.string.emptying_the_trash)) { c.api.emptyTrash(); source.refresh() }
         }
     }
     if (confirmRestore) {
-        ConfirmDialog("Restore everything?", "All items in the trash go back to where they were.", "Restore", destructive = false, onDismiss = { confirmRestore = false }) {
+        ConfirmDialog(stringResource(R.string.restore_everything), stringResource(R.string.all_items_in_the_trash_go_back_to), stringResource(R.string.restore), destructive = false, onDismiss = { confirmRestore = false }) {
             confirmRestore = false
-            c.runTask("Restored") { c.api.restoreAllTrash(); Sources.refreshAll() }
+            c.runTask(Strings.str(R.string.restored)) { c.api.restoreAllTrash(); Sources.refreshAll() }
         }
     }
 }
@@ -245,14 +248,14 @@ fun LockedScreen() {
         SourceGrid(
             rememberTimeline("locked", TimelineQuery(visibility = "locked")),
             SelectionContext.LOCKED,
-            topBar = { ScreenTopBar("Locked folder") },
-            empty = { MessageView(Icons.Outlined.Lock, "Nothing locked yet", "Move photos here from a photo's menu. They're hidden from Photos, search and albums.") },
+            topBar = { ScreenTopBar(stringResource(R.string.locked_folder)) },
+            empty = { MessageView(Icons.Outlined.Lock, stringResource(R.string.nothing_locked_yet), stringResource(R.string.move_photos_here_from_a_photo_s_menu)) },
         )
         return
     }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Locked folder")
+        ScreenTopBar(stringResource(R.string.locked_folder))
         when (val s = status.state) {
             is Load.Loading -> LoadingView()
             is Load.Err -> ErrorView(s.message) { status.reload() }
@@ -261,14 +264,14 @@ fun LockedScreen() {
                 // was open, or locking it again failed): opening the folder still asks for the PIN.
                 MessageView(
                     Icons.Outlined.Lock,
-                    if (s.value.pinCode) "Enter your PIN" else "Set up a PIN",
-                    error ?: if (s.value.pinCode) "Photos in the locked folder need your PIN to see." else "Choose a PIN to protect your locked folder. It's the same PIN as on the Immich website.",
-                    actionLabel = if (s.value.pinCode) "Unlock" else "Set PIN",
+                    if (s.value.pinCode) stringResource(R.string.lock_enter_pin) else stringResource(R.string.set_up_a_pin),
+                    error ?: if (s.value.pinCode) stringResource(R.string.photos_in_the_locked_folder_need) else stringResource(R.string.choose_a_pin_to_protect_your_locked),
+                    actionLabel = if (s.value.pinCode) stringResource(R.string.lock_unlock) else stringResource(R.string.set_pin),
                     onAction = {
                         if (!s.value.pinCode) settingUp = true
                         else if (bio && activity != null && accountKey != null) c.appScope.launch(kotlinx.coroutines.Dispatchers.Main) {
                             // Fingerprint first when a PIN has been remembered; fall back to typing it.
-                            val saved = if (c.appLock.hasSavedPin(accountKey)) c.appLock.unlockSavedPin(activity, accountKey, "Unlock the locked folder") else null
+                            val saved = if (c.appLock.hasSavedPin(accountKey)) c.appLock.unlockSavedPin(activity, accountKey, Strings.str(R.string.unlock_the_locked_folder)) else null
                             if (saved == null) { entering = true; return@launch }
                             runCatching { c.api.unlockSession(saved) }
                                 .onSuccess { error = null; unlocked = true }
@@ -280,7 +283,7 @@ fun LockedScreen() {
         }
     }
     if (entering) {
-        TextInputDialog("Unlock", "PIN", "Unlock", secret = true, numeric = true, onDismiss = { entering = false }) { pin ->
+        TextInputDialog(stringResource(R.string.lock_unlock), "PIN", stringResource(R.string.lock_unlock), secret = true, numeric = true, onDismiss = { entering = false }) { pin ->
             entering = false
             c.appScope.launch(kotlinx.coroutines.Dispatchers.Main) {
                 runCatching { c.api.unlockSession(pin) }
@@ -290,10 +293,10 @@ fun LockedScreen() {
         }
     }
     if (settingUp) {
-        TextInputDialog("New PIN", "6-digit PIN", "Save", secret = true, numeric = true, onDismiss = { settingUp = false }) { pin ->
+        TextInputDialog(stringResource(R.string.new_pin), stringResource(R.string.n_6_digit_pin), stringResource(R.string.save), secret = true, numeric = true, onDismiss = { settingUp = false }) { pin ->
             settingUp = false
             if (pin.length != 6 || pin.any { !it.isDigit() }) {
-                error = "The PIN needs to be 6 digits"
+                error = Strings.str(R.string.the_pin_needs_to_be_6_digits)
                 return@TextInputDialog
             }
             c.appScope.launch(kotlinx.coroutines.Dispatchers.Main) {
@@ -319,12 +322,12 @@ fun SharedLinksScreen() {
     var open by remember { mutableStateOf<SharedLinkDto?>(null) }
     var editing by remember { mutableStateOf<SharedLinkDto?>(null) }
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Shared links")
+        ScreenTopBar(stringResource(R.string.shared_links))
         when (val s = links.state) {
             is Load.Loading -> LoadingView()
             is Load.Err -> ErrorView(s.message) { links.reload() }
             is Load.Ok -> if (s.value.isEmpty()) {
-                MessageView(Icons.Outlined.Link, "No shared links", "Share a link from an album or from selected photos. Anyone with the link can see them.")
+                MessageView(Icons.Outlined.Link, stringResource(R.string.no_shared_links), stringResource(R.string.share_a_link_from_an_album_or_from))
             } else {
                 LazyColumn(contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.navigationBarsPadding()) {
                     item {
@@ -332,16 +335,16 @@ fun SharedLinksScreen() {
                             s.value.forEach { l ->
                                 val expires = daysUntil(l.expiresAt)
                                 GroupRow(
-                                    l.album?.albumName ?: l.description?.ifBlank { null } ?: countLabel(l.assets.size, "photo"),
+                                    l.album?.albumName ?: l.description?.ifBlank { null } ?: countLabel(l.assets.size, R.plurals.count_photos),
                                     listOfNotNull(
-                                        "Created ${shortDate(l.createdAt)}",
+                                        Strings.str(R.string.created, shortDate(l.createdAt)),
                                         when {
                                             l.expiresAt == null -> null
-                                            expires != null && expires < 0 -> "Expired"
-                                            else -> "Expires ${shortDate(l.expiresAt)}"
+                                            expires != null && expires < 0 -> Strings.str(R.string.expired)
+                                            else -> Strings.str(R.string.expires, shortDate(l.expiresAt))
                                         },
-                                        if (l.password != null) "Password" else null,
-                                        if (l.allowUpload) "Uploads allowed" else null,
+                                        if (l.password != null) Strings.str(R.string.password) else null,
+                                        if (l.allowUpload) Strings.str(R.string.uploads_allowed) else null,
                                     ).joinToString("  ·  "),
                                     icon = Icons.Outlined.Link,
                                     onClick = { open = l },
@@ -357,19 +360,19 @@ fun SharedLinksScreen() {
         val url = Exporter.sharedLinkUrl(c.api, c.serverConfig.value.externalDomain, l.key, l.slug)
         ModalBottomSheet(onDismissRequest = { open = null }, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
             Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
-                SheetTitle(l.album?.albumName ?: countLabel(l.assets.size, "photo"), url)
-                ActionItem(Icons.Outlined.ContentCopy, "Copy link") {
+                SheetTitle(l.album?.albumName ?: countLabel(l.assets.size, R.plurals.count_photos), url)
+                ActionItem(Icons.Outlined.ContentCopy, stringResource(R.string.copy_link)) {
                     // Anyone with the link can see the photos: keep it out of clipboard previews and history.
-                    com.vknxworks.immichctrl.data.security.copySensitive(c.context, url, "Shared link")
-                    c.toast("Link copied")
+                    com.vknxworks.immichctrl.data.security.copySensitive(c.context, url, Strings.str(R.string.shared_link))
+                    c.toast(Strings.str(R.string.link_copied))
                     open = null
                 }
-                ActionItem(Icons.Outlined.Share, "Share") { Exporter.shareText(c.context, url); open = null }
-                ActionItem(Icons.Outlined.Edit, "Change options") { editing = l; open = null }
-                l.album?.let { a -> ActionItem(Icons.Outlined.SmartDisplay, "Open album") { open = null; nav.album(a.id) } }
-                ActionItem(Icons.Outlined.Delete, "Delete link", tint = MaterialTheme.colorScheme.error) {
+                ActionItem(Icons.Outlined.Share, stringResource(R.string.share)) { Exporter.shareText(c.context, url); open = null }
+                ActionItem(Icons.Outlined.Edit, stringResource(R.string.change_options)) { editing = l; open = null }
+                l.album?.let { a -> ActionItem(Icons.Outlined.SmartDisplay, stringResource(R.string.open_album)) { open = null; nav.album(a.id) } }
+                ActionItem(Icons.Outlined.Delete, stringResource(R.string.delete_link), tint = MaterialTheme.colorScheme.error) {
                     open = null
-                    c.runTask("Link deleted") { c.api.deleteSharedLink(l.id); links.reload(silent = true) }
+                    c.runTask(Strings.str(R.string.link_deleted)) { c.api.deleteSharedLink(l.id); links.reload(silent = true) }
                 }
             }
         }
@@ -382,7 +385,7 @@ private fun EditLinkDialog(l: SharedLinkDto, onDone: () -> Unit) {
     val c = LocalContext.current.container
     val days = daysUntil(l.expiresAt)?.let { d -> listOf(1, 7, 30).minByOrNull { kotlin.math.abs(it - d) } }
     SharedLinkDialog(
-        "Link options",
+        stringResource(R.string.link_options),
         initial = LinkOptions(
             description = l.description.orEmpty(),
             expiresInDays = if (l.expiresAt == null) null else days,
@@ -392,11 +395,11 @@ private fun EditLinkDialog(l: SharedLinkDto, onDone: () -> Unit) {
             showMetadata = l.showMetadata,
         ),
         allowUploadOption = l.album != null,
-        confirm = "Save",
+        confirm = stringResource(R.string.save),
         onDismiss = onDone,
     ) { o ->
         onDone()
-        c.runTask("Link updated") {
+        c.runTask(Strings.str(R.string.link_updated)) {
             val legacy = if (c.api.serverMajor < 3) arrayOf<Pair<String, Any?>>("changeExpiryTime" to true) else emptyArray()
             c.api.updateSharedLink(
                 l.id,
@@ -426,16 +429,16 @@ fun PartnersScreen() {
     var removing by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
-        ScreenTopBar("Partners")
+        ScreenTopBar(stringResource(R.string.partners))
         Text(
-            "Partners share their whole library (not archived or locked photos). Tap someone to see just their photos. Turn on \"Also in Photos\" only if you want their photos mixed into your own timeline.",
+            stringResource(R.string.partners_share_their_whole_library),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp),
         )
-        Group("Sharing with you") {
+        Group(stringResource(R.string.sharing_with_you)) {
             val list = withMe.value.orEmpty()
-            if (list.isEmpty()) GroupRow(if (withMe.state is Load.Loading) "Loading…" else "No one yet")
+            if (list.isEmpty()) GroupRow(if (withMe.state is Load.Loading) stringResource(R.string.loading) else stringResource(R.string.no_one_yet))
             list.forEach { p ->
                 GroupRow(
                     p.name,
@@ -446,19 +449,19 @@ fun PartnersScreen() {
                             Switch(p.inTimeline == true, onCheckedChange = { on ->
                                 c.runTask { c.api.updatePartner(p.id, on); withMe.reload(silent = true); Sources.refreshAll() }
                             })
-                            Text("Also in Photos", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.also_in_photos), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     },
                 )
             }
         }
-        Group("You share with") {
+        Group(stringResource(R.string.you_share_with)) {
             byMe.value.orEmpty().forEach { p ->
                 GroupRow(p.name, p.email, trailing = {
-                    IconButton(onClick = { removing = p.id to p.name }) { Icon(Icons.Outlined.Delete, "Stop sharing with ${p.name}") }
+                    IconButton(onClick = { removing = p.id to p.name }) { Icon(Icons.Outlined.Delete, stringResource(R.string.stop_sharing_with, p.name)) }
                 })
             }
-            GroupRow("Add a partner", icon = Icons.Outlined.PersonAdd, onClick = { adding = true })
+            GroupRow(stringResource(R.string.add_a_partner), icon = Icons.Outlined.PersonAdd, onClick = { adding = true })
         }
         Spacer(Modifier.height(32.dp))
     }
@@ -467,7 +470,7 @@ fun PartnersScreen() {
         val users = rememberLoader("users") { c.api.users() }
         val existing = byMe.value.orEmpty().map { it.id }.toSet() + c.me
         ModalBottomSheet(onDismissRequest = { adding = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-            SheetTitle("Share your photos with")
+            SheetTitle(stringResource(R.string.share_your_photos_with))
             when (val s = users.state) {
                 is Load.Loading -> LoadingView(Modifier.height(160.dp))
                 is Load.Err -> Text(s.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(24.dp))
@@ -476,7 +479,7 @@ fun PartnersScreen() {
                         androidx.compose.foundation.layout.Row(
                             Modifier.fillMaxWidth().clickable {
                                 adding = false
-                                c.runTask("Now sharing with ${u.name}") { c.api.addPartner(u.id); byMe.reload(silent = true) }
+                                c.runTask(Strings.str(R.string.now_sharing_with, u.name)) { c.api.addPartner(u.id); byMe.reload(silent = true) }
                             }.padding(horizontal = 24.dp, vertical = 10.dp),
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                         ) {
@@ -492,7 +495,7 @@ fun PartnersScreen() {
         }
     }
     removing?.let { (id, name) ->
-        ConfirmDialog("Stop sharing with $name?", "$name won't see your photos any more.", "Stop sharing", onDismiss = { removing = null }) {
+        ConfirmDialog(stringResource(R.string.stop_sharing_with_2, name), stringResource(R.string.won_t_see_your_photos_any_more, name), stringResource(R.string.stop_sharing), onDismiss = { removing = null }) {
             removing = null
             c.runTask { c.api.removePartner(id); byMe.reload(silent = true) }
         }
@@ -507,7 +510,7 @@ fun PartnerScreen(userId: String, name: String) {
     SourceGrid(
         rememberTimeline("partner:$userId", TimelineQuery(userId = userId, visibility = "timeline", withStacked = true)),
         SelectionContext.SHARED,
-        topBar = { ScreenTopBar("$name's photos") },
+        topBar = { ScreenTopBar(stringResource(R.string.s_photos, name)) },
         header = {
             item(key = "partner-header") {
                 androidx.compose.foundation.layout.Row(
@@ -516,8 +519,8 @@ fun PartnerScreen(userId: String, name: String) {
                 ) {
                     UserAvatar(userId, name, partner?.profileImagePath?.isNotBlank() == true, partner?.profileChangedAt, null, Modifier.size(44.dp))
                     Text(
-                        if (partner?.inTimeline == true) "Shared with you by $name. Also shown in your Photos tab; turn that off in Partners."
-                        else "Shared with you by $name. Only their photos are here; yours aren't mixed in.",
+                        if (partner?.inTimeline == true) stringResource(R.string.shared_with_you_by_also_shown_in, name)
+                        else stringResource(R.string.shared_with_you_by_only_their_photos, name),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 14.dp),
@@ -525,7 +528,7 @@ fun PartnerScreen(userId: String, name: String) {
                 }
             }
         },
-        empty = { MessageView(Icons.Outlined.People, "$name hasn't shared any photos yet") },
+        empty = { MessageView(Icons.Outlined.People, stringResource(R.string.hasn_t_shared_any_photos_yet, name)) },
     )
 }
 
@@ -539,12 +542,12 @@ fun TagsScreen() {
     val nav = LocalNavigator.current
     val tags = rememberLoader("tags") { c.api.tags().sortedBy { it.value.lowercase() } }
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Tags")
+        ScreenTopBar(stringResource(R.string.tags))
         when (val s = tags.state) {
             is Load.Loading -> LoadingView()
             is Load.Err -> ErrorView(s.message) { tags.reload() }
             is Load.Ok -> if (s.value.isEmpty()) {
-                MessageView(Icons.Outlined.Sell, "No tags yet", "Tag photos from their menu, or turn on tags in Immich's settings.")
+                MessageView(Icons.Outlined.Sell, stringResource(R.string.no_tags_yet), stringResource(R.string.tag_photos_from_their_menu_or_turn))
             } else {
                 LazyColumn(contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.navigationBarsPadding()) {
                     item {
@@ -571,7 +574,7 @@ fun TagScreen(id: String, name: String) {
         SelectionContext.TIMELINE,
         topBar = {
             ScreenTopBar(name) {
-                IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "More") }
+                IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, stringResource(R.string.more)) }
             }
         },
     )
@@ -579,14 +582,14 @@ fun TagScreen(id: String, name: String) {
         ModalBottomSheet(onDismissRequest = { menu = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.surfaceContainer) {
             Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(name)
-                ActionItem(Icons.Outlined.Delete, "Delete tag", tint = MaterialTheme.colorScheme.error) { menu = false; confirm = true }
+                ActionItem(Icons.Outlined.Delete, stringResource(R.string.delete_tag), tint = MaterialTheme.colorScheme.error) { menu = false; confirm = true }
             }
         }
     }
     if (confirm) {
-        ConfirmDialog("Delete the tag \"$name\"?", "The photos stay; only the tag is removed.", "Delete", onDismiss = { confirm = false }) {
+        ConfirmDialog(stringResource(R.string.delete_the_tag, name), stringResource(R.string.the_photos_stay_only_the_tag_is), stringResource(R.string.lock_delete), onDismiss = { confirm = false }) {
             confirm = false
-            c.runTask("Tag deleted") { c.api.deleteTag(id); nav.back() }
+            c.runTask(Strings.str(R.string.tag_deleted)) { c.api.deleteTag(id); nav.back() }
         }
     }
 }
@@ -606,7 +609,7 @@ fun FoldersScreen(path: String) {
         }.distinct().sortedBy { it.lowercase() }
     }
     val hasAssets = paths?.contains(path) == true
-    val title = path.substringAfterLast('/').ifBlank { "Folders" }
+    val title = path.substringAfterLast('/').ifBlank { Strings.str(R.string.folders) }
 
     when (val s = all.state) {
         is Load.Loading -> Column(Modifier.fillMaxSize()) { ScreenTopBar(title); LoadingView() }
@@ -633,7 +636,7 @@ fun FoldersScreen(path: String) {
             } else {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
                     ScreenTopBar(title)
-                    if (children.isEmpty()) MessageView(Icons.Outlined.Folder, "Empty folder") else folderList()
+                    if (children.isEmpty()) MessageView(Icons.Outlined.Folder, stringResource(R.string.empty_folder)) else folderList()
                 }
             }
         }

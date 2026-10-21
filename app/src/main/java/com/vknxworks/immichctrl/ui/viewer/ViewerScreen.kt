@@ -139,6 +139,9 @@ import com.vknxworks.immichctrl.ui.photos.upload
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 private val titleDate = DateTimeFormatter.ofPattern("EEE d MMM yyyy")
 private val titleTime = DateTimeFormatter.ofPattern("HH:mm")
@@ -293,13 +296,13 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                     .padding(horizontal = 4.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { nav.back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White) }
+                IconButton(onClick = { nav.back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), tint = Color.White) }
                 Column(Modifier.weight(1f)) {
                     if (current != null) {
                         val dt = current.localDateTime
                         Text(dt.format(titleDate), style = MaterialTheme.typography.titleMedium, color = Color.White)
                         Text(
-                            listOfNotNull(dt.format(titleTime), current.city, current.country, if (current.isLocalOnly) "Only on this phone" else null).joinToString("  ·  "),
+                            listOfNotNull(dt.format(titleTime), current.city, current.country, if (current.isLocalOnly) Strings.str(R.string.only_on_this_phone) else null).joinToString("  ·  "),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.8f),
                             maxLines = 1,
@@ -318,7 +321,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                             ) {
                                 UserAvatar(current.ownerId, owner ?: "?", true, null, null, Modifier.size(18.dp))
                                 Text(
-                                    if (owner != null) "$owner's photo" else "Shared with you",
+                                    if (owner != null) stringResource(R.string.s_photo, owner) else stringResource(R.string.shared_with_you),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = Color.White,
                                     modifier = Modifier.padding(start = 6.dp),
@@ -331,7 +334,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                 }
                 if (current?.livePhotoVideoId != null) {
                     IconButton(onClick = { playLive = !playLive }) {
-                        Icon(if (playLive) Icons.Outlined.MotionPhotosPaused else Icons.Outlined.MotionPhotosOn, "Live photo", tint = Color.White)
+                        Icon(if (playLive) Icons.Outlined.MotionPhotosPaused else Icons.Outlined.MotionPhotosOn, stringResource(R.string.live_photo), tint = Color.White)
                     }
                 }
             }
@@ -372,38 +375,38 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                     ) {
                         when {
                             readOnly -> {
-                                IslandAction(Icons.Outlined.Info, "Details") { info = true }
+                                IslandAction(Icons.Outlined.Info, stringResource(R.string.details)) { info = true }
                             }
                             a.isLocalOnly -> {
-                                IslandAction(Icons.Outlined.CloudUpload, "Upload") { c.upload(listOf(a)) }
-                                IslandAction(Icons.Outlined.Share, "Share") { shareFlow.start(c, listOf(a)) }
-                                IslandAction(Icons.Outlined.Info, "Details") { info = true }
-                                IslandAction(Icons.Outlined.Delete, "Delete") { confirmDelete = false }
+                                IslandAction(Icons.Outlined.CloudUpload, stringResource(R.string.upload)) { c.upload(listOf(a)) }
+                                IslandAction(Icons.Outlined.Share, stringResource(R.string.share)) { shareFlow.start(c, listOf(a)) }
+                                IslandAction(Icons.Outlined.Info, stringResource(R.string.details)) { info = true }
+                                IslandAction(Icons.Outlined.Delete, stringResource(R.string.lock_delete)) { confirmDelete = false }
                             }
                             isTrash -> {
-                                IslandAction(Icons.Outlined.RestoreFromTrash, "Restore") { c.restore(listOf(a)) }
-                                IslandAction(Icons.Outlined.Info, "Details") { info = true }
-                                IslandAction(Icons.Outlined.DeleteForever, "Delete") { confirmDelete = true }
+                                IslandAction(Icons.Outlined.RestoreFromTrash, stringResource(R.string.restore)) { c.restore(listOf(a)) }
+                                IslandAction(Icons.Outlined.Info, stringResource(R.string.details)) { info = true }
+                                IslandAction(Icons.Outlined.DeleteForever, stringResource(R.string.lock_delete)) { confirmDelete = true }
                             }
                             isLocked -> {
-                                IslandAction(Icons.Outlined.LockOpen, "Unlock") { c.setVisibility(listOf(a), "timeline", "Moved out of the locked folder") }
-                                IslandAction(Icons.Outlined.Info, "Details") { info = true }
-                                IslandAction(Icons.Outlined.Delete, "Delete") { confirmDelete = false }
-                                IslandAction(Icons.Filled.MoreHoriz, "More") { more = true }
+                                IslandAction(Icons.Outlined.LockOpen, stringResource(R.string.lock_unlock)) { c.setVisibility(listOf(a), "timeline", Strings.str(R.string.moved_out_of_the_locked_folder)) }
+                                IslandAction(Icons.Outlined.Info, stringResource(R.string.details)) { info = true }
+                                IslandAction(Icons.Outlined.Delete, stringResource(R.string.lock_delete)) { confirmDelete = false }
+                                IslandAction(Icons.Filled.MoreHoriz, stringResource(R.string.more)) { more = true }
                             }
                             else -> {
-                                IslandAction(Icons.Outlined.Share, "Share") { shareFlow.start(c, listOf(a)) }
+                                IslandAction(Icons.Outlined.Share, stringResource(R.string.share)) { shareFlow.start(c, listOf(a)) }
                                 if (mine) {
-                                    IslandAction(if (a.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, if (a.isFavorite) "Unfavourite" else "Favourite") {
+                                    IslandAction(if (a.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, if (a.isFavorite) stringResource(R.string.unfavourite) else stringResource(R.string.favourite)) {
                                         c.setFavorite(listOf(a), !a.isFavorite)
                                     }
-                                    if (a.isImage) IslandAction(Icons.Outlined.Crop, "Edit") { nav.navigate(EditorRoute(a.id)) }
+                                    if (a.isImage) IslandAction(Icons.Outlined.Crop, stringResource(R.string.edit)) { nav.navigate(EditorRoute(a.id)) }
                                 }
-                                IslandAction(Icons.Outlined.Info, "Details") { info = true }
-                                if (mine) IslandAction(Icons.Outlined.Delete, "Delete") {
+                                IslandAction(Icons.Outlined.Info, stringResource(R.string.details)) { info = true }
+                                if (mine) IslandAction(Icons.Outlined.Delete, stringResource(R.string.lock_delete)) {
                                     if (settings.confirmDelete) confirmDelete = false else c.trash(listOf(a), false)
                                 }
-                                IslandAction(Icons.Filled.MoreHoriz, "More") { more = true }
+                                IslandAction(Icons.Filled.MoreHoriz, stringResource(R.string.more)) { more = true }
                             }
                         }
                     }
@@ -433,51 +436,51 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(a.localDateTime.format(titleDate))
                 fun act(block: () -> Unit) { block(); more = false }
-                ActionItem(Icons.Outlined.LibraryAdd, "Add to album") { more = false; pickAlbum = true }
-                ActionItem(Icons.Outlined.Download, "Save to phone") { act { c.download(listOf(a)) } }
-                ActionItem(Icons.Outlined.Link, "Share a link") { more = false; linkOptions = true }
-                ActionItem(Icons.Outlined.SmartDisplay, "Slideshow") { act { nav.navigate(SlideshowRoute(source.key, pager.currentPage)) } }
-                if (a.isImage && features.ocr) ActionItem(Icons.Outlined.TextFields, "Text in this photo") { act { overlay = Overlay.TEXT; ocrLines = null } }
-                if (a.isImage) ActionItem(Icons.Outlined.Face, "People in this photo") { act { overlay = Overlay.FACES; faces = null } }
+                ActionItem(Icons.Outlined.LibraryAdd, stringResource(R.string.add_to_album)) { more = false; pickAlbum = true }
+                ActionItem(Icons.Outlined.Download, stringResource(R.string.save_to_phone)) { act { c.download(listOf(a)) } }
+                ActionItem(Icons.Outlined.Link, stringResource(R.string.share_a_link)) { more = false; linkOptions = true }
+                ActionItem(Icons.Outlined.SmartDisplay, stringResource(R.string.slideshow)) { act { nav.navigate(SlideshowRoute(source.key, pager.currentPage)) } }
+                if (a.isImage && features.ocr) ActionItem(Icons.Outlined.TextFields, stringResource(R.string.text_in_this_photo)) { act { overlay = Overlay.TEXT; ocrLines = null } }
+                if (a.isImage) ActionItem(Icons.Outlined.Face, stringResource(R.string.people_in_this_photo)) { act { overlay = Overlay.FACES; faces = null } }
                 if (mine) {
-                    ActionItem(Icons.Outlined.Sell, "Tag") { more = false; pickTag = true }
-                    ActionItem(Icons.Outlined.CalendarMonth, "Change date and time") { more = false; pickDate = true }
-                    ActionItem(Icons.Outlined.Place, "Change location") { more = false; pickPlace = true }
+                    ActionItem(Icons.Outlined.Sell, stringResource(R.string.tag)) { more = false; pickTag = true }
+                    ActionItem(Icons.Outlined.CalendarMonth, stringResource(R.string.change_date_and_time)) { more = false; pickDate = true }
+                    ActionItem(Icons.Outlined.Place, stringResource(R.string.change_location)) { more = false; pickPlace = true }
                     if (a.visibility == "archive") {
-                        ActionItem(Icons.Outlined.Unarchive, "Unarchive") { act { c.setVisibility(listOf(a), "timeline", "Moved back to Photos") } }
+                        ActionItem(Icons.Outlined.Unarchive, stringResource(R.string.unarchive)) { act { c.setVisibility(listOf(a), "timeline", Strings.str(R.string.moved_back_to_photos)) } }
                     } else if (!isLocked) {
-                        ActionItem(Icons.Outlined.Archive, "Archive") { act { c.setVisibility(listOf(a), "archive", "Archived") } }
+                        ActionItem(Icons.Outlined.Archive, stringResource(R.string.archive)) { act { c.setVisibility(listOf(a), "archive", Strings.str(R.string.archived_2)) } }
                     }
-                    if (!isLocked) ActionItem(Icons.Outlined.Lock, "Move to locked folder") { act { c.setVisibility(listOf(a), "locked", "Moved to the locked folder") } }
+                    if (!isLocked) ActionItem(Icons.Outlined.Lock, stringResource(R.string.move_to_locked_folder)) { act { c.setVisibility(listOf(a), "locked", Strings.str(R.string.moved_to_the_locked_folder)) } }
                 }
                 stack?.let { s ->
                     if (mine) {
-                        if (s.primaryAssetId != a.id) ActionItem(Icons.Outlined.ViewCarousel, "Show this on top of the stack") {
-                            act { c.runTask("Stack cover changed") { c.api.setStackPrimary(s.id, a.id); Sources.refreshAll() } }
+                        if (s.primaryAssetId != a.id) ActionItem(Icons.Outlined.ViewCarousel, stringResource(R.string.show_this_on_top_of_the_stack)) {
+                            act { c.runTask(Strings.str(R.string.stack_cover_changed)) { c.api.setStackPrimary(s.id, a.id); Sources.refreshAll() } }
                         }
-                        ActionItem(Icons.Outlined.RemoveCircleOutline, "Take out of the stack") {
-                            act { c.runTask("Removed from the stack") { c.api.removeFromStack(s.id, a.id); Sources.refreshAll() } }
+                        ActionItem(Icons.Outlined.RemoveCircleOutline, stringResource(R.string.take_out_of_the_stack)) {
+                            act { c.runTask(Strings.str(R.string.removed_from_the_stack)) { c.api.removeFromStack(s.id, a.id); Sources.refreshAll() } }
                         }
-                        ActionItem(Icons.Outlined.Collections, "Unstack all") {
-                            act { c.runTask("Unstacked") { c.api.deleteStack(s.id); Sources.refreshAll() } }
+                        ActionItem(Icons.Outlined.Collections, stringResource(R.string.unstack_all)) {
+                            act { c.runTask(Strings.str(R.string.unstacked)) { c.api.deleteStack(s.id); Sources.refreshAll() } }
                         }
                     }
                 }
                 if (albumId != null) {
-                    ActionItem(Icons.Outlined.Image, "Use as album cover") {
-                        act { c.runTask("Album cover changed") { c.api.updateAlbum(albumId, "albumThumbnailAssetId" to a.id); Sources.refreshAll() } }
+                    ActionItem(Icons.Outlined.Image, stringResource(R.string.use_as_album_cover)) {
+                        act { c.runTask(Strings.str(R.string.album_cover_changed)) { c.api.updateAlbum(albumId, "albumThumbnailAssetId" to a.id); Sources.refreshAll() } }
                     }
-                    ActionItem(Icons.Outlined.RemoveCircleOutline, "Remove from album") { act { c.removeFromAlbum(albumId, listOf(a)) } }
+                    ActionItem(Icons.Outlined.RemoveCircleOutline, stringResource(R.string.remove_from_album)) { act { c.removeFromAlbum(albumId, listOf(a)) } }
                 }
-                if (a.onDevice) ActionItem(Icons.Outlined.PhoneAndroid, "Delete from this phone only") { act { c.deleteFromPhone(listOf(a)) } }
+                if (a.onDevice) ActionItem(Icons.Outlined.PhoneAndroid, stringResource(R.string.delete_from_this_phone_only)) { act { c.deleteFromPhone(listOf(a)) } }
                 if (mine) {
-                    ActionItem(Icons.Outlined.Refresh, "Refresh metadata") {
-                        act { c.runTask("Metadata refresh queued") { c.api.runAssetJob(listOf(a.id), "refresh-metadata") } }
+                    ActionItem(Icons.Outlined.Refresh, stringResource(R.string.refresh_metadata)) {
+                        act { c.runTask(Strings.str(R.string.metadata_refresh_queued)) { c.api.runAssetJob(listOf(a.id), "refresh-metadata") } }
                     }
-                    ActionItem(Icons.Outlined.Refresh, "Regenerate thumbnails") {
-                        act { c.runTask("Thumbnails queued") { c.api.runAssetJob(listOf(a.id), "regenerate-thumbnail") } }
+                    ActionItem(Icons.Outlined.Refresh, stringResource(R.string.regenerate_thumbnails)) {
+                        act { c.runTask(Strings.str(R.string.thumbnails_queued)) { c.api.runAssetJob(listOf(a.id), "regenerate-thumbnail") } }
                     }
-                    if (!isTrash) ActionItem(Icons.Outlined.DeleteForever, "Delete permanently", tint = MaterialTheme.colorScheme.error) {
+                    if (!isTrash) ActionItem(Icons.Outlined.DeleteForever, stringResource(R.string.delete_permanently), tint = MaterialTheme.colorScheme.error) {
                         more = false
                         confirmDelete = true
                     }
@@ -493,7 +496,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                 c.runTask {
                     val album = c.api.createAlbum(name, if (a.isRemote) listOf(a.id) else emptyList())
                     if (a.isLocalOnly) c.addToAlbum(album.id, name, listOf(a))
-                    c.toast("Created $name")
+                    c.toast(Strings.str(R.string.created, name))
                     Sources.refreshAll()
                 }
             } else c.addToAlbum(id, name, listOf(a))
@@ -513,7 +516,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
         }
     }
     if (linkOptions && a != null) {
-        SharedLinkDialog("Share a link", allowUploadOption = false, onDismiss = { linkOptions = false }) { o ->
+        SharedLinkDialog(stringResource(R.string.share_a_link), allowUploadOption = false, onDismiss = { linkOptions = false }) { o ->
             linkOptions = false
             c.shareLink(listOf(a), o)
         }
@@ -526,23 +529,23 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
         }
         if (permanent) {
             ConfirmDialog(
-                "Delete permanently?",
-                "It'll be removed from the server for good. This can't be undone.",
-                "Delete",
+                stringResource(R.string.delete_permanently_3),
+                stringResource(R.string.it_ll_be_removed_from_the_server_for),
+                stringResource(R.string.lock_delete),
                 onDismiss = { confirmDelete = null },
             ) { c.trash(listOf(a), true); confirmDelete = null }
         } else if (a.isLocalOnly) {
             ConfirmDialog(
-                "Delete from this phone?",
-                "It isn't backed up, so it's gone for good once the phone empties its trash.",
-                "Delete",
+                stringResource(R.string.delete_from_this_phone_2),
+                stringResource(R.string.it_isn_t_backed_up_so_it_s_gone_for),
+                stringResource(R.string.lock_delete),
                 onDismiss = { confirmDelete = null },
             ) { c.trash(listOf(a), false); confirmDelete = null }
         } else {
             ConfirmDialog(
-                "Move to the trash?",
-                "You can restore it from the trash in Library for ${c.serverConfig.value.trashDays} days.",
-                "Move to trash",
+                stringResource(R.string.move_to_the_trash_2),
+                stringResource(R.string.you_can_restore_it_from_the_trash_in, c.serverConfig.value.trashDays),
+                stringResource(R.string.move_to_trash),
                 onDismiss = { confirmDelete = null },
             ) { c.trash(listOf(a), false); confirmDelete = null }
         }

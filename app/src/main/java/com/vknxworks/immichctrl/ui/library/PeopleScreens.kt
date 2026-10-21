@@ -83,6 +83,9 @@ import com.vknxworks.immichctrl.ui.photos.rememberTimeline
 import com.vknxworks.immichctrl.ui.theme.Gutter
 import java.time.LocalDate
 import java.time.Period
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 @Composable
 fun PeopleScreen() {
@@ -97,7 +100,7 @@ fun PeopleScreen() {
     }
     val sharers = (sharedBy.state as? Load.Ok)?.value.orEmpty()
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("People")
+        ScreenTopBar(stringResource(R.string.people))
         when (val s = people.state) {
             is Load.Loading -> LoadingView()
             is Load.Err -> ErrorView(s.message) { people.reload() }
@@ -106,7 +109,7 @@ fun PeopleScreen() {
                 val shown = all.filter { it.isHidden == showHidden }
                     .sortedWith(compareByDescending<PersonDto> { it.isFavorite }.thenBy { it.name.isBlank() }.thenBy { it.name.lowercase() })
                 if (all.isEmpty()) {
-                    MessageView(Icons.Outlined.People, "No people yet", "Immich finds faces once facial recognition has run on your photos.")
+                    MessageView(Icons.Outlined.People, stringResource(R.string.no_people_yet), stringResource(R.string.immich_finds_faces_once_facial))
                 } else {
                     LazyVerticalGrid(
                         columns = GridCells.Adaptive(96.dp),
@@ -117,8 +120,8 @@ fun PeopleScreen() {
                     ) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilterChip(!showHidden, onClick = { showHidden = false }, label = { Text("Shown") })
-                                FilterChip(showHidden, onClick = { showHidden = true }, label = { Text("Hidden (${s.value.hidden})") })
+                                FilterChip(!showHidden, onClick = { showHidden = false }, label = { Text(stringResource(R.string.shown)) })
+                                FilterChip(showHidden, onClick = { showHidden = true }, label = { Text(stringResource(R.string.hidden, s.value.hidden)) })
                             }
                         }
                         items(shown, key = { it.id }) { p ->
@@ -128,10 +131,10 @@ fun PeopleScreen() {
                             ) {
                                 Box {
                                     PersonFace(p.id, p.updatedAt, Modifier.fillMaxWidth().aspectRatio(1f))
-                                    if (p.isFavorite) Icon(Icons.Filled.Favorite, "Favourite", Modifier.align(Alignment.BottomEnd).size(18.dp), tint = MaterialTheme.colorScheme.error)
+                                    if (p.isFavorite) Icon(Icons.Filled.Favorite, stringResource(R.string.favourite), Modifier.align(Alignment.BottomEnd).size(18.dp), tint = MaterialTheme.colorScheme.error)
                                 }
                                 Text(
-                                    p.name.ifBlank { "Add a name" },
+                                    p.name.ifBlank { Strings.str(R.string.add_a_name) },
                                     style = MaterialTheme.typography.labelLarge,
                                     color = if (p.name.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
@@ -141,7 +144,7 @@ fun PeopleScreen() {
                                 )
                                 sharers[p.id]?.filter { it.isNotBlank() }?.takeIf { it.isNotEmpty() }?.let { names ->
                                     Text(
-                                        "From " + names.joinToString(),
+                                        stringResource(R.string.from_names, names.joinToString()),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary,
                                         maxLines = 1,
@@ -180,8 +183,8 @@ fun PersonScreen(id: String) {
         source = source,
         context = SelectionContext.TIMELINE,
         topBar = {
-            ScreenTopBar(p?.name?.ifBlank { "Unnamed person" } ?: "") {
-                IconButton(onClick = { menu = true }, enabled = p != null) { Icon(Icons.Filled.MoreVert, "More") }
+            ScreenTopBar(p?.name?.ifBlank { Strings.str(R.string.unnamed_person) } ?: "") {
+                IconButton(onClick = { menu = true }, enabled = p != null) { Icon(Icons.Filled.MoreVert, stringResource(R.string.more)) }
             }
         },
         header = {
@@ -191,16 +194,16 @@ fun PersonScreen(id: String) {
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
                         Text(
-                            p?.name?.ifBlank { null } ?: "Add a name",
+                            p?.name?.ifBlank { null } ?: stringResource(R.string.add_a_name),
                             style = MaterialTheme.typography.titleLarge,
                             modifier = Modifier.clickable { naming = true },
                         )
                         val age = p?.birthDate?.let { runCatching { Period.between(LocalDate.parse(it.take(10)), LocalDate.now()).years }.getOrNull() }
                         Text(
                             listOfNotNull(
-                                stats.value?.let { countLabel(it.assets, "photo") },
-                                age?.let { "Age $it" },
-                                if (p?.isHidden == true) "Hidden" else null,
+                                stats.value?.let { countLabel(it.assets, R.plurals.count_photos) },
+                                age?.let { Strings.str(R.string.age, it) },
+                                if (p?.isHidden == true) Strings.str(R.string.hidden_2) else null,
                             ).joinToString("  ·  "),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -218,37 +221,37 @@ fun PersonScreen(id: String) {
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
-                SheetTitle(p.name.ifBlank { "Unnamed person" })
-                ActionItem(Icons.Outlined.Edit, if (p.name.isBlank()) "Add a name" else "Rename") { menu = false; naming = true }
-                ActionItem(Icons.Outlined.Cake, if (p.birthDate == null) "Add birthday" else "Change birthday (${shortDate(p.birthDate)})") { menu = false; birthday = true }
-                ActionItem(if (p.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, if (p.isFavorite) "Remove from favourites" else "Add to favourites") {
+                SheetTitle(p.name.ifBlank { Strings.str(R.string.unnamed_person) })
+                ActionItem(Icons.Outlined.Edit, if (p.name.isBlank()) stringResource(R.string.add_a_name) else stringResource(R.string.rename)) { menu = false; naming = true }
+                ActionItem(Icons.Outlined.Cake, if (p.birthDate == null) stringResource(R.string.add_birthday) else stringResource(R.string.change_birthday, shortDate(p.birthDate))) { menu = false; birthday = true }
+                ActionItem(if (p.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, if (p.isFavorite) stringResource(R.string.remove_from_favourites) else stringResource(R.string.add_to_favourites)) {
                     menu = false
                     c.runTask { c.api.updatePerson(p.id, "isFavorite" to !p.isFavorite); changed() }
                 }
-                ActionItem(if (p.isHidden) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff, if (p.isHidden) "Show this person" else "Hide this person") {
+                ActionItem(if (p.isHidden) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff, if (p.isHidden) stringResource(R.string.show_this_person) else stringResource(R.string.hide_this_person)) {
                     menu = false
                     c.runTask { c.api.updatePerson(p.id, "isHidden" to !p.isHidden); changed() }
                 }
-                ActionItem(Icons.AutoMirrored.Outlined.CallMerge, "Merge with another person") { menu = false; merging = true }
+                ActionItem(Icons.AutoMirrored.Outlined.CallMerge, stringResource(R.string.merge_with_another_person)) { menu = false; merging = true }
             }
         }
     }
     if (naming && p != null) {
-        TextInputDialog("Name", "Name", "Save", initial = p.name, allowEmpty = true, onDismiss = { naming = false }) { name ->
+        TextInputDialog(stringResource(R.string.name), stringResource(R.string.name), stringResource(R.string.save), initial = p.name, allowEmpty = true, onDismiss = { naming = false }) { name ->
             naming = false
             c.runTask { c.api.updatePerson(p.id, "name" to name); changed() }
         }
     }
     if (birthday && p != null) {
         TextInputDialog(
-            "Birthday", "YYYY-MM-DD (leave empty to clear)", "Save",
+            stringResource(R.string.birthday), stringResource(R.string.yyyy_mm_dd_leave_empty_to_clear), stringResource(R.string.save),
             initial = p.birthDate?.take(10).orEmpty(), allowEmpty = true,
             onDismiss = { birthday = false },
         ) { text ->
             birthday = false
             val date = text.trim().ifEmpty { null }
             if (date != null && runCatching { LocalDate.parse(date) }.isFailure) {
-                c.runTask { throw IllegalArgumentException("Use the format YYYY-MM-DD, e.g. 1990-04-21") }
+                c.runTask { throw IllegalArgumentException(Strings.str(R.string.use_the_format_yyyy_mm_dd_e_g_1990)) }
             } else {
                 c.runTask { c.api.updatePerson(p.id, "birthDate" to (date ?: Null)); changed() }
             }
@@ -256,7 +259,7 @@ fun PersonScreen(id: String) {
     }
     if (merging && p != null) MergeSheet(p, onDismiss = { merging = false }) { other ->
         merging = false
-        c.runTask("Merged") {
+        c.runTask(Strings.str(R.string.merged)) {
             c.api.mergePeople(p.id, listOf(other.id))
             changed()
             source.refresh(silent = true)
@@ -271,7 +274,7 @@ private fun MergeSheet(into: PersonDto, onDismiss: () -> Unit, onPick: (PersonDt
     val people = rememberLoader("people-merge") { c.api.people(withHidden = false) }
     var confirm by remember { mutableStateOf<PersonDto?>(null) }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-        SheetTitle("Merge into ${into.name.ifBlank { "this person" }}", "Pick who else these photos show")
+        SheetTitle(stringResource(R.string.merge_into, into.name.ifBlank { Strings.str(R.string.this_person) }), stringResource(R.string.pick_who_else_these_photos_show))
         when (val s = people.state) {
             is Load.Loading -> Box(Modifier.fillMaxWidth().padding(32.dp)) { LoadingView() }
             is Load.Err -> Text(s.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(24.dp))
@@ -285,7 +288,7 @@ private fun MergeSheet(into: PersonDto, onDismiss: () -> Unit, onPick: (PersonDt
                 items(s.value.people.filter { it.id != into.id }, key = { it.id }) { p ->
                     Column(Modifier.clickable { confirm = p }, horizontalAlignment = Alignment.CenterHorizontally) {
                         PersonFace(p.id, p.updatedAt, Modifier.size(64.dp).clip(CircleShape))
-                        Text(p.name.ifBlank { "Unnamed" }, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(p.name.ifBlank { Strings.str(R.string.unnamed) }, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -293,9 +296,9 @@ private fun MergeSheet(into: PersonDto, onDismiss: () -> Unit, onPick: (PersonDt
     }
     confirm?.let { other ->
         ConfirmDialog(
-            "Merge ${other.name.ifBlank { "this person" }}?",
-            "Their faces will belong to ${into.name.ifBlank { "this person" }}. This can't be undone.",
-            "Merge",
+            stringResource(R.string.merge, other.name.ifBlank { Strings.str(R.string.this_person) }),
+            stringResource(R.string.their_faces_will_belong_to_this_can, into.name.ifBlank { Strings.str(R.string.this_person) }),
+            stringResource(R.string.merge_2),
             destructive = false,
             onDismiss = { confirm = null },
         ) {

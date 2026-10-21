@@ -68,6 +68,9 @@ import com.vknxworks.immichctrl.ui.components.ConfirmDialog
 import com.vknxworks.immichctrl.ui.components.PillButton
 import com.vknxworks.immichctrl.ui.components.friendlyMessage
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 @Composable
 fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
@@ -170,14 +173,12 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
 
     offerHttp?.let { httpUrl ->
         ConfirmDialog(
-            "Use an unencrypted connection?",
-            "ImmichCtrl couldn't connect to this server over HTTPS. It can try plain HTTP instead, " +
-                "but then your password and photos are sent unencrypted and anyone on the network can see them. " +
-                "Only do this on a network you trust.",
-            "Use HTTP",
+            stringResource(R.string.use_an_unencrypted_connection),
+            stringResource(R.string.offer_http_body),
+            stringResource(R.string.use_http),
             onDismiss = {
                 offerHttp = null
-                error = "Couldn't connect securely (HTTPS)"
+                error = Strings.str(R.string.couldn_t_connect_securely_https)
             },
         ) {
             offerHttp = null
@@ -210,23 +211,23 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
             Box(Modifier.height(48.dp)) {
                 if (onCancel != null || probe != null) {
                     IconButton(onClick = { if (probe != null) probe = null else onCancel?.invoke() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             }
-            Text(if (onCancel == null) "ImmichCtrl" else "Add an account", style = MaterialTheme.typography.displaySmall)
+            Text(if (onCancel == null) stringResource(R.string.app_name) else stringResource(R.string.add_an_account), style = MaterialTheme.typography.displaySmall)
 
             val p = probe
             if (p == null) {
                 Text(
-                    "Sign in to your Immich server with the address you'd open in a browser.",
+                    stringResource(R.string.sign_in_to_your_immich_server_with),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(8.dp))
                 Field(
                     address, { address = it },
-                    label = "Server address",
+                    label = stringResource(R.string.server_address),
                     placeholder = "photos.example.com",
                     keyboard = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go, autoCorrectEnabled = false),
                     actions = KeyboardActions(onGo = { if (address.isNotBlank()) findServer(address) }),
@@ -234,14 +235,14 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                 )
                 HttpWarning(address)
                 TextButton(onClick = { showAdvanced = !showAdvanced }) {
-                    Text(if (showAdvanced) "Hide advanced" else if (headerText.isBlank()) "Advanced: custom headers" else "Advanced: ${parseHeaders(headerText).size} custom headers")
+                    Text(if (showAdvanced) stringResource(R.string.hide_advanced) else if (headerText.isBlank()) stringResource(R.string.advanced_custom_headers_2) else stringResource(R.string.advanced_custom_headers, parseHeaders(headerText).size))
                 }
                 if (showAdvanced) {
                     TextField(
                         value = headerText,
                         onValueChange = { headerText = it },
-                        label = { Text("Headers, one per line") },
-                        placeholder = { Text("CF-Access-Client-Id: …") },
+                        label = { Text(stringResource(R.string.headers_one_per_line)) },
+                        placeholder = { Text(stringResource(R.string.cf_access_client_id)) },
                         minLines = 2,
                         enabled = !busy,
                         shape = MaterialTheme.shapes.medium,
@@ -253,13 +254,13 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Text(
-                        "Sent with every request, for servers behind Cloudflare Access, an auth proxy and the like. Change them later in Settings → Networking.",
+                        stringResource(R.string.sent_with_every_request_for_servers),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
-                if (busy) Spinner() else PillButton("Next", onClick = { findServer(address) }, enabled = address.isNotBlank(), modifier = Modifier.fillMaxWidth())
+                if (busy) Spinner() else PillButton(stringResource(R.string.lock_next), onClick = { findServer(address) }, enabled = address.isNotBlank(), modifier = Modifier.fillMaxWidth())
             } else {
                 Row(
                     Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceContainer).padding(14.dp),
@@ -270,12 +271,12 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                     Column(Modifier.weight(1f)) {
                         Text(p.baseUrl, style = MaterialTheme.typography.bodyMedium)
                         Text(
-                            listOfNotNull("Immich", p.version).joinToString(" "),
+                            listOfNotNull(Strings.str(R.string.immich), p.version).joinToString(" "),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
-                    TextButton(onClick = { probe = null }) { Text("Change") }
+                    TextButton(onClick = { probe = null }) { Text(stringResource(R.string.change)) }
                 }
                 HttpWarning(p.baseUrl)
                 if (p.config.loginPageMessage.isNotBlank()) {
@@ -284,7 +285,7 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                 if (useApiKey) {
                     Field(
                         apiKey, { apiKey = it },
-                        label = "API key",
+                        label = stringResource(R.string.api_key),
                         keyboard = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done, autoCorrectEnabled = false),
                         actions = KeyboardActions(onDone = { if (apiKey.isNotBlank()) signIn() }),
                         visual = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
@@ -292,20 +293,20 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                         trailing = { ShowHide(showPassword) { showPassword = !showPassword } },
                     )
                     Text(
-                        "Create one in Immich under Account settings > API keys. Give it full access so every feature here works.",
+                        stringResource(R.string.create_one_in_immich_under_account),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else if (p.features.passwordLogin) {
                     Field(
                         email, { email = it },
-                        label = "Email",
+                        label = stringResource(R.string.email),
                         keyboard = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next, capitalization = KeyboardCapitalization.None, autoCorrectEnabled = false),
                         enabled = !busy,
                     )
                     Field(
                         password, { password = it },
-                        label = "Password",
+                        label = stringResource(R.string.password),
                         visual = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboard = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                         actions = KeyboardActions(onDone = { if (email.isNotBlank() && password.isNotEmpty()) signIn() }),
@@ -317,13 +318,13 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                 if (busy || waitingForOAuth) {
                     Spinner()
                     if (waitingForOAuth) {
-                        Text("Finish signing in in your browser.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        TextButton(onClick = { waitingForOAuth = false }) { Text("Cancel") }
+                        Text(stringResource(R.string.finish_signing_in_in_your_browser), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        TextButton(onClick = { waitingForOAuth = false }) { Text(stringResource(R.string.lock_cancel)) }
                     }
                 } else {
                     if (useApiKey || p.features.passwordLogin) {
                         PillButton(
-                            "Sign in",
+                            stringResource(R.string.sign_in),
                             onClick = ::signIn,
                             enabled = if (useApiKey) apiKey.isNotBlank() else email.isNotBlank() && password.isNotEmpty(),
                             modifier = Modifier.fillMaxWidth(),
@@ -333,17 +334,17 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                         OutlinedButton(onClick = ::oauth, shape = CircleShape, modifier = Modifier.fillMaxWidth().height(52.dp)) {
                             Icon(Icons.AutoMirrored.Filled.Login, null, Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text(p.config.oauthButtonText.ifBlank { "Sign in with OAuth" }, style = MaterialTheme.typography.titleMedium)
+                            Text(p.config.oauthButtonText.ifBlank { Strings.str(R.string.sign_in_with_oauth) }, style = MaterialTheme.typography.titleMedium)
                         }
                     }
                     TextButton(onClick = { useApiKey = !useApiKey; error = null }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                         Icon(Icons.Filled.Key, null, Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text(if (useApiKey) "Sign in with your account instead" else "Use an API key instead")
+                        Text(if (useApiKey) stringResource(R.string.sign_in_with_your_account_instead) else stringResource(R.string.use_an_api_key_instead))
                     }
                 }
                 Text(
-                    "Your sign-in is stored encrypted on this phone and only sent to your server.",
+                    stringResource(R.string.your_sign_in_is_stored_encrypted_on),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -360,7 +361,7 @@ private fun Spinner() {
 @Composable
 private fun ShowHide(shown: Boolean, onToggle: () -> Unit) {
     IconButton(onClick = onToggle) {
-        Icon(if (shown) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, if (shown) "Hide" else "Show")
+        Icon(if (shown) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, if (shown) stringResource(R.string.hide) else stringResource(R.string.show))
     }
 }
 
@@ -374,7 +375,7 @@ private fun HttpWarning(address: String) {
         Icon(Icons.Outlined.LockOpen, null, tint = MaterialTheme.colorScheme.error)
         Spacer(Modifier.width(12.dp))
         Text(
-            "Not encrypted (HTTP). Your password and photos are sent in the clear. Fine on your home network, risky anywhere else.",
+            stringResource(R.string.not_encrypted_http_your_password_and),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

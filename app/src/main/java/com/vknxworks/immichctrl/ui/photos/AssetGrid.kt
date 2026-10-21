@@ -99,6 +99,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.R
 
 // ---------------------------------------------------------------------------------------------
 // Selection
@@ -195,7 +197,7 @@ fun AssetGrid(
     selectable: Boolean = true,
     /** Cloud icons for photos only on this phone, or backed up from it. */
     indicator: Boolean = false,
-    empty: @Composable () -> Unit = { MessageView(Icons.Outlined.PhotoLibrary, "Nothing here yet") },
+    empty: @Composable () -> Unit = { MessageView(Icons.Outlined.PhotoLibrary, stringResource(R.string.nothing_here_yet)) },
     header: (LazyListScope.() -> Unit)? = null,
 ) {
     val cols = columns.coerceIn(2, 7)
@@ -484,7 +486,7 @@ private fun AssetCell(a: Asset, selected: Boolean, selecting: Boolean, cols: Int
         if (indicator && !selecting && cols <= 5 && (a.isLocalOnly || a.onDevice)) {
             Icon(
                 if (a.isLocalOnly) Icons.Outlined.CloudOff else Icons.Outlined.CloudDone,
-                if (a.isLocalOnly) "Only on this phone" else "Backed up from this phone",
+                if (a.isLocalOnly) stringResource(R.string.only_on_this_phone) else stringResource(R.string.backed_up_from_this_phone),
                 Modifier.align(Alignment.TopStart).padding(5.dp).size(15.dp),
                 tint = Color.White,
             )
@@ -492,13 +494,13 @@ private fun AssetCell(a: Asset, selected: Boolean, selecting: Boolean, cols: Int
         if (a.isVideo) {
             Badge(a.durationMs?.let { formatClock(it) } ?: "", Modifier.align(Alignment.TopEnd).padding(5.dp), icon = Icons.Filled.PlayArrow)
         } else if (a.livePhotoVideoId != null && cols <= 4) {
-            Icon(Icons.Outlined.MotionPhotosOn, "Live photo", Modifier.align(Alignment.TopEnd).padding(5.dp).size(16.dp), tint = Color.White)
+            Icon(Icons.Outlined.MotionPhotosOn, stringResource(R.string.live_photo), Modifier.align(Alignment.TopEnd).padding(5.dp).size(16.dp), tint = Color.White)
         }
         if (a.stackCount > 1 && cols <= 5) {
             Badge(a.stackCount.toString(), Modifier.align(Alignment.BottomEnd).padding(5.dp), icon = Icons.Outlined.Collections)
         }
         if (a.isFavorite && cols <= 5) {
-            Icon(Icons.Filled.Favorite, "Favourite", Modifier.align(Alignment.BottomStart).padding(5.dp).size(16.dp), tint = Color.White)
+            Icon(Icons.Filled.Favorite, stringResource(R.string.favourite), Modifier.align(Alignment.BottomStart).padding(5.dp).size(16.dp), tint = Color.White)
         }
         if (selecting) {
             Box(Modifier.align(Alignment.TopStart).padding(6.dp)) { SelectMark(selected) }
@@ -510,7 +512,7 @@ private fun AssetCell(a: Asset, selected: Boolean, selecting: Boolean, cols: Int
 fun SelectMark(selected: Boolean) {
     if (selected) {
         Box(Modifier.size(22.dp).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
-            Icon(Icons.Filled.CheckCircle, "Selected", Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Filled.CheckCircle, stringResource(R.string.selected), Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
         }
     } else {
         Box(Modifier.size(22.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.2f)).border(2.dp, Color.White, CircleShape))

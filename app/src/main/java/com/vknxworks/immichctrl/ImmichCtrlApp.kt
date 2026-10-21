@@ -20,6 +20,7 @@ class ImmichCtrlApp : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        Strings.init(this)
         container = AppContainer(this)
     }
 

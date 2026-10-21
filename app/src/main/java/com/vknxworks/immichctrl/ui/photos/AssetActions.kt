@@ -95,6 +95,9 @@ import com.vknxworks.immichctrl.ui.components.runTask
 import com.vknxworks.immichctrl.ui.components.toast
 import java.time.LocalDateTime
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 // ---------------------------------------------------------------------------------------------
 // Actions (shared by grids and the viewer). Each updates the server, then every open grid.
@@ -108,8 +111,8 @@ private fun AppContainer.own(assets: Collection<Asset>): Set<String> {
     val remote = assets.filter { it.isRemote }
     val mine = remote.filter { it.ownerId.isEmpty() || it.ownerId == me }.mapTo(HashSet()) { it.id }
     val skipped = remote.size - mine.size
-    if (skipped > 0) toast("${countLabel(skipped, "item")} belong to someone else and were left as they are")
-    if (remote.size < assets.size && mine.isEmpty()) toast("Photos only on this phone need uploading first")
+    if (skipped > 0) toast(Strings.str(R.string.belong_to_someone_else_and_were_left, countLabel(skipped, R.plurals.count_items)))
+    if (remote.size < assets.size && mine.isEmpty()) toast(Strings.str(R.string.photos_only_on_this_phone_need))
     return mine
 }
 
@@ -150,7 +153,7 @@ fun AppContainer.trash(assets: Collection<Asset>, permanently: Boolean) {
             api.deleteAssets(ids, force = permanently || !features.value.trash)
             Sources.removeEverywhere(ids)
             Sources.refreshAll()
-            toast(if (permanently) "Deleted ${countLabel(ids.size, "item")}" else "Moved ${countLabel(ids.size, "item")} to the trash")
+            toast(if (permanently) Strings.str(R.string.deleted, countLabel(ids.size, R.plurals.count_items)) else Strings.str(R.string.moved_to_the_trash, countLabel(ids.size, R.plurals.count_items)))
         }
         if (localOnly.isNotEmpty()) {
             val uris = phoneUris(localOnly)
@@ -168,12 +171,12 @@ fun AppContainer.trash(assets: Collection<Asset>, permanently: Boolean) {
 fun AppContainer.deleteFromPhone(assets: Collection<Asset>) {
     val backedUp = assets.filter { it.onDevice && it.localId != null }
     if (backedUp.isEmpty()) {
-        toast("These aren't backed up from this phone")
+        toast(Strings.str(R.string.these_aren_t_backed_up_from_this))
         return
     }
     runTask {
         if (device.trash(phoneUris(backedUp))) {
-            toast("Removed ${countLabel(backedUp.size, "item")} from this phone")
+            toast(Strings.str(R.string.removed_from_this_phone, countLabel(backedUp.size, R.plurals.count_items)))
             local.changed()
             Sources.refreshAll()
         }
@@ -185,12 +188,12 @@ fun AppContainer.upload(assets: Collection<Asset>) {
     val ids = assets.filter { it.isLocalOnly }.mapNotNull { LocalLibrary.localIdOf(it) }
     if (ids.isEmpty()) return
     backup.uploadLocal(ids)
-    toast("Uploading ${countLabel(ids.size, "item")}")
+    toast(Strings.str(R.string.uploading, countLabel(ids.size, R.plurals.count_items)))
 }
 
 fun AppContainer.restore(assets: Collection<Asset>) {
     val ids = assets.mapTo(HashSet()) { it.id }
-    runTask("Restored ${countLabel(ids.size, "item")}") {
+    runTask(Strings.str(R.string.restored_2, countLabel(ids.size, R.plurals.count_items))) {
         api.restoreAssets(ids)
         Sources.removeEverywhere(ids)
         Sources.refreshAll()
@@ -205,11 +208,11 @@ fun AppContainer.addToAlbum(albumId: String, albumName: String, assets: Collecti
         if (remote.isNotEmpty()) {
             val res = api.addToAlbum(albumId, remote)
             val added = res.count { it.success }
-            toast(if (added == 0) "Already in $albumName" else "Added ${countLabel(added, "item")} to $albumName")
+            toast(if (added == 0) Strings.str(R.string.already_in, albumName) else Strings.str(R.string.added_to, countLabel(added, R.plurals.count_items), albumName))
         }
         if (phone.isNotEmpty()) {
             val n = backup.uploadShared(phone, albumId)
-            toast("Uploading ${countLabel(n, "item")} to $albumName")
+            toast(Strings.str(R.string.uploading_to, countLabel(n, R.plurals.count_items), albumName))
         }
         Sources.refreshAll()
     }
@@ -217,7 +220,7 @@ fun AppContainer.addToAlbum(albumId: String, albumName: String, assets: Collecti
 
 fun AppContainer.removeFromAlbum(albumId: String, assets: Collection<Asset>) {
     val ids = assets.mapTo(HashSet()) { it.id }
-    runTask("Removed from the album") {
+    runTask(Strings.str(R.string.removed_from_the_album)) {
         api.removeFromAlbum(albumId, ids)
         Sources["album:$albumId"]?.removeIds(ids)
     }
@@ -226,7 +229,7 @@ fun AppContainer.removeFromAlbum(albumId: String, assets: Collection<Asset>) {
 fun AppContainer.share(assets: Collection<Asset>, large: Boolean) {
     val remote = assets.filter { it.isRemote }.map { it.id }
     val phone = phoneUris(assets.filter { it.isLocalOnly })
-    if (remote.isNotEmpty()) toast(if (assets.size == 1) "Preparing to share…" else "Preparing ${assets.size} items to share…")
+    if (remote.isNotEmpty()) toast(if (assets.size == 1) Strings.str(R.string.preparing_to_share) else Strings.str(R.string.preparing_items_to_share, assets.size))
     val strip = settings.settings.value.shareStripLocation
     runTask { Exporter.shareFiles(context, api, remote, large, phone, stripLocation = strip) }
 }
@@ -234,10 +237,10 @@ fun AppContainer.share(assets: Collection<Asset>, large: Boolean) {
 fun AppContainer.download(assets: Collection<Asset>) {
     val remote = assets.filter { it.isRemote }
     if (remote.isEmpty()) return
-    toast("Saving ${countLabel(remote.size, "item")} to Pictures/ImmichCtrl…")
+    toast(Strings.str(R.string.saving_to_pictures_immichctrl, countLabel(remote.size, R.plurals.count_items)))
     runTask {
         val n = Exporter.download(context, api, remote.map { it.id })
-        toast(if (n == 0) "Couldn't save to the phone" else "Saved ${countLabel(n, "item")} to Pictures/ImmichCtrl")
+        toast(if (n == 0) Strings.str(R.string.couldn_t_save_to_the_phone) else Strings.str(R.string.saved_to_pictures_immichctrl, countLabel(n, R.plurals.count_items)))
     }
 }
 
@@ -261,10 +264,10 @@ fun AppContainer.shareLink(assets: Collection<Asset>, options: LinkOptions = Lin
 fun AppContainer.stack(assets: List<Asset>) {
     val ids = own(assets)
     if (ids.size < 2) {
-        toast("Pick at least two of your photos to stack")
+        toast(Strings.str(R.string.pick_at_least_two_of_your_photos_to))
         return
     }
-    runTask("Stacked ${countLabel(ids.size, "photo")}") {
+    runTask(Strings.str(R.string.stacked, countLabel(ids.size, R.plurals.count_photos))) {
         api.createStack(assets.map { it.id }.filter { it in ids })
         Sources.refreshAll()
     }
@@ -272,7 +275,7 @@ fun AppContainer.stack(assets: List<Asset>) {
 
 fun AppContainer.setDate(assets: Collection<Asset>, iso: String) {
     val ids = own(assets).ifEmpty { return }
-    runTask("Date changed") {
+    runTask(Strings.str(R.string.date_changed)) {
         api.updateAssets(ids, "dateTimeOriginal" to iso)
         Sources.refreshAll()
     }
@@ -280,7 +283,7 @@ fun AppContainer.setDate(assets: Collection<Asset>, iso: String) {
 
 fun AppContainer.setLocation(assets: Collection<Asset>, lat: Double, lon: Double) {
     val ids = own(assets).ifEmpty { return }
-    runTask("Location changed") {
+    runTask(Strings.str(R.string.location_changed)) {
         api.updateAssets(ids, "latitude" to lat, "longitude" to lon)
         Sources.refreshAll()
     }
@@ -358,34 +361,34 @@ fun SelectionBar(
             .padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = ::done) { Icon(Icons.Filled.Close, "Clear selection") }
+            IconButton(onClick = ::done) { Icon(Icons.Filled.Close, stringResource(R.string.clear_selection)) }
             Text(
-                "${selection.size} selected",
+                stringResource(R.string.selected_2, selection.size),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )
             when (context) {
                 SelectionContext.TRASH -> {
-                    BarAction(Icons.Outlined.RestoreFromTrash, "Restore") { c.restore(assets); done() }
-                    BarAction(Icons.Outlined.DeleteForever, "Delete") { confirmDelete = true }
+                    BarAction(Icons.Outlined.RestoreFromTrash, stringResource(R.string.restore)) { c.restore(assets); done() }
+                    BarAction(Icons.Outlined.DeleteForever, stringResource(R.string.lock_delete)) { confirmDelete = true }
                 }
                 SelectionContext.LOCKED -> {
-                    BarAction(Icons.Outlined.LockOpen, "Unlock") { c.setVisibility(assets, "timeline", "Moved out of the locked folder"); done() }
-                    BarAction(Icons.Outlined.Download, "Save") { c.download(assets); done() }
-                    BarAction(Icons.Outlined.Delete, "Delete") { askDelete() }
+                    BarAction(Icons.Outlined.LockOpen, stringResource(R.string.lock_unlock)) { c.setVisibility(assets, "timeline", Strings.str(R.string.moved_out_of_the_locked_folder)); done() }
+                    BarAction(Icons.Outlined.Download, stringResource(R.string.save)) { c.download(assets); done() }
+                    BarAction(Icons.Outlined.Delete, stringResource(R.string.lock_delete)) { askDelete() }
                 }
                 else -> {
-                    if (anyLocal) BarAction(Icons.Outlined.CloudUpload, "Upload") { c.upload(assets); done() }
-                    BarAction(Icons.Outlined.Share, "Share") { shareFlow.start(c, assets) }
+                    if (anyLocal) BarAction(Icons.Outlined.CloudUpload, stringResource(R.string.upload)) { c.upload(assets); done() }
+                    BarAction(Icons.Outlined.Share, stringResource(R.string.share)) { shareFlow.start(c, assets) }
                     if (anyRemote) {
                         val allFav = assets.all { it.isFavorite }
-                        BarAction(if (allFav) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, if (allFav) "Unfavourite" else "Favourite") {
+                        BarAction(if (allFav) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, if (allFav) stringResource(R.string.unfavourite) else stringResource(R.string.favourite)) {
                             c.setFavorite(assets, !allFav); done()
                         }
                     }
-                    BarAction(Icons.Outlined.LibraryAdd, "Add to album") { pickAlbum = true }
-                    BarAction(Icons.Outlined.Delete, "Delete") { askDelete() }
-                    if (anyRemote || anyOnPhone) IconButton(onClick = { more = true }) { Icon(Icons.Filled.MoreVert, "More") }
+                    BarAction(Icons.Outlined.LibraryAdd, stringResource(R.string.add_to_album)) { pickAlbum = true }
+                    BarAction(Icons.Outlined.Delete, stringResource(R.string.lock_delete)) { askDelete() }
+                    if (anyRemote || anyOnPhone) IconButton(onClick = { more = true }) { Icon(Icons.Filled.MoreVert, stringResource(R.string.more)) }
                 }
             }
         }
@@ -400,32 +403,32 @@ fun SelectionBar(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
-                SheetTitle(countLabel(assets.size, "item") + " selected")
+                SheetTitle(stringResource(R.string.count_selected, countLabel(assets.size, R.plurals.count_items)))
                 fun act(block: () -> Unit) { block(); more = false; done() }
                 if (anyRemote) {
                     if (context == SelectionContext.ARCHIVE) {
-                        ActionItem(Icons.Outlined.Unarchive, "Unarchive") { act { c.setVisibility(assets, "timeline", "Moved back to Photos") } }
+                        ActionItem(Icons.Outlined.Unarchive, stringResource(R.string.unarchive)) { act { c.setVisibility(assets, "timeline", Strings.str(R.string.moved_back_to_photos)) } }
                     } else {
-                        ActionItem(Icons.Outlined.Archive, "Archive") { act { c.setVisibility(assets, "archive", "Archived ${countLabel(assets.size, "item")}") } }
+                        ActionItem(Icons.Outlined.Archive, stringResource(R.string.archive)) { act { c.setVisibility(assets, "archive", Strings.str(R.string.archived, countLabel(assets.size, R.plurals.count_items))) } }
                     }
-                    ActionItem(Icons.Outlined.Download, "Save to phone") { act { c.download(assets) } }
-                    ActionItem(Icons.Outlined.Link, "Share a link") { more = false; linkOptions = true }
-                    ActionItem(Icons.Outlined.Sell, "Tag") { more = false; pickTag = true }
-                    ActionItem(Icons.Outlined.Collections, "Stack") { act { c.stack(assets) } }
-                    ActionItem(Icons.Outlined.CalendarMonth, "Change date and time") { more = false; pickDate = true }
-                    ActionItem(Icons.Outlined.Place, "Change location") { more = false; pickPlace = true }
-                    ActionItem(Icons.Outlined.Lock, "Move to locked folder") {
-                        act { c.setVisibility(assets, "locked", "Moved to the locked folder") }
+                    ActionItem(Icons.Outlined.Download, stringResource(R.string.save_to_phone)) { act { c.download(assets) } }
+                    ActionItem(Icons.Outlined.Link, stringResource(R.string.share_a_link)) { more = false; linkOptions = true }
+                    ActionItem(Icons.Outlined.Sell, stringResource(R.string.tag)) { more = false; pickTag = true }
+                    ActionItem(Icons.Outlined.Collections, stringResource(R.string.stack)) { act { c.stack(assets) } }
+                    ActionItem(Icons.Outlined.CalendarMonth, stringResource(R.string.change_date_and_time)) { more = false; pickDate = true }
+                    ActionItem(Icons.Outlined.Place, stringResource(R.string.change_location)) { more = false; pickPlace = true }
+                    ActionItem(Icons.Outlined.Lock, stringResource(R.string.move_to_locked_folder)) {
+                        act { c.setVisibility(assets, "locked", Strings.str(R.string.moved_to_the_locked_folder)) }
                     }
                 }
                 if (anyOnPhone) {
-                    ActionItem(Icons.Outlined.PhoneAndroid, "Delete from this phone only") { act { c.deleteFromPhone(assets) } }
+                    ActionItem(Icons.Outlined.PhoneAndroid, stringResource(R.string.delete_from_this_phone_only)) { act { c.deleteFromPhone(assets) } }
                 }
                 if (context == SelectionContext.ALBUM && albumId != null && canEditAlbum) {
-                    ActionItem(Icons.Outlined.RemoveCircleOutline, "Remove from album") { act { c.removeFromAlbum(albumId, assets) } }
+                    ActionItem(Icons.Outlined.RemoveCircleOutline, stringResource(R.string.remove_from_album)) { act { c.removeFromAlbum(albumId, assets) } }
                 }
                 if (anyRemote) {
-                    ActionItem(Icons.Outlined.DeleteForever, "Delete permanently", tint = MaterialTheme.colorScheme.error) {
+                    ActionItem(Icons.Outlined.DeleteForever, stringResource(R.string.delete_permanently), tint = MaterialTheme.colorScheme.error) {
                         more = false
                         confirmDelete = true
                     }
@@ -442,7 +445,7 @@ fun SelectionBar(
                 c.runTask {
                     val remote = list.filter { it.isRemote }.map { it.id }
                     val album = c.api.createAlbum(name, remote)
-                    c.toast("Created $name")
+                    c.toast(Strings.str(R.string.created, name))
                     if (list.any { it.isLocalOnly }) c.addToAlbum(album.id, name, list.filter { it.isLocalOnly })
                     Sources.refreshAll()
                 }
@@ -471,7 +474,7 @@ fun SelectionBar(
         }
     }
     if (linkOptions) {
-        SharedLinkDialog("Share a link", allowUploadOption = false, onDismiss = { linkOptions = false }) { o ->
+        SharedLinkDialog(stringResource(R.string.share_a_link), allowUploadOption = false, onDismiss = { linkOptions = false }) { o ->
             linkOptions = false
             c.shareLink(assets, o)
             done()
@@ -479,22 +482,21 @@ fun SelectionBar(
     }
 
     confirmDelete?.let { permanent ->
-        val n = countLabel(assets.size, "item")
+        val n = countLabel(assets.size, R.plurals.count_items)
         if (permanent) {
             ConfirmDialog(
-                "Delete $n permanently?",
-                "They'll be removed from the server for good. This can't be undone.",
-                "Delete",
+                stringResource(R.string.delete_permanently_2, n),
+                stringResource(R.string.they_ll_be_removed_from_the_server),
+                stringResource(R.string.lock_delete),
                 onDismiss = { confirmDelete = null },
             ) { c.trash(assets, true); confirmDelete = null; done() }
         } else {
             val onlyPhone = anyLocal && !anyRemote
             ConfirmDialog(
-                if (onlyPhone) "Delete $n from this phone?" else "Move $n to the trash?",
-                if (onlyPhone) "They aren't backed up, so this removes them for good once the phone empties its trash."
-                else "You can restore them from the trash in Library for ${c.serverConfig.value.trashDays} days." +
-                    if (anyLocal) " Photos only on this phone go to the phone's trash." else "",
-                if (onlyPhone) "Delete" else "Move to trash",
+                if (onlyPhone) stringResource(R.string.delete_from_this_phone, n) else stringResource(R.string.move_to_the_trash, n),
+                if (onlyPhone) stringResource(R.string.they_aren_t_backed_up_so_this)
+                else stringResource(if (anyLocal) R.string.trash_restore_days_local else R.string.trash_restore_days, c.serverConfig.value.trashDays),
+                if (onlyPhone) stringResource(R.string.lock_delete) else stringResource(R.string.move_to_trash),
                 onDismiss = { confirmDelete = null },
             ) { c.trash(assets, false); confirmDelete = null; done() }
         }
@@ -520,14 +522,14 @@ fun AlbumPickerSheet(onDismiss: () -> Unit, onPick: (id: String?, name: String) 
     }
     var naming by remember { mutableStateOf(false) }
     if (naming) {
-        TextInputDialog("New album", "Album name", "Create", onDismiss = { naming = false }) { name ->
+        TextInputDialog(stringResource(R.string.new_album), stringResource(R.string.album_name), stringResource(R.string.create), onDismiss = { naming = false }) { name ->
             naming = false
             onPick(null, name)
         }
     }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-        SheetTitle("Add to album")
-        ActionItem(Icons.Filled.Add, "New album") { naming = true }
+        SheetTitle(stringResource(R.string.add_to_album))
+        ActionItem(Icons.Filled.Add, stringResource(R.string.new_album)) { naming = true }
         when (val s = albums.state) {
             is Load.Loading -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             is Load.Err -> Text(s.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(24.dp))
@@ -550,9 +552,9 @@ private fun AlbumPickRow(a: AlbumDto, onClick: () -> Unit) {
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(a.albumName.ifBlank { "Untitled" }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(a.albumName.ifBlank { Strings.str(R.string.untitled) }, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                countLabel(a.assetCount, "item") + if (a.shared) "  ·  Shared" else "",
+                if (a.shared) stringResource(R.string.count_shared, countLabel(a.assetCount, R.plurals.count_items)) else countLabel(a.assetCount, R.plurals.count_items),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -567,18 +569,18 @@ fun TagPickerSheet(assets: List<Asset>, onDismiss: () -> Unit) {
     var naming by remember { mutableStateOf(false) }
     val ids = assets.map { it.id }
     if (naming) {
-        TextInputDialog("New tag", "Tag (use / for nested tags)", "Create", onDismiss = { naming = false }) { name ->
+        TextInputDialog(stringResource(R.string.new_tag), stringResource(R.string.tag_use_for_nested_tags), stringResource(R.string.create), onDismiss = { naming = false }) { name ->
             naming = false
             onDismiss()
-            c.runTask("Tagged ${countLabel(ids.size, "item")} $name") {
+            c.runTask(Strings.str(R.string.tagged, countLabel(ids.size, R.plurals.count_items), name)) {
                 val tag = c.api.createTag(name)
                 c.api.tagAssets(listOf(tag.id), ids)
             }
         }
     }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-        SheetTitle("Tag ${countLabel(ids.size, "item")}")
-        ActionItem(Icons.Filled.Add, "New tag") { naming = true }
+        SheetTitle(stringResource(R.string.tag_2, countLabel(ids.size, R.plurals.count_items)))
+        ActionItem(Icons.Filled.Add, stringResource(R.string.new_tag)) { naming = true }
         when (val s = tags.state) {
             is Load.Loading -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             is Load.Err -> Text(s.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(24.dp))
@@ -586,7 +588,7 @@ fun TagPickerSheet(assets: List<Asset>, onDismiss: () -> Unit) {
                 items(s.value, key = { it.id }) { t ->
                     ActionItem(Icons.Outlined.Sell, t.value.ifBlank { t.name }) {
                         onDismiss()
-                        c.runTask("Tagged ${countLabel(ids.size, "item")} ${t.name}") { c.api.tagAssets(listOf(t.id), ids) }
+                        c.runTask(Strings.str(R.string.tagged, countLabel(ids.size, R.plurals.count_items), t.name)) { c.api.tagAssets(listOf(t.id), ids) }
                     }
                 }
             }

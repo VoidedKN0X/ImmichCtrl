@@ -106,6 +106,9 @@ import com.vknxworks.immichctrl.ui.photos.addToAlbum
 import com.vknxworks.immichctrl.ui.photos.rememberTimeline
 import com.vknxworks.immichctrl.ui.components.PillButton
 import com.vknxworks.immichctrl.ui.theme.Gutter
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 @Composable
 fun AlbumScreen(id: String) {
@@ -118,7 +121,7 @@ fun AlbumScreen(id: String) {
             // No connection, but it's saved on the phone.
             OfflineAlbumScreen(id)
         } else {
-            Column(Modifier.fillMaxSize()) { ScreenTopBar("Album"); ErrorView(s.message) { album.reload() } }
+            Column(Modifier.fillMaxSize()) { ScreenTopBar(stringResource(R.string.album)); ErrorView(s.message) { album.reload() } }
         }
         is Load.Ok -> AlbumContent(s.value, onChanged = { album.reload(silent = true) }, onGone = { nav.back() })
     }
@@ -147,7 +150,7 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { uris ->
         if (uris.isNotEmpty()) c.runTask {
             val n = c.backup.uploadShared(uris, a.id)
-            c.toast("Uploading ${countLabel(n, "item")} to ${a.albumName}")
+            c.toast(Strings.str(R.string.uploading_to, countLabel(n, R.plurals.count_items), a.albumName))
         }
     }
 
@@ -157,19 +160,19 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
         albumId = a.id,
         canEditAlbum = canEdit,
         topBar = {
-            ScreenTopBar(a.albumName.ifBlank { "Untitled" }) {
-                if (canEdit && !readOnly) IconButton(onClick = { addMenu = true }) { Icon(Icons.Outlined.AddPhotoAlternate, "Add photos") }
-                if (isOwner && !readOnly) IconButton(onClick = { sharing = true }) { Icon(Icons.Outlined.PersonAddAlt, "Share") }
-                if (a.shared && a.isActivityEnabled) IconButton(onClick = { activity = true }) { Icon(Icons.AutoMirrored.Outlined.Comment, "Activity") }
-                IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, "More") }
+            ScreenTopBar(a.albumName.ifBlank { Strings.str(R.string.untitled) }) {
+                if (canEdit && !readOnly) IconButton(onClick = { addMenu = true }) { Icon(Icons.Outlined.AddPhotoAlternate, stringResource(R.string.add_photos)) }
+                if (isOwner && !readOnly) IconButton(onClick = { sharing = true }) { Icon(Icons.Outlined.PersonAddAlt, stringResource(R.string.share)) }
+                if (a.shared && a.isActivityEnabled) IconButton(onClick = { activity = true }) { Icon(Icons.AutoMirrored.Outlined.Comment, stringResource(R.string.activity)) }
+                IconButton(onClick = { menu = true }) { Icon(Icons.Filled.MoreVert, stringResource(R.string.more)) }
             }
         },
         empty = {
             com.vknxworks.immichctrl.ui.components.MessageView(
                 Icons.Outlined.PhotoLibrary,
-                "This album is empty",
-                if (canEdit) "Add photos from your library or this phone." else null,
-                actionLabel = if (canEdit) "Add photos" else null,
+                stringResource(R.string.this_album_is_empty),
+                if (canEdit) stringResource(R.string.add_photos_from_your_library_or_this) else null,
+                actionLabel = if (canEdit) stringResource(R.string.add_photos) else null,
                 onAction = { addMenu = true },
             )
         },
@@ -178,7 +181,7 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
                 Column(Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 8.dp)) {
                     val range = listOfNotNull(shortDate(a.startDate), shortDate(a.endDate)).distinct().joinToString(" – ")
                     Text(
-                        listOfNotNull(range.ifBlank { null }, countLabel(a.assetCount, "item")).joinToString("  ·  "),
+                        listOfNotNull(range.ifBlank { null }, countLabel(a.assetCount, R.plurals.count_items)).joinToString("  ·  "),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -201,9 +204,9 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
     if (addMenu) {
         ModalBottomSheet(onDismissRequest = { addMenu = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
             Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
-                SheetTitle("Add to ${a.albumName}")
-                ActionItem(Icons.Outlined.PhotoLibrary, "From your Immich library") { addMenu = false; nav.navigate(PickAssetsRoute(a.id)) }
-                ActionItem(Icons.Outlined.Smartphone, "Upload from this phone") {
+                SheetTitle(stringResource(R.string.add_to, a.albumName))
+                ActionItem(Icons.Outlined.PhotoLibrary, stringResource(R.string.from_your_immich_library)) { addMenu = false; nav.navigate(PickAssetsRoute(a.id)) }
+                ActionItem(Icons.Outlined.Smartphone, stringResource(R.string.upload_from_this_phone)) {
                     addMenu = false
                     com.vknxworks.immichctrl.data.security.expectAppReturn(c.context)
                     picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
@@ -219,41 +222,41 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
-                SheetTitle(a.albumName, a.ownerUser?.name?.let { if (isOwner) null else "Shared by $it" })
-                ActionItem(Icons.Outlined.OfflinePin, if (isOffline) "Remove offline copy" else "Make available offline") {
+                SheetTitle(a.albumName, a.ownerUser?.name?.let { if (isOwner) null else Strings.str(R.string.shared_by, it) })
+                ActionItem(Icons.Outlined.OfflinePin, if (isOffline) stringResource(R.string.remove_offline_copy) else stringResource(R.string.make_available_offline)) {
                     menu = false
                     if (isOffline) c.offline.remove(a.id) else {
                         c.offline.sync(a.id, a.albumName)
-                        c.toast("Saving ${a.albumName} for offline viewing")
+                        c.toast(Strings.str(R.string.saving_for_offline_viewing, a.albumName))
                     }
                 }
                 if (canEdit && !isOwner && !readOnly) {
-                    ActionItem(Icons.Outlined.Edit, "Rename") { menu = false; renaming = true }
-                    ActionItem(Icons.AutoMirrored.Outlined.Notes, "Edit description") { menu = false; describing = true }
+                    ActionItem(Icons.Outlined.Edit, stringResource(R.string.rename)) { menu = false; renaming = true }
+                    ActionItem(Icons.AutoMirrored.Outlined.Notes, stringResource(R.string.edit_description)) { menu = false; describing = true }
                 }
                 if (isOwner && !readOnly) {
-                    ActionItem(Icons.Outlined.Edit, "Rename") { menu = false; renaming = true }
-                    ActionItem(Icons.AutoMirrored.Outlined.Notes, "Edit description") { menu = false; describing = true }
-                    ActionItem(Icons.Outlined.SwapVert, if (a.order == "asc") "Show newest first" else "Show oldest first") {
+                    ActionItem(Icons.Outlined.Edit, stringResource(R.string.rename)) { menu = false; renaming = true }
+                    ActionItem(Icons.AutoMirrored.Outlined.Notes, stringResource(R.string.edit_description)) { menu = false; describing = true }
+                    ActionItem(Icons.Outlined.SwapVert, if (a.order == "asc") stringResource(R.string.show_newest_first) else stringResource(R.string.show_oldest_first)) {
                         menu = false
                         c.runTask {
                             c.api.updateAlbum(a.id, "order" to if (a.order == "asc") "desc" else "asc")
                             onChanged()
                         }
                     }
-                    ActionItem(Icons.Outlined.Link, "Share a link") {
+                    ActionItem(Icons.Outlined.Link, stringResource(R.string.share_a_link)) {
                         menu = false
                         linkOptions = true
                     }
-                    ActionItem(Icons.AutoMirrored.Outlined.Comment, if (a.isActivityEnabled) "Turn off comments and likes" else "Turn on comments and likes") {
+                    ActionItem(Icons.AutoMirrored.Outlined.Comment, if (a.isActivityEnabled) stringResource(R.string.turn_off_comments_and_likes) else stringResource(R.string.turn_on_comments_and_likes)) {
                         menu = false
                         c.runTask { c.api.updateAlbum(a.id, "isActivityEnabled" to !a.isActivityEnabled); onChanged() }
                     }
-                    ActionItem(Icons.Outlined.Delete, "Delete album", tint = MaterialTheme.colorScheme.error) { menu = false; confirmDelete = true }
+                    ActionItem(Icons.Outlined.Delete, stringResource(R.string.delete_album), tint = MaterialTheme.colorScheme.error) { menu = false; confirmDelete = true }
                 } else if (!isOwner && !readOnly) {
-                    ActionItem(Icons.AutoMirrored.Outlined.ExitToApp, "Leave album", tint = MaterialTheme.colorScheme.error) { menu = false; confirmLeave = true }
+                    ActionItem(Icons.AutoMirrored.Outlined.ExitToApp, stringResource(R.string.leave_album), tint = MaterialTheme.colorScheme.error) { menu = false; confirmLeave = true }
                 }
-                ActionItem(Icons.Outlined.SmartDisplay, "Play as slideshow") {
+                ActionItem(Icons.Outlined.SmartDisplay, stringResource(R.string.play_as_slideshow)) {
                     menu = false
                     if (source.total > 0) source.assetAt(0)?.let { nav.viewer(source.key, 0, it.id) }
                 }
@@ -262,36 +265,36 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
     }
 
     if (renaming) {
-        TextInputDialog("Rename album", "Name", "Save", initial = a.albumName, onDismiss = { renaming = false }) { name ->
+        TextInputDialog(stringResource(R.string.rename_album), stringResource(R.string.name), stringResource(R.string.save), initial = a.albumName, onDismiss = { renaming = false }) { name ->
             renaming = false
             c.runTask { c.api.updateAlbum(a.id, "albumName" to name); onChanged() }
         }
     }
     if (describing) {
-        TextInputDialog("Description", "Description", "Save", initial = a.description, allowEmpty = true, singleLine = false, onDismiss = { describing = false }) { text ->
+        TextInputDialog(stringResource(R.string.description), stringResource(R.string.description), stringResource(R.string.save), initial = a.description, allowEmpty = true, singleLine = false, onDismiss = { describing = false }) { text ->
             describing = false
             c.runTask { c.api.updateAlbum(a.id, "description" to text); onChanged() }
         }
     }
     if (confirmDelete) {
         ConfirmDialog(
-            "Delete \"${a.albumName}\"?",
-            "The album goes away for everyone it's shared with. The photos in it stay in your library.",
-            "Delete",
+            stringResource(R.string.delete, a.albumName),
+            stringResource(R.string.the_album_goes_away_for_everyone_it),
+            stringResource(R.string.lock_delete),
             onDismiss = { confirmDelete = false },
         ) {
             confirmDelete = false
-            c.runTask("Album deleted") { c.api.deleteAlbum(a.id); onGone() }
+            c.runTask(Strings.str(R.string.album_deleted)) { c.api.deleteAlbum(a.id); onGone() }
         }
     }
     if (confirmLeave) {
-        ConfirmDialog("Leave \"${a.albumName}\"?", "You'll no longer see this album unless it's shared with you again.", "Leave", onDismiss = { confirmLeave = false }) {
+        ConfirmDialog(stringResource(R.string.leave_2, a.albumName), stringResource(R.string.you_ll_no_longer_see_this_album), stringResource(R.string.leave), onDismiss = { confirmLeave = false }) {
             confirmLeave = false
-            c.runTask("Left the album") { c.api.removeAlbumUser(a.id, "me"); onGone() }
+            c.runTask(Strings.str(R.string.left_the_album)) { c.api.removeAlbumUser(a.id, "me"); onGone() }
         }
     }
     if (linkOptions) {
-        SharedLinkDialog("Share \"${a.albumName}\"", allowUploadOption = true, onDismiss = { linkOptions = false }) { o ->
+        SharedLinkDialog(stringResource(R.string.share_2, a.albumName), allowUploadOption = true, onDismiss = { linkOptions = false }) { o ->
             linkOptions = false
             c.runTask {
                 val link = c.api.createSharedLink(
@@ -319,24 +322,24 @@ private fun ShareAlbumSheet(a: AlbumDto, onDismiss: () -> Unit, onChanged: () ->
     val users = rememberLoader("users") { c.api.users() }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
-            SheetTitle("Shared with", if (a.members.isEmpty()) "Only you can see this album" else null)
+            SheetTitle(stringResource(R.string.shared_with), if (a.members.isEmpty()) stringResource(R.string.only_you_can_see_this_album) else null)
             a.members.forEach { m ->
                 Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     UserAvatar(m.user.id, m.user.name, m.user.profileImagePath.isNotBlank(), m.user.profileChangedAt, m.user.avatarColor, Modifier.size(40.dp))
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text(m.user.name, style = MaterialTheme.typography.bodyLarge)
-                        Text(if (m.role == "editor") "Can add and remove photos" else "Can view", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if (m.role == "editor") stringResource(R.string.can_add_and_remove_photos) else stringResource(R.string.can_view), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     TextButton(onClick = {
                         c.runTask { c.api.setAlbumUserRole(a.id, m.user.id, if (m.role == "editor") "viewer" else "editor"); onChanged() }
-                    }) { Text(if (m.role == "editor") "Make viewer" else "Make editor") }
+                    }) { Text(if (m.role == "editor") stringResource(R.string.make_viewer) else stringResource(R.string.make_editor)) }
                     IconButton(onClick = { c.runTask { c.api.removeAlbumUser(a.id, m.user.id); onChanged() } }) {
-                        Icon(Icons.Outlined.Delete, "Remove ${m.user.name}")
+                        Icon(Icons.Outlined.Delete, stringResource(R.string.remove, m.user.name))
                     }
                 }
             }
-            ActionItem(Icons.Outlined.PersonAdd, "Add people") { adding = true }
+            ActionItem(Icons.Outlined.PersonAdd, stringResource(R.string.add_people)) { adding = true }
             if (adding) {
                 val existing = a.albumUsers.map { it.user.id }.toSet() + c.me
                 when (val s = users.state) {
@@ -345,12 +348,12 @@ private fun ShareAlbumSheet(a: AlbumDto, onDismiss: () -> Unit, onChanged: () ->
                     is Load.Ok -> {
                         val others = s.value.filter { it.id !in existing }
                         if (others.isEmpty()) {
-                            Text("Everyone on this server already has access.", modifier = Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.everyone_on_this_server_already_has), modifier = Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         others.forEach { u ->
                             Row(
                                 Modifier.fillMaxWidth().clickable {
-                                    c.runTask("Shared with ${u.name}") { c.api.addAlbumUsers(a.id, listOf(u.id)); onChanged() }
+                                    c.runTask(Strings.str(R.string.shared_with_2, u.name)) { c.api.addAlbumUsers(a.id, listOf(u.id)); onChanged() }
                                     onDismiss()
                                 }.padding(horizontal = 24.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -382,21 +385,21 @@ private fun ActivitySheet(a: AlbumDto, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         Column(Modifier.navigationBarsPadding().imePadding()) {
             Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Activity", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.activity), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
                 IconButton(onClick = {
                     c.runTask {
                         if (myLike != null) c.api.deleteActivity(myLike.id) else c.api.addActivity(a.id, null, null)
                         list.reload(silent = true)
                     }
                 }) {
-                    Icon(if (myLike != null) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, "Like", tint = if (myLike != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(if (myLike != null) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, stringResource(R.string.like), tint = if (myLike != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             when (val s = list.state) {
                 is Load.Loading -> Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 is Load.Err -> Text(s.message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(24.dp))
                 is Load.Ok -> LazyColumn(Modifier.heightIn(max = 420.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
-                    if (s.value.isEmpty()) item { Text("No comments yet.", modifier = Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    if (s.value.isEmpty()) item { Text(stringResource(R.string.no_comments_yet), modifier = Modifier.padding(24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     items(s.value, key = { it.id }) { act ->
                         Row(
                             Modifier.fillMaxWidth()
@@ -413,7 +416,7 @@ private fun ActivitySheet(a: AlbumDto, onDismiss: () -> Unit) {
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Text(
-                                    if (act.type == "like") "Liked ${if (act.assetId == null) "the album" else "a photo"}" else act.comment.orEmpty(),
+                                    if (act.type == "like") stringResource(if (act.assetId == null) R.string.liked_the_album else R.string.liked_a_photo) else act.comment.orEmpty(),
                                     style = MaterialTheme.typography.bodyMedium,
                                     maxLines = 8,
                                     overflow = TextOverflow.Ellipsis,
@@ -424,19 +427,19 @@ private fun ActivitySheet(a: AlbumDto, onDismiss: () -> Unit) {
                 }
             }
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(text, { text = it }, placeholder = { Text("Say something") }, modifier = Modifier.weight(1f), maxLines = 4)
+                OutlinedTextField(text, { text = it }, placeholder = { Text(stringResource(R.string.say_something)) }, modifier = Modifier.weight(1f), maxLines = 4)
                 IconButton(onClick = {
                     val t = text.trim()
                     if (t.isNotEmpty()) {
                         text = ""
                         c.runTask { c.api.addActivity(a.id, null, t); list.reload(silent = true) }
                     }
-                }) { Icon(Icons.AutoMirrored.Filled.Send, "Send") }
+                }) { Icon(Icons.AutoMirrored.Filled.Send, stringResource(R.string.send)) }
             }
         }
     }
     removing?.let { act ->
-        ConfirmDialog("Delete this?", "Your ${if (act.type == "like") "like" else "comment"} will be removed.", "Delete", onDismiss = { removing = null }) {
+        ConfirmDialog(stringResource(R.string.delete_this), stringResource(if (act.type == "like") R.string.your_like_will_be_removed else R.string.your_comment_will_be_removed), stringResource(R.string.lock_delete), onDismiss = { removing = null }) {
             removing = null
             c.runTask { c.api.deleteActivity(act.id); list.reload(silent = true) }
         }
@@ -457,7 +460,7 @@ fun PickAssetsScreen(albumId: String) {
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
-            ScreenTopBar(if (selection.active) "${selection.size} selected" else "Add to ${album.value?.albumName ?: "album"}")
+            ScreenTopBar(if (selection.active) stringResource(R.string.selected_2, selection.size) else stringResource(R.string.add_to, album.value?.albumName ?: "album"))
             AssetGrid(
                 source = source,
                 selection = selection,
@@ -468,9 +471,9 @@ fun PickAssetsScreen(albumId: String) {
         }
         if (selection.active) {
             PillButton(
-                "Add ${countLabel(selection.size, "item")}",
+                stringResource(R.string.add, countLabel(selection.size, R.plurals.count_items)),
                 onClick = {
-                    c.addToAlbum(albumId, album.value?.albumName ?: "the album", selection.assets)
+                    c.addToAlbum(albumId, album.value?.albumName ?: Strings.str(R.string.the_album), selection.assets)
                     Sources["album:$albumId"]?.refresh(silent = true)
                     nav.back()
                 },

@@ -73,6 +73,9 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /**
  * Crop, rotate and mirror. Immich keeps the original and applies the edits when it makes thumbnails
@@ -148,7 +151,7 @@ private fun Editor(asset: AssetDto, existing: EditsDto?) {
 
     fun save() {
         val list = toEdits(rotation, flipX, flipY, crop, origW, origH)
-        c.runTask(if (list.isEmpty()) "Back to the original" else "Saved") {
+        c.runTask(if (list.isEmpty()) Strings.str(R.string.back_to_the_original) else Strings.str(R.string.saved)) {
             if (list.isEmpty()) c.api.revertEdits(asset.id) else c.api.setEdits(asset.id, list)
             Sources.refreshAll()
             nav.back()
@@ -157,12 +160,12 @@ private fun Editor(asset: AssetDto, existing: EditsDto?) {
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { nav.back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Cancel", tint = Color.White) }
-            Text("Edit", style = MaterialTheme.typography.titleLarge, color = Color.White, modifier = Modifier.weight(1f))
+            IconButton(onClick = { nav.back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.lock_cancel), tint = Color.White) }
+            Text(stringResource(R.string.edit), style = MaterialTheme.typography.titleLarge, color = Color.White, modifier = Modifier.weight(1f))
             TextButton(onClick = {
                 rotation = 0; flipX = false; flipY = false; crop = Crop(); aspect = null
-            }) { Text("Revert", color = Color.White) }
-            TextButton(onClick = ::save) { Text("Save", color = MaterialTheme.colorScheme.primary) }
+            }) { Text(stringResource(R.string.revert), color = Color.White) }
+            TextButton(onClick = ::save) { Text(stringResource(R.string.save), color = MaterialTheme.colorScheme.primary) }
         }
 
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -194,17 +197,17 @@ private fun Editor(asset: AssetDto, existing: EditsDto?) {
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            listOf<Pair<Float?, String>>(null to "Free", (origW / origH) to "Original", 1f to "Square", (4f / 3f) to "4:3", (3f / 4f) to "3:4", (16f / 9f) to "16:9", (9f / 16f) to "9:16")
+            listOf<Pair<Float?, String>>(null to Strings.str(R.string.free), (origW / origH) to Strings.str(R.string.original), 1f to Strings.str(R.string.square), (4f / 3f) to "4:3", (3f / 4f) to "3:4", (16f / 9f) to "16:9", (9f / 16f) to "9:16")
                 .forEach { (a, label) -> FilterChip(aspect == a, onClick = { applyAspect(a) }, label = { Text(label) }) }
         }
         Row(
             Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
-            ToolButton(Icons.Outlined.RotateLeft, "Turn left") { rotate(-90) }
-            ToolButton(Icons.Outlined.RotateRight, "Turn right") { rotate(90) }
-            ToolButton(Icons.Outlined.Flip, "Mirror") { flip() }
-            ToolButton(Icons.Outlined.RestartAlt, "Reset crop") { crop = Crop(); aspect = null }
+            ToolButton(Icons.Outlined.RotateLeft, stringResource(R.string.turn_left)) { rotate(-90) }
+            ToolButton(Icons.Outlined.RotateRight, stringResource(R.string.turn_right)) { rotate(90) }
+            ToolButton(Icons.Outlined.Flip, stringResource(R.string.mirror)) { flip() }
+            ToolButton(Icons.Outlined.RestartAlt, stringResource(R.string.reset_crop)) { crop = Crop(); aspect = null }
         }
     }
 }

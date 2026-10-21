@@ -50,27 +50,30 @@ import com.vknxworks.immichctrl.ui.components.formatBytes
 import com.vknxworks.immichctrl.ui.components.rememberLoader
 import com.vknxworks.immichctrl.ui.components.runTask
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 private val queueLabels = mapOf(
-    "thumbnailGeneration" to "Thumbnails",
-    "metadataExtraction" to "Metadata",
-    "videoConversion" to "Video conversion",
-    "faceDetection" to "Face detection",
-    "facialRecognition" to "Facial recognition",
-    "smartSearch" to "Smart search",
-    "duplicateDetection" to "Duplicate detection",
-    "backgroundTask" to "Background tasks",
-    "storageTemplateMigration" to "Storage template",
-    "migration" to "Migration",
-    "search" to "Search",
-    "sidecar" to "Sidecar files",
-    "library" to "External libraries",
-    "notifications" to "Notifications",
-    "backupDatabase" to "Database backup",
-    "ocr" to "Text recognition (OCR)",
-    "workflow" to "Workflows",
-    "integrityCheck" to "Integrity check",
-    "editor" to "Editor",
+    "thumbnailGeneration" to Strings.str(R.string.thumbnails),
+    "metadataExtraction" to Strings.str(R.string.metadata),
+    "videoConversion" to Strings.str(R.string.video_conversion),
+    "faceDetection" to Strings.str(R.string.face_detection),
+    "facialRecognition" to Strings.str(R.string.facial_recognition),
+    "smartSearch" to Strings.str(R.string.smart_search),
+    "duplicateDetection" to Strings.str(R.string.duplicate_detection),
+    "backgroundTask" to Strings.str(R.string.background_tasks),
+    "storageTemplateMigration" to Strings.str(R.string.storage_template),
+    "migration" to Strings.str(R.string.migration),
+    "search" to Strings.str(R.string.search),
+    "sidecar" to Strings.str(R.string.sidecar_files),
+    "library" to Strings.str(R.string.external_libraries),
+    "notifications" to Strings.str(R.string.notifications),
+    "backupDatabase" to Strings.str(R.string.database_backup),
+    "ocr" to Strings.str(R.string.text_recognition_ocr),
+    "workflow" to Strings.str(R.string.workflows),
+    "integrityCheck" to Strings.str(R.string.integrity_check),
+    "editor" to Strings.str(R.string.editor),
 )
 
 /** For admins: what's on the server and the background jobs that process it. */
@@ -92,35 +95,35 @@ fun AdminScreen() {
     }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Server administration") {
+        ScreenTopBar(stringResource(R.string.server_administration)) {
             IconButton(onClick = { stats.reload(silent = true); storage.reload(silent = true); queues.reload(silent = true) }) {
-                Icon(Icons.Outlined.Refresh, "Refresh")
+                Icon(Icons.Outlined.Refresh, stringResource(R.string.refresh))
             }
         }
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
             storage.value?.let { d ->
-                Group("Disk") {
+                Group(stringResource(R.string.disk)) {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                        Text("${d.diskUse} of ${d.diskSize} used  ·  ${d.diskAvailable} free", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.of_used_free, d.diskUse, d.diskSize, d.diskAvailable), style = MaterialTheme.typography.bodyLarge)
                         Spacer(Modifier.height(8.dp))
                         LinearProgressIndicator(progress = { (d.diskUsagePercentage / 100).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                     }
                 }
             }
             stats.value?.let { s ->
-                Group("Library") {
+                Group(stringResource(R.string.library)) {
                     GroupRow("%,d photos".format(s.photos), formatBytes(s.usagePhotos), icon = Icons.Outlined.Photo)
                     GroupRow("%,d videos".format(s.videos), formatBytes(s.usageVideos), icon = Icons.Outlined.Videocam)
-                    GroupRow("Total", formatBytes(s.usage), icon = Icons.Outlined.Storage)
+                    GroupRow(stringResource(R.string.total), formatBytes(s.usage), icon = Icons.Outlined.Storage)
                 }
                 if (s.usageByUser.isNotEmpty()) {
-                    Group("Users") {
+                    Group(stringResource(R.string.users)) {
                         s.usageByUser.sortedByDescending { it.usage }.forEach { u ->
                             GroupRow(
                                 u.userName,
                                 listOfNotNull(
                                     "%,d photos, %,d videos".format(u.photos, u.videos),
-                                    formatBytes(u.usage) + (u.quotaSizeInBytes?.let { " of ${formatBytes(it)}" } ?: ""),
+                                    u.quotaSizeInBytes?.let { Strings.str(R.string.usage_of_quota, formatBytes(u.usage), formatBytes(it)) } ?: formatBytes(u.usage),
                                 ).joinToString("  ·  "),
                                 icon = Icons.Outlined.Person,
                             )
@@ -128,28 +131,28 @@ fun AdminScreen() {
                     }
                 }
             }
-            Group("Jobs", footer = "Tap a job to run it, pause it or clear failures.") {
+            Group(stringResource(R.string.jobs), footer = stringResource(R.string.tap_a_job_to_run_it_pause_it_or)) {
                 val list = queues.value.orEmpty()
-                if (list.isEmpty()) GroupRow(if (queues.value == null) "Loading…" else "No job queues")
+                if (list.isEmpty()) GroupRow(if (queues.value == null) stringResource(R.string.loading) else stringResource(R.string.no_job_queues))
                 list.forEach { q ->
                     val st = q.statistics
                     GroupRow(
                         queueLabels[q.name] ?: q.name,
                         listOfNotNull(
-                            if (q.isPaused) "Paused" else null,
-                            if (st.active > 0) "${st.active} running" else null,
-                            if (st.waiting > 0) "${st.waiting} waiting" else null,
-                            if (st.delayed > 0) "${st.delayed} delayed" else null,
-                            if (st.failed > 0) "${st.failed} failed" else null,
-                        ).joinToString("  ·  ").ifEmpty { "Idle" },
+                            if (q.isPaused) Strings.str(R.string.paused) else null,
+                            if (st.active > 0) Strings.str(R.string.running, st.active) else null,
+                            if (st.waiting > 0) Strings.str(R.string.waiting, st.waiting) else null,
+                            if (st.delayed > 0) Strings.str(R.string.delayed, st.delayed) else null,
+                            if (st.failed > 0) Strings.str(R.string.failed, st.failed) else null,
+                        ).joinToString("  ·  ").ifEmpty { Strings.str(R.string.idle) },
                         trailing = { Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         onClick = { open = q },
                     )
                 }
             }
             about.value?.let { a ->
-                Group("Server") {
-                    GroupRow("Immich ${a.version}", if (a.licensed) "Licensed" else null, icon = Icons.Outlined.Info)
+                Group(stringResource(R.string.server)) {
+                    GroupRow(stringResource(R.string.immich_2, a.version), if (a.licensed) stringResource(R.string.licensed) else null, icon = Icons.Outlined.Info)
                 }
             }
             Spacer(Modifier.height(24.dp))
@@ -165,15 +168,15 @@ fun AdminScreen() {
                     open = null
                     c.runTask(done) { block(); queues.reload(silent = true) }
                 }
-                ActionItem(Icons.Outlined.Refresh, "Run for what's missing") { act("$label started") { c.api.queueCommand(q.name, "start", force = false) } }
-                ActionItem(Icons.Outlined.Refresh, "Run for everything") { act("$label started for everything") { c.api.queueCommand(q.name, "start", force = true) } }
+                ActionItem(Icons.Outlined.Refresh, stringResource(R.string.run_for_what_s_missing)) { act(Strings.str(R.string.started, label)) { c.api.queueCommand(q.name, "start", force = false) } }
+                ActionItem(Icons.Outlined.Refresh, stringResource(R.string.run_for_everything)) { act(Strings.str(R.string.started_for_everything, label)) { c.api.queueCommand(q.name, "start", force = true) } }
                 if (q.isPaused) {
-                    ActionItem(Icons.Outlined.Refresh, "Resume") { act("$label resumed") { c.api.setQueuePaused(q.name, false) } }
+                    ActionItem(Icons.Outlined.Refresh, stringResource(R.string.resume)) { act(Strings.str(R.string.resumed, label)) { c.api.setQueuePaused(q.name, false) } }
                 } else {
-                    ActionItem(Icons.Outlined.Refresh, "Pause") { act("$label paused") { c.api.setQueuePaused(q.name, true) } }
+                    ActionItem(Icons.Outlined.Refresh, stringResource(R.string.pause)) { act(Strings.str(R.string.paused_2, label)) { c.api.setQueuePaused(q.name, true) } }
                 }
                 if (q.statistics.failed > 0) {
-                    ActionItem(Icons.Outlined.Refresh, "Clear failed") { act("Cleared") { c.api.queueCommand(q.name, "clear-failed") } }
+                    ActionItem(Icons.Outlined.Refresh, stringResource(R.string.clear_failed)) { act(Strings.str(R.string.cleared)) { c.api.queueCommand(q.name, "clear-failed") } }
                 }
             }
         }

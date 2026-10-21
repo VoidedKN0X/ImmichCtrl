@@ -35,6 +35,7 @@ import okio.buffer
 import okio.sink
 import java.io.File
 import java.security.MessageDigest
+import com.vknxworks.immichctrl.Strings
 
 @Serializable
 data class OfflineAsset(
@@ -228,8 +229,8 @@ class OfflineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     private fun notification(done: Int, total: Int, name: String) =
         NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Saving \"$name\" for offline")
-            .setContentText("$done of $total")
+            .setContentTitle(Strings.str(R.string.saving_for_offline, name))
+            .setContentText(Strings.str(R.string.of, done, total))
             .setProgress(total, done, total == 0)
             .setOngoing(true)
             .setSilent(true)
@@ -238,7 +239,7 @@ class OfflineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             .setPublicVersion(
                 NotificationCompat.Builder(applicationContext, CHANNEL)
                     .setSmallIcon(R.drawable.ic_notification)
-                    .setContentTitle("Saving an album for offline")
+                    .setContentTitle(Strings.str(R.string.saving_an_album_for_offline))
                     .setProgress(total, done, total == 0)
                     .setSilent(true)
                     .build(),

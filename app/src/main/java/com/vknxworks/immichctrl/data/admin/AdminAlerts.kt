@@ -26,6 +26,7 @@ import com.vknxworks.immichctrl.data.appDataStore
 import com.vknxworks.immichctrl.data.log.AppLog
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
+import com.vknxworks.immichctrl.Strings
 
 /**
  * For admins: checks the server every hour and notifies about failed background jobs, a disk
@@ -51,7 +52,7 @@ class AdminAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
             val last = stored[lastKey] ?: 0L
             if (total > last) {
                 val which = failed.filterValues { it > 0 }.keys.joinToString(", ")
-                notify(nm, 1, "${total - last} background jobs failed", "On ${s.account.serverName}: $which")
+                notify(nm, 1, Strings.plural(R.plurals.background_jobs_failed, total - last, total - last), Strings.str(R.string.on, s.account.serverName, which))
             }
             prefs.edit { it[lastKey] = total }
         }.onFailure { AppLog.w("Admin", "Couldn't check job queues: ${it.message}") }
@@ -63,7 +64,7 @@ class AdminAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
             val stepKey = longPreferencesKey("admin_disk_step:$key")
             val lastStep = stored[stepKey] ?: 0L
             val step = if (pct >= settings.adminDiskPercent) (pct / 5).toLong() else 0L
-            if (step > lastStep) notify(nm, 2, "Server disk is $pct% full", "${disk.diskAvailable} left of ${disk.diskSize} on ${s.account.serverName}")
+            if (step > lastStep) notify(nm, 2, Strings.str(R.string.server_disk_is_full, pct), Strings.str(R.string.left_of_on, disk.diskAvailable, disk.diskSize, s.account.serverName))
             prefs.edit { it[stepKey] = step }
         }
 
@@ -73,7 +74,7 @@ class AdminAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
             val current = c.api.serverVersion().toString().removePrefix("v")
             val seenKey = stringPreferencesKey("admin_release_seen:$key")
             if (newer(latest, current) && stored[seenKey] != latest) {
-                notify(nm, 3, "Immich $latest is available", "${s.account.serverName} runs $current")
+                notify(nm, 3, Strings.str(R.string.immich_is_available, latest), Strings.str(R.string.runs, s.account.serverName, current))
                 prefs.edit { it[seenKey] = latest }
             }
         }
@@ -110,7 +111,7 @@ class AdminAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
                 .setPublicVersion(
                     NotificationCompat.Builder(applicationContext, CHANNEL)
                         .setSmallIcon(R.drawable.ic_notification)
-                        .setContentTitle("Immich server alert")
+                        .setContentTitle(Strings.str(R.string.immich_server_alert))
                         .build(),
                 )
                 .build(),

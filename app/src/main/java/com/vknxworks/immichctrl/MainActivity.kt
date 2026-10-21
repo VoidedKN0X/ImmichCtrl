@@ -127,15 +127,15 @@ class MainActivity : FragmentActivity() {
         lifecycleScope.launch {
             c.sessions.ready.first { it }
             if (c.sessions.active.value == null) {
-                Toast.makeText(this@MainActivity, "Sign in to an Immich server first", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, Strings.str(R.string.sign_in_to_an_immich_server_first), Toast.LENGTH_LONG).show()
                 return@launch
             }
             if (c.settings.current().readOnly) {
-                Toast.makeText(this@MainActivity, "Uploading is off in read-only mode", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, Strings.str(R.string.uploading_is_off_in_read_only_mode), Toast.LENGTH_LONG).show()
                 return@launch
             }
             val n = c.backup.uploadShared(uris, albumId)
-            val msg = if (n == 0) "Couldn't read what was shared" else "Uploading $n ${if (n == 1) "item" else "items"} to Immich"
+            val msg = if (n == 0) Strings.str(R.string.couldn_t_read_what_was_shared) else Strings.plural(R.plurals.uploading_to_immich, n, n)
             Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
         }
     }

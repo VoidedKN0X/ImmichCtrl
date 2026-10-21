@@ -44,6 +44,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.vknxworks.immichctrl.Strings
 
 /**
  * Uploads new photos and videos from the chosen phone albums, or files shared to the app.
@@ -102,7 +103,7 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 return Result.success()
             }
         }
-        if (!LocalMedia.hasPermission(applicationContext)) return Result.failure(workDataOf(KEY_ERROR to "Photo access is off"))
+        if (!LocalMedia.hasPermission(applicationContext)) return Result.failure(workDataOf(KEY_ERROR to Strings.str(R.string.photo_access_is_off)))
 
         val items = withContext(Dispatchers.IO) {
             if (mode == MODE_ITEMS) {
@@ -222,15 +223,15 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         nm.cancel(NOTIFICATION_ID)
         if (uploaded == 0 && failed == 0) return
         val text = buildList {
-            if (uploaded > 0) add("$uploaded backed up")
-            if (skipped > 0) add("$skipped already on the server")
-            if (failed > 0) add("$failed couldn't be uploaded")
+            if (uploaded > 0) add(Strings.str(R.string.backed_up, uploaded))
+            if (skipped > 0) add(Strings.str(R.string.already_on_the_server, skipped))
+            if (failed > 0) add(Strings.str(R.string.couldn_t_be_uploaded, failed))
         }.joinToString(", ")
         nm.notify(
             DONE_ID,
             NotificationCompat.Builder(applicationContext, CHANNEL)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle("Backup finished")
+                .setContentTitle(Strings.str(R.string.backup_finished))
                 .setContentText(text)
                 .setAutoCancel(true)
                 .build(),
@@ -306,7 +307,7 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             override fun contentType(): MediaType? = mime.toMediaTypeOrNull()
             override fun contentLength(): Long = size
             override fun writeTo(sink: BufferedSink) {
-                (open() ?: throw IOException("Can't read $name")).source().use { sink.writeAll(it) }
+                (open() ?: throw IOException(Strings.str(R.string.can_t_read, name))).source().use { sink.writeAll(it) }
             }
         }
         val form = MultipartBody.Builder().setType(MultipartBody.FORM)
@@ -348,8 +349,8 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
     private fun notification(done: Int, total: Int, name: String?) =
         NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Backing up $done of $total")
-            .setContentText(name ?: "Checking what's new")
+            .setContentTitle(Strings.str(R.string.backing_up_of, done, total))
+            .setContentText(name ?: Strings.str(R.string.checking_what_s_new))
             .setProgress(total, done, total == 0)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -359,7 +360,7 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             .setPublicVersion(
                 NotificationCompat.Builder(applicationContext, CHANNEL)
                     .setSmallIcon(R.drawable.ic_notification)
-                    .setContentTitle("Backing up photos")
+                    .setContentTitle(Strings.str(R.string.backing_up_photos))
                     .setProgress(total, done, total == 0)
                     .setSilent(true)
                     .build(),
