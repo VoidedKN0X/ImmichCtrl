@@ -22,8 +22,8 @@ android {
         minSdk = 33
         targetSdk = 36
         // Bump both to publish a new release (see CHANGELOG.md).
-        versionCode = 28
-        versionName = "0.3.14"
+        versionCode = 29
+        versionName = "0.3.15"
         // 64-bit ARM phones only (arm64-v8a), like every Ctrl app.
         ndk { abiFilters += listOf("arm64-v8a") }
 
@@ -72,6 +72,12 @@ android {
 
     packaging {
         resources.excludes += listOf("/META-INF/{AL2.0,LGPL2.1}", "/META-INF/INDEX.LIST")
+    }
+
+    // No dependency metadata blob in the APK: it's encrypted for Google Play, so nobody checking the build can read it.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 
     lint {
