@@ -119,16 +119,19 @@ Your account, backup, **Settings** and sign out are all on that same page behind
 
 ## App lock
 
-Turn it on in **Settings → Privacy and security → App lock** (tap your profile picture, then Settings). It's off until you turn it on.
+Turn it on under **Settings > Privacy and security > App lock (tap your profile picture, then Settings)**. It's off until you turn it on.
 
-- **An app PIN of its own**, at least 6 digits and separate from your phone's. Very obvious PINs, like 111111 or 123456, are refused. The PIN is never stored: it's stretched with 600,000 rounds of PBKDF2 and mixed with a key that never leaves the phone's secure hardware, so a copy of the app's files isn't enough to guess it somewhere else.
-- **Unlock with fingerprint** (optional): strong biometrics only, checked by the phone's secure hardware. Adding a fingerprint to the phone turns it off until you turn it on again. The PIN is still needed after the phone restarts and at least every 72 hours.
-- **Wrong PINs make you wait**: 30 seconds after 5 wrong tries, doubling up to 15 minutes. Restarting the app or the phone, or changing the clock, doesn't end the wait.
-- **Your logins stay encrypted while ImmichCtrl is locked**, with a key that only exists in memory while the app is unlocked and is wiped the moment it locks. The photo widgets hide your photos while the lock is on.
+- **Its own app PIN** of at least 6 digits, separate from your phone's screen lock. Very obvious PINs such as 111111 or 123456 are refused.
+- **Unlock with fingerprint** (optional) only accepts strong biometrics, such as the fingerprint sensor, checked by the phone's secure hardware. Face unlock that only uses the camera isn't accepted. The PIN is still needed after the phone restarts and at least every 72 hours, and adding a new fingerprint to the phone turns fingerprint unlock off until you turn it on again.
+- **Your logins are encrypted with the PIN while ImmichCtrl is locked.** The key only exists in memory while the app is unlocked and is wiped the moment it locks. The PIN itself is never stored: it's stretched with 600,000 rounds of PBKDF2 and mixed with a key held in the phone's secure hardware, so a copy of the app's files isn't enough to guess it on a computer.
+- **Wrong PINs:** after 5 tries you wait 30 seconds, doubling up to 15 minutes. Restarting the app or the phone, or changing the clock, doesn't skip the wait.
+- **Lock again:** as soon as you leave the app (the default), after 1, 5 or 15 minutes or 1 hour away, or only when the app restarts. Sharing, photo pickers, editing in another app, the map app and Android's confirmations don't count as leaving, unless you stay away for more than 5 minutes.
+- **Change app PIN** asks for your current PIN first, and turning the app lock off asks for the PIN too.
+- **Forgot your PIN?** It can't be recovered, because it encrypts your login. The lock screen offers to sign out of every account and remove ImmichCtrl's offline albums, cached photos and backup history from this phone; your photos on the Immich server and on this phone stay.
+- **With the app lock on**, the recent-apps screen always shows a blank card, and the photo widgets show "ImmichCtrl is locked" instead of your photos.
 - **Backups keep working while locked**: while automatic backup (or admin alerts on an admin account) is on, that account's login stays usable in the background, encrypted with the Android Keystore as without the app lock. Every other login stays sealed with your PIN.
-- **Lock again**: as soon as you leave the app (the default), after 1, 5 or 15 minutes or 1 hour away, or only when the app restarts. Sharing, photo pickers, editing in another app, the map app and Android's confirmations don't count as leaving, unless you're away for more than 5 minutes.
-- **Hide in screenshots and recent apps** (off by default): screenshots, screen recordings and casting show a blank screen. The recent apps view never shows your photos, and the locked folder and the lock screen are always hidden.
-- **Forgot PIN?** on the lock screen signs out of every account and removes ImmichCtrl's offline albums, cached photos and backup history from this phone, so you can sign in again. Your photos on the Immich server and on this phone stay.
+
+**Hide in screenshots** and **Hide in recent apps** are in the same section, work without the app lock too, and are both off by default. The first keeps ImmichCtrl out of screenshots and screen recordings; the second shows a blank card in the recent-apps view instead of the app. Sign-in, Networking (custom headers often hold proxy secrets), the locked folder, the lock screen and the PIN screens are always kept out of screenshots, whatever the switches say.
 
 Updating from a version before 0.3.9 with the old app lock (your phone's screen lock): unlock once the old way, then choose an app PIN. This step can't be skipped.
 

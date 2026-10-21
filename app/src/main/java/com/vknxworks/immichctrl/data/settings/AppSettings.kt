@@ -17,7 +17,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-enum class ThemeChoice(val label: String) { SYSTEM("Follow system"), DARK("Dark"), LIGHT("Light"), BLACK("Pure black") }
+enum class ThemeChoice(@androidx.annotation.StringRes val label: Int) {
+    SYSTEM(com.vknxworks.immichctrl.R.string.theme_system), DARK(com.vknxworks.immichctrl.R.string.theme_dark),
+    LIGHT(com.vknxworks.immichctrl.R.string.theme_light), BLACK(com.vknxworks.immichctrl.R.string.theme_black),
+}
 
 enum class GroupBy(val label: String) { DAY("Day"), MONTH("Month") }
 
@@ -67,8 +70,10 @@ data class AppSettings(
     val appLockTimeout: Int = 0,
     /** Unlock the locked folder with a fingerprint once its PIN has been entered here. */
     val lockedFolderBiometric: Boolean = false,
-    /** FLAG_SECURE on the whole app: blank screenshots, screen recordings and casting. */
-    val hideContent: Boolean = false,
+    /** FLAG_SECURE on the whole app: screenshots, screen recordings and casting show a blank screen. */
+    val hideScreenshots: Boolean = false,
+    /** The recent-apps view shows a blank card instead of the app. */
+    val hideRecents: Boolean = false,
     /** Show maps (the photo's mini map and the Map screen); tiles come from the server's map style. */
     val showMaps: Boolean = true,
 
@@ -117,7 +122,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val appLock = booleanPreferencesKey("app_lock")
         val appLockTimeout = intPreferencesKey("app_lock_timeout")
         val lockedBio = booleanPreferencesKey("locked_folder_biometric")
+        /** 0.3.11's single "Hide in screenshots and recent apps"; an explicit "on" turns both new switches on. */
         val hideContent = booleanPreferencesKey("hide_content")
+        val hideScreenshots = booleanPreferencesKey("hide_screenshots")
+        val hideRecents = booleanPreferencesKey("hide_recents")
         val showMaps = booleanPreferencesKey("show_maps")
         val adminAlerts = booleanPreferencesKey("admin_alerts")
         val adminDisk = intPreferencesKey("admin_disk_percent")
@@ -171,7 +179,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         appLock = this[K.appLock] ?: false,
         // 30 seconds isn't offered any more: it becomes "as soon as you leave" rather than longer.
         appLockTimeout = (this[K.appLockTimeout] ?: 0).let { if (it == 30) 0 else it },
-        hideContent = this[K.hideContent] ?: false,
+        hideScreenshots = this[K.hideScreenshots] ?: this[K.hideContent] ?: false,
+        hideRecents = this[K.hideRecents] ?: this[K.hideContent] ?: false,
         lockedFolderBiometric = this[K.lockedBio] ?: false,
         showMaps = this[K.showMaps] ?: true,
         adminAlerts = this[K.adminAlerts] ?: true,
@@ -216,7 +225,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.readOnly] = s.readOnly
             p[K.appLock] = s.appLock
             p[K.appLockTimeout] = s.appLockTimeout
-            p[K.hideContent] = s.hideContent
+            p.remove(K.hideContent)
+            p[K.hideScreenshots] = s.hideScreenshots
+            p[K.hideRecents] = s.hideRecents
             p[K.lockedBio] = s.lockedFolderBiometric
             p[K.showMaps] = s.showMaps
             p[K.adminAlerts] = s.adminAlerts

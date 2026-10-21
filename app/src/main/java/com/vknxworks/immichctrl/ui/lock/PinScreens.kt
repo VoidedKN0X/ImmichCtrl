@@ -64,6 +64,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.R
 
 /** Updated from the old app lock (the phone's screen lock): confirm once, then choose a PIN. */
 @Composable
@@ -79,14 +81,14 @@ fun LegacyLockScreen() {
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             LockBadge()
-            Text("ImmichCtrl is locked", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Text(stringResource(R.string.lock_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
             Text(
-                "Unlock with your fingerprint, face or screen lock one last time, then choose an app PIN.",
+                stringResource(R.string.lock_legacy_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-            PillButton("Unlock", onClick = ::unlock)
+            PillButton(stringResource(R.string.lock_unlock), onClick = ::unlock)
         }
     }
 }
@@ -143,12 +145,12 @@ fun PinLockScreen() {
     fun askFingerprint() {
         val a = activity ?: return
         val cipher = vault.biometricUnlockCipher() ?: run {
-            if (!vault.biometricEnabled) message = "A fingerprint was added or removed. Unlock with your PIN, then turn fingerprint unlock on again."
+            if (!vault.biometricEnabled) message = context.getString(R.string.lock_fingerprint_changed)
             return
         }
-        lock.biometricPrompt(a, "Unlock ImmichCtrl", cipher, subtitle = "Confirm it's you to see your photos", onError = { message = it }) { unlocked ->
+        lock.biometricPrompt(a, context.getString(R.string.lock_fingerprint_title), cipher, subtitle = context.getString(R.string.lock_fingerprint_subtitle), onError = { message = it }) { unlocked ->
             if (vault.unlockWithBiometric(unlocked)) scope.launch { lock.unlocked() }
-            else message = "Couldn't unlock with your fingerprint. Use your PIN."
+            else message = context.getString(R.string.lock_fingerprint_failed)
         }
     }
     LaunchedEffect(lock.lockCount) { if (bioAvailable) askFingerprint() }
@@ -167,7 +169,7 @@ fun PinLockScreen() {
             } else {
                 checking = false
                 lockout = vault.lockoutRemaining()
-                message = "Wrong PIN"
+                message = context.getString(R.string.lock_wrong_pin)
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 for (x in listOf(18f, -14f, 10f, -6f, 0f)) shake.animateTo(x, tween(45))
             }
@@ -176,12 +178,12 @@ fun PinLockScreen() {
 
     LockCover {
         PinPad(
-            title = "ImmichCtrl is locked",
+            title = stringResource(R.string.lock_title),
             message = when {
-                lockout > 0 -> "Too many tries. Try again in ${(lockout + 999) / 1000} s"
+                lockout > 0 -> stringResource(R.string.lock_too_many, ((lockout + 999) / 1000).toInt())
                 message != null -> message!!
-                vault.biometricEnabled && vault.pinRequired() -> "Enter your PIN. It's needed after a restart and every 72 hours."
-                else -> "Enter your PIN"
+                vault.biometricEnabled && vault.pinRequired() -> stringResource(R.string.lock_pin_due)
+                else -> stringResource(R.string.lock_enter_pin)
             },
             isError = lockout > 0 || message != null,
             pin = pin,
@@ -203,19 +205,17 @@ fun PinLockScreen() {
                 TextButton(onClick = ::askFingerprint) {
                     Icon(Icons.Outlined.Fingerprint, null)
                     Spacer(Modifier.size(8.dp))
-                    Text("Use fingerprint")
+                    Text(stringResource(R.string.lock_use_fingerprint))
                 }
             }
-            TextButton(onClick = { forgetting = true }) { Text("Forgot PIN?") }
+            TextButton(onClick = { forgetting = true }) { Text(stringResource(R.string.lock_forgot)) }
         }
     }
     if (forgetting) {
         ConfirmDialog(
-            "Forgot your PIN?",
-            "The PIN can't be recovered, because it encrypts your login. ImmichCtrl will sign out of every account and " +
-                "remove its offline albums, cached photos and backup history from this phone. Your photos on the Immich server " +
-                "and the photos on this phone stay.",
-            "Sign out and reset",
+            stringResource(R.string.lock_forgot_title),
+            stringResource(R.string.lock_forgot_body),
+            stringResource(R.string.lock_forgot_confirm),
             onDismiss = { forgetting = false },
         ) {
             forgetting = false
@@ -231,25 +231,24 @@ fun PinRequestScreen(request: PinRequest) {
     val lock = c.appLock
     when (request) {
         PinRequest.ENABLE -> PinSetupScreen(
-            title = "Choose an app PIN",
-            intro = "At least ${LockVault.PIN_MIN} digits, different from your phone's PIN. " +
-                "If you forget it, the only way back in is to sign out and sign in again.",
+            title = stringResource(R.string.lock_choose_title),
+            intro = stringResource(R.string.lock_choose_intro, LockVault.PIN_MIN),
             verifyCurrent = false,
             cancellable = true,
             onDone = { pin -> c.enableLock(pin); lock.request = null },
             onCancel = { lock.request = null },
         )
         PinRequest.CHANGE -> PinSetupScreen(
-            title = "Change app PIN",
-            intro = "At least ${LockVault.PIN_MIN} digits, different from your phone's PIN.",
+            title = stringResource(R.string.lock_change_title),
+            intro = stringResource(R.string.lock_change_intro, LockVault.PIN_MIN),
             verifyCurrent = true,
             cancellable = true,
             onDone = { pin -> withContext(Dispatchers.Default) { c.vault.changePin(pin) }; lock.request = null },
             onCancel = { lock.request = null },
         )
         PinRequest.DISABLE -> PinSetupScreen(
-            title = "Turn off app lock",
-            intro = "Enter your app PIN to turn the lock off.",
+            title = stringResource(R.string.lock_disable_title),
+            intro = stringResource(R.string.lock_disable_intro),
             verifyCurrent = true,
             verifyOnly = true,
             cancellable = true,
@@ -264,9 +263,8 @@ fun PinRequestScreen(request: PinRequest) {
 fun MandatoryPinScreen() {
     val c = LocalContext.current.container
     PinSetupScreen(
-        title = "Choose an app PIN",
-        intro = "ImmichCtrl's app lock now has its own PIN, separate from your phone's. " +
-            "Your login is encrypted with it while the app is locked.",
+        title = stringResource(R.string.lock_choose_title),
+        intro = stringResource(R.string.lock_migrate_intro),
         verifyCurrent = false,
         cancellable = false,
         onDone = { pin -> c.enableLock(pin) },
@@ -318,7 +316,7 @@ private fun PinSetupScreen(
     fun finish(newPin: String) {
         busy = true
         scope.launch {
-            runCatching { onDone(newPin) }.onFailure { busy = false; wrong("Couldn't save the PIN. Try again.") }
+            runCatching { onDone(newPin) }.onFailure { busy = false; wrong(context.getString(R.string.lock_save_failed)) }
         }
     }
 
@@ -338,14 +336,14 @@ private fun PinSetupScreen(
                         if (verifyOnly) finish(entered) else step = 1
                     } else {
                         lockout = vault.lockoutRemaining()
-                        wrong("Wrong PIN")
+                        wrong(context.getString(R.string.lock_wrong_pin))
                     }
                 }
             }
             1 -> {
                 if (pin.length < LockVault.PIN_MIN) return
                 if (pin.toSet().size == 1 || "0123456789012".contains(pin) || "9876543210987".contains(pin)) {
-                    wrong("Too easy to guess. Try a less obvious PIN.")
+                    wrong(context.getString(R.string.lock_too_easy))
                     return
                 }
                 first = pin
@@ -357,7 +355,7 @@ private fun PinSetupScreen(
                 if (pin != first) {
                     first = ""
                     step = 1
-                    wrong("The PINs didn't match. Start again.")
+                    wrong(context.getString(R.string.lock_mismatch))
                     return
                 }
                 finish(pin)
@@ -369,11 +367,11 @@ private fun PinSetupScreen(
         PinPad(
             title = title,
             message = when {
-                lockout > 0 -> "Too many tries. Try again in ${(lockout + 999) / 1000} s"
+                lockout > 0 -> stringResource(R.string.lock_too_many, ((lockout + 999) / 1000).toInt())
                 message != null -> message!!
-                step == 0 -> "Enter your current PIN"
+                step == 0 -> stringResource(R.string.lock_current_pin)
                 step == 1 -> intro
-                else -> "Enter the same PIN again"
+                else -> stringResource(R.string.lock_repeat_pin)
             },
             isError = lockout > 0 || message != null,
             pin = pin,
@@ -384,9 +382,9 @@ private fun PinSetupScreen(
             onBackspace = { pin = pin.dropLast(1) },
             onConfirm = ::next,
             showConfirm = pin.length >= LockVault.PIN_MIN,
-            confirmLabel = if (step == 2 || (step == 0 && verifyOnly)) "Done" else "Next",
+            confirmLabel = stringResource(if (step == 2 || (step == 0 && verifyOnly)) R.string.lock_done else R.string.lock_next),
         ) {
-            if (cancellable) TextButton(onClick = onCancel) { Text("Cancel") }
+            if (cancellable) TextButton(onClick = onCancel) { Text(stringResource(R.string.lock_cancel)) }
         }
     }
 }
@@ -404,7 +402,7 @@ private fun PinPad(
     onBackspace: () -> Unit,
     onConfirm: () -> Unit,
     showConfirm: Boolean,
-    confirmLabel: String = "OK",
+    confirmLabel: String = stringResource(R.string.lock_ok),
     bottom: @Composable () -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
@@ -448,7 +446,7 @@ private fun PinPad(
             }
             Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onBackspace, enabled = enabled && pin.isNotEmpty(), modifier = Modifier.size(72.dp)) {
-                    Icon(Icons.AutoMirrored.Outlined.Backspace, "Delete")
+                    Icon(Icons.AutoMirrored.Outlined.Backspace, stringResource(R.string.lock_delete))
                 }
                 DigitKey("0", enabled) {
                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)

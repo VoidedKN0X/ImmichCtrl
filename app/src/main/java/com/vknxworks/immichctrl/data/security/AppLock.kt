@@ -1,6 +1,7 @@
 package com.vknxworks.immichctrl.data.security
 
 import android.content.Context
+import com.vknxworks.immichctrl.R
 import com.vknxworks.immichctrl.data.lock.LockVault
 import android.os.SystemClock
 import androidx.biometric.BiometricManager
@@ -156,7 +157,7 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
             _locked.value = false
             return
         }
-        prompt(activity, "Unlock ImmichCtrl", allowCredential = true) { ok -> if (ok) _locked.value = false }
+        prompt(activity, activity.getString(R.string.lock_fingerprint_title), allowCredential = true) { ok -> if (ok) _locked.value = false }
     }
 
     /**
@@ -178,7 +179,7 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     prompting = false
                     val c = result.cryptoObject?.cipher
-                    if (c != null) onSuccess(c) else onError("Fingerprint didn't unlock the key")
+                    if (c != null) onSuccess(c) else onError(activity.getString(R.string.lock_fingerprint_failed))
                 }
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     prompting = false
@@ -193,10 +194,10 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
             .setTitle(title)
             .apply { if (subtitle != null) setSubtitle(subtitle) }
             .setAllowedAuthenticators(BIOMETRIC_STRONG)
-            .setNegativeButtonText("Use PIN")
+            .setNegativeButtonText(activity.getString(R.string.lock_use_pin))
             .build()
         runCatching { prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher)) }
-            .onFailure { prompting = false; onError(it.message ?: "Couldn't show the fingerprint prompt") }
+            .onFailure { prompting = false; onError(it.message ?: activity.getString(R.string.lock_prompt_failed)) }
     }
 
     /** Shows the system's fingerprint/face/screen-lock prompt. */
@@ -224,7 +225,7 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
                 if (allowCredential) setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
                 else {
                     setAllowedAuthenticators(BIOMETRIC_STRONG)
-                    setNegativeButtonText("Use PIN")
+                    setNegativeButtonText(activity.getString(R.string.lock_use_pin))
                 }
             }
             .build()
@@ -294,7 +295,7 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
             val info = BiometricPrompt.PromptInfo.Builder()
                 .setTitle(title)
                 .setAllowedAuthenticators(BIOMETRIC_STRONG)
-                .setNegativeButtonText("Use PIN")
+                .setNegativeButtonText(activity.getString(R.string.lock_use_pin))
                 .build()
             runCatching { prompt.authenticate(info, BiometricPrompt.CryptoObject(cipher)) }
                 .onFailure { if (cont.isActive) cont.resume(null) }

@@ -66,8 +66,11 @@ import com.vknxworks.immichctrl.ui.components.ScreenTopBar
 import com.vknxworks.immichctrl.ui.nav.AddAccountRoute
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import kotlinx.coroutines.launch
+import com.vknxworks.immichctrl.R
+import androidx.compose.ui.res.stringResource
 import com.vknxworks.immichctrl.data.lock.LockVault
 import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.material.icons.outlined.Layers
 import com.vknxworks.immichctrl.data.security.PinRequest
 
 @Composable
@@ -83,9 +86,9 @@ fun SettingsScreen() {
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar("Settings")
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
-            Group("Appearance") {
-                GroupChoice("Theme", ThemeChoice.entries.map { it to it.label }, s.theme, Icons.Outlined.DarkMode) { v -> update { it.copy(theme = v) } }
-                GroupSwitch("Use wallpaper colours", "Replaces ImmichCtrl's periwinkle with colours from your wallpaper", s.dynamicColor, Icons.Outlined.Palette) { v ->
+            Group(stringResource(R.string.group_appearance)) {
+                GroupChoice(stringResource(R.string.theme), ThemeChoice.entries.map { it to stringResource(it.label) }, s.theme, Icons.Outlined.DarkMode) { v -> update { it.copy(theme = v) } }
+                GroupSwitch(stringResource(R.string.dynamic_colour), stringResource(R.string.dynamic_colour_subtitle), s.dynamicColor, Icons.Outlined.Palette) { v ->
                     update { it.copy(dynamicColor = v) }
                 }
             }
@@ -102,33 +105,28 @@ fun SettingsScreen() {
                 }
             }
             Group(
-                "Privacy and security",
-                footer = "ImmichCtrl has no analytics or tracking. It only talks to your own Immich server (and its map tiles when maps are on). " +
-                    "While automatic backup (or admin alerts on an admin account) is on, that account's login stays usable in the background " +
-                    "for backups and alerts. Every other login stays encrypted with the PIN while the app is locked.",
+                stringResource(R.string.group_privacy),
+                footer = stringResource(R.string.privacy_footer),
             ) {
                 val lockOn = c.vault.enabled
                 GroupSwitch(
-                    "App lock",
-                    "Ask for an app PIN (and optionally your fingerprint) when opening ImmichCtrl. While locked, your login stays " +
-                        "encrypted with the PIN, and the photo widgets hide your photos.",
+                    stringResource(R.string.lock_app),
+                    stringResource(R.string.lock_app_subtitle),
                     lockOn,
                     Icons.Outlined.Lock,
                 ) { v -> c.appLock.request = if (v) PinRequest.ENABLE else PinRequest.DISABLE }
                 if (lockOn) {
                     GroupRow(
-                        "Change app PIN",
-                        "At least ${LockVault.PIN_MIN} digits, separate from your phone's PIN",
+                        stringResource(R.string.lock_change_pin),
+                        stringResource(R.string.lock_change_pin_subtitle, LockVault.PIN_MIN),
                         icon = Icons.Outlined.Password,
                         showChevron = true,
                         onClick = { c.appLock.request = PinRequest.CHANGE },
                     )
                     val bioAvailable = remember { c.appLock.biometricAvailable() }
                     GroupSwitch(
-                        "Unlock with fingerprint",
-                        if (bioAvailable || c.vault.biometricEnabled)
-                            "Only strong biometrics such as your fingerprint, checked by the phone's secure hardware. The PIN is still needed after a restart and every 72 hours."
-                        else "Set up a fingerprint on this phone first",
+                        stringResource(R.string.lock_fingerprint),
+                        stringResource(if (bioAvailable || c.vault.biometricEnabled) R.string.lock_fingerprint_settings_subtitle else R.string.lock_fingerprint_unavailable),
                         c.vault.biometricEnabled,
                         Icons.Outlined.Fingerprint,
                         enabled = bioAvailable || c.vault.biometricEnabled,
@@ -138,36 +136,42 @@ fun SettingsScreen() {
                         } else if (bioAvailable) {
                             val activity = context.findActivity() ?: return@GroupSwitch
                             val cipher = c.vault.biometricEnrolCipher() ?: run {
-                                android.widget.Toast.makeText(context, "Couldn't set up fingerprint unlock", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, R.string.lock_fingerprint_setup_failed, android.widget.Toast.LENGTH_SHORT).show()
                                 return@GroupSwitch
                             }
-                            c.appLock.biometricPrompt(activity, "Turn on fingerprint unlock", cipher, subtitle = "Confirm your fingerprint") { unlocked ->
+                            c.appLock.biometricPrompt(activity, context.getString(R.string.lock_fingerprint_enable_title), cipher, subtitle = context.getString(R.string.lock_fingerprint_enable_subtitle)) { unlocked ->
                                 if (!c.vault.finishBiometricEnrol(unlocked)) {
-                                    android.widget.Toast.makeText(context, "Couldn't set up fingerprint unlock", android.widget.Toast.LENGTH_SHORT).show()
+                                    android.widget.Toast.makeText(context, R.string.lock_fingerprint_setup_failed, android.widget.Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
                     }
                     GroupChoice(
-                        "Lock again",
+                        stringResource(R.string.lock_again),
                         listOf(
-                            0 to "As soon as you leave the app",
-                            60 to "After 1 minute away",
-                            300 to "After 5 minutes away",
-                            900 to "After 15 minutes away",
-                            3600 to "After 1 hour away",
-                            -1 to "Only when the app restarts",
-                        ),
+                            0 to R.string.lock_again_immediately,
+                            60 to R.string.lock_again_1m,
+                            300 to R.string.lock_again_5m,
+                            900 to R.string.lock_again_15m,
+                            3600 to R.string.lock_again_1h,
+                            -1 to R.string.lock_again_restart,
+                        ).map { (v, label) -> v to stringResource(label) },
                         s.appLockTimeout,
                         Icons.Outlined.Timer,
                     ) { v -> update { it.copy(appLockTimeout = v) } }
                 }
                 GroupSwitch(
-                    "Hide in screenshots and recent apps",
-                    "Screenshots, screen recordings and the recent apps view show a blank screen. The locked folder and the lock screen are always hidden",
-                    s.hideContent,
+                    stringResource(R.string.hide_screenshots),
+                    stringResource(R.string.hide_screenshots_subtitle),
+                    s.hideScreenshots,
                     Icons.Outlined.VisibilityOff,
-                ) { v -> update { it.copy(hideContent = v) } }
+                ) { v -> update { it.copy(hideScreenshots = v) } }
+                GroupSwitch(
+                    stringResource(R.string.hide_recents),
+                    stringResource(R.string.hide_recents_subtitle),
+                    s.hideRecents,
+                    Icons.Outlined.Layers,
+                ) { v -> update { it.copy(hideRecents = v) } }
                 val canBioPin = remember { c.appLock.canUseBiometricPin() }
                 GroupSwitch(
                     "Fingerprint for the locked folder",
