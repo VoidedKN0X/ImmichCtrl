@@ -273,7 +273,7 @@ fun AccountsScreen() {
                     val isActive = a.key == active?.account?.key
                     GroupRow(
                         a.name.ifBlank { a.email },
-                        listOfNotNull(a.serverName, a.serverVersion, if (a.isEncrypted) null else "HTTP").joinToString("  ·  "),
+                        listOfNotNull(a.serverName, a.serverVersion, if (a.isEncrypted) null else "HTTP").joinToString(Strings.str(R.string.list_separator_wide)),
                         onClick = { if (!isActive) scope.launch { c.sessions.switchTo(a.key) } },
                         trailing = {
                             if (isActive) Icon(Icons.Filled.Check, stringResource(R.string.active), tint = MaterialTheme.colorScheme.primary)

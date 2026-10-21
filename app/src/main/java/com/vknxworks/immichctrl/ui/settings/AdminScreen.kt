@@ -124,7 +124,7 @@ fun AdminScreen() {
                                 listOfNotNull(
                                     "%,d photos, %,d videos".format(u.photos, u.videos),
                                     u.quotaSizeInBytes?.let { Strings.str(R.string.usage_of_quota, formatBytes(u.usage), formatBytes(it)) } ?: formatBytes(u.usage),
-                                ).joinToString("  ·  "),
+                                ).joinToString(Strings.str(R.string.list_separator_wide)),
                                 icon = Icons.Outlined.Person,
                             )
                         }
@@ -144,7 +144,7 @@ fun AdminScreen() {
                             if (st.waiting > 0) Strings.str(R.string.waiting, st.waiting) else null,
                             if (st.delayed > 0) Strings.str(R.string.delayed, st.delayed) else null,
                             if (st.failed > 0) Strings.str(R.string.failed, st.failed) else null,
-                        ).joinToString("  ·  ").ifEmpty { Strings.str(R.string.idle) },
+                        ).joinToString(Strings.str(R.string.list_separator_wide)).ifEmpty { Strings.str(R.string.idle) },
                         trailing = { Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         onClick = { open = q },
                     )

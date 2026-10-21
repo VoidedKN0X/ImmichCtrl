@@ -147,7 +147,7 @@ fun YouScreen() {
                 Spacer(Modifier.height(14.dp))
                 Text(acc.name.ifBlank { acc.email }, style = MaterialTheme.typography.headlineMedium)
                 Text(
-                    listOfNotNull(acc.email.takeIf { it.isNotBlank() && it != acc.name }, if (acc.isAdmin) Strings.str(R.string.admin) else null).joinToString("  ·  "),
+                    listOfNotNull(acc.email.takeIf { it.isNotBlank() && it != acc.name }, if (acc.isAdmin) Strings.str(R.string.admin) else null).joinToString(Strings.str(R.string.list_separator_wide)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -217,7 +217,7 @@ fun YouScreen() {
                             AuthType.OAUTH -> Strings.str(R.string.signed_in_with_oauth)
                             AuthType.PASSWORD -> null
                         },
-                    ).joinToString("  ·  ").ifEmpty { null },
+                    ).joinToString(Strings.str(R.string.list_separator_wide)).ifEmpty { null },
                     icon = Icons.Filled.Dns,
                 )
                 // Two saved addresses: switching is always the user's choice, never automatic.

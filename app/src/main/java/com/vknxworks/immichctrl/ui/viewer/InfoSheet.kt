@@ -107,7 +107,7 @@ private fun LocalInfo(asset: Asset) {
         InfoRow(
             Icons.Outlined.Image,
             asset.fileName ?: stringResource(R.string.photo),
-            listOfNotNull(asset.fileSize?.let { formatBytes(it) }, asset.durationMs?.let { com.vknxworks.immichctrl.ui.components.formatClock(it) }).joinToString("  ·  "),
+            listOfNotNull(asset.fileSize?.let { formatBytes(it) }, asset.durationMs?.let { com.vknxworks.immichctrl.ui.components.formatClock(it) }).joinToString(Strings.str(R.string.list_separator_wide)),
         )
     }
 }
@@ -180,7 +180,7 @@ private fun InfoContent(
         InfoRow(
             Icons.Outlined.CalendarToday,
             longDate(local.toLocalDate()),
-            listOfNotNull(local.format(DateTimeFormatter.ofPattern("HH:mm")), exif?.timeZone, if (canEdit) Strings.str(R.string.tap_to_change) else null).joinToString("  ·  "),
+            listOfNotNull(local.format(DateTimeFormatter.ofPattern("HH:mm")), exif?.timeZone, if (canEdit) Strings.str(R.string.tap_to_change) else null).joinToString(Strings.str(R.string.list_separator_wide)),
             onClick = if (canEdit) onEditDate else null,
         )
         InfoRow(
@@ -190,7 +190,7 @@ private fun InfoContent(
                 exif?.fileSizeInByte?.let { formatBytes(it) },
                 if (exif?.exifImageWidth != null && exif.exifImageHeight != null) "${exif.exifImageWidth} × ${exif.exifImageHeight}" else null,
                 exif?.exifImageWidth?.let { w -> exif.exifImageHeight?.let { h -> "%.1f MP".format(Locale.US, w * h / 1_000_000.0) } },
-            ).joinToString("  ·  "),
+            ).joinToString(Strings.str(R.string.list_separator_wide)),
         )
         if (exif != null && (exif.make != null || exif.model != null)) {
             InfoRow(
@@ -202,7 +202,7 @@ private fun InfoContent(
                     exif.exposureTime?.let { "${it}s" },
                     exif.focalLength?.let { "%.0f mm".format(Locale.US, it) },
                     exif.iso?.let { Strings.str(R.string.iso, it) },
-                ).joinToString("  ·  "),
+                ).joinToString(Strings.str(R.string.list_separator_wide)),
             )
         }
         val lat = exif?.latitude
@@ -270,7 +270,7 @@ private fun InfoContent(
             }
         }
         if (d.owner != null || !mine) {
-            InfoRow(Icons.Outlined.Person, if (mine) stringResource(R.string.you) else d.owner?.name ?: stringResource(R.string.someone_else), if (mine) stringResource(R.string.owner) else listOfNotNull(Strings.str(R.string.owner), d.owner?.email).joinToString("  ·  "))
+            InfoRow(Icons.Outlined.Person, if (mine) stringResource(R.string.you) else d.owner?.name ?: stringResource(R.string.someone_else), if (mine) stringResource(R.string.owner) else listOfNotNull(Strings.str(R.string.owner), d.owner?.email).joinToString(Strings.str(R.string.list_separator_wide)))
         }
     }
 }

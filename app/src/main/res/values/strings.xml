@@ -872,4 +872,8 @@
     <string name="tap_to_change">Tap to change</string>
     <string name="coords_open_in_maps">%1$s, %2$s  ·  Open in maps</string>
     <string name="certificate_problem">certificate problem</string>
+
+    <!-- Whole sentences instead of joined pieces -->
+    <string name="list_separator">" · "</string>
+    <string name="list_separator_wide">"  ·  "</string>
 </resources>

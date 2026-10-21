@@ -302,7 +302,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                         val dt = current.localDateTime
                         Text(dt.format(titleDate), style = MaterialTheme.typography.titleMedium, color = Color.White)
                         Text(
-                            listOfNotNull(dt.format(titleTime), current.city, current.country, if (current.isLocalOnly) Strings.str(R.string.only_on_this_phone) else null).joinToString("  ·  "),
+                            listOfNotNull(dt.format(titleTime), current.city, current.country, if (current.isLocalOnly) Strings.str(R.string.only_on_this_phone) else null).joinToString(Strings.str(R.string.list_separator_wide)),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.8f),
                             maxLines = 1,
