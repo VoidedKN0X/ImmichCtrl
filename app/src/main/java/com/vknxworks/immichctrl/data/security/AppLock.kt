@@ -116,9 +116,15 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
     @Volatile private var exemptTrip = false
 
     fun onBackground() {
-        if (prompting) return
         val now = SystemClock.elapsedRealtime()
         backgroundedAt = now
+        if (prompting) {
+            // The system prompt can open the phone's screen-lock page, which counts like a trip the app
+            // started: no lock right away, but staying away long still locks when you come back.
+            exemptTrip = true
+            expectReturnAt = 0L
+            return
+        }
         // Only right after the app opened something itself; leaving later still counts.
         exemptTrip = expectReturnAt > 0 && now - expectReturnAt < 5_000
         expectReturnAt = 0L
@@ -206,14 +212,13 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
             activity,
             ContextCompat.getMainExecutor(activity),
             object : BiometricPrompt.AuthenticationCallback() {
+                // backgroundedAt is left alone: onForeground() measures the time away, also for this trip.
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     prompting = false
-                    backgroundedAt = null
                     onResult(true)
                 }
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     prompting = false
-                    backgroundedAt = null
                     onResult(false)
                 }
             },

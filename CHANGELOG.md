@@ -4,6 +4,16 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.15
+
+### Security
+
+- **The app lock now also counts time away while an unlock prompt is open.** When you left ImmichCtrl while the phone's fingerprint or screen-lock prompt was showing (for example the one for leaving read-only mode), the time you were away wasn't counted, so ImmichCtrl didn't lock when you came back, however long you'd been gone. Now that trip counts like opening the share sheet or another app from ImmichCtrl: it doesn't lock just for showing the prompt, but if you stay away for 5 minutes or longer (or your chosen lock time, if that's longer), you have to unlock again.
+
+### Privacy
+
+- **No hidden dependency list in the app file any more**: the build tools used to tuck an encrypted list of the libraries ImmichCtrl is built with into the APK's signature block. Only Google can read it, so nobody checking the app could see what it holds. It's now left out, the same as in the other Ctrl apps. Nothing changes in how the app works.
+
 ## 0.3.14
 
 ### Changed
