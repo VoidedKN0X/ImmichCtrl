@@ -72,6 +72,7 @@ import com.vknxworks.immichctrl.data.lock.LockVault
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.Layers
 import com.vknxworks.immichctrl.data.security.PinRequest
+import com.vknxworks.immichctrl.Strings
 
 @Composable
 fun SettingsScreen() {
@@ -84,7 +85,7 @@ fun SettingsScreen() {
     val session by c.sessions.active.collectAsStateWithLifecycle()
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Settings")
+        ScreenTopBar(stringResource(R.string.settings))
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
             Group(stringResource(R.string.group_appearance)) {
                 GroupChoice(stringResource(R.string.theme), ThemeChoice.entries.map { it to stringResource(it.label) }, s.theme, Icons.Outlined.DarkMode) { v -> update { it.copy(theme = v) } }
@@ -93,12 +94,12 @@ fun SettingsScreen() {
                 }
             }
             if (session?.account?.isAdmin == true) {
-                Group("Notifications", footer = "Server alerts are checked about once an hour. Only shown on admin accounts.") {
-                    GroupSwitch("Notify me about the server", "Failed jobs, low disk space and new Immich releases", s.adminAlerts, Icons.Outlined.NotificationsActive) { v ->
+                Group(stringResource(R.string.notifications), footer = stringResource(R.string.server_alerts_are_checked_about_once)) {
+                    GroupSwitch(stringResource(R.string.notify_me_about_the_server), stringResource(R.string.failed_jobs_low_disk_space_and_new), s.adminAlerts, Icons.Outlined.NotificationsActive) { v ->
                         update { it.copy(adminAlerts = v) }
                     }
                     if (s.adminAlerts) {
-                        GroupChoice("Warn when the disk is", listOf(75, 80, 85, 90, 95).map { it to "$it% full" }, s.adminDiskPercent, Icons.Outlined.SdStorage) { v ->
+                        GroupChoice(stringResource(R.string.warn_when_the_disk_is), listOf(75, 80, 85, 90, 95).map { it to Strings.str(R.string.disk_percent_full, it) }, s.adminDiskPercent, Icons.Outlined.SdStorage) { v ->
                             update { it.copy(adminDiskPercent = v) }
                         }
                     }
@@ -174,8 +175,8 @@ fun SettingsScreen() {
                 ) { v -> update { it.copy(hideRecents = v) } }
                 val canBioPin = remember { c.appLock.canUseBiometricPin() }
                 GroupSwitch(
-                    "Fingerprint for the locked folder",
-                    if (canBioPin) "Remembers your locked-folder PIN on this phone, protected by the fingerprint" else "Needs a fingerprint (or secure face unlock) set up on the phone",
+                    stringResource(R.string.fingerprint_for_the_locked_folder),
+                    if (canBioPin) stringResource(R.string.remembers_your_locked_folder_pin_on) else stringResource(R.string.needs_a_fingerprint_or_secure_face),
                     s.lockedFolderBiometric && canBioPin,
                     Icons.Outlined.Fingerprint,
                 ) { v ->
@@ -183,69 +184,69 @@ fun SettingsScreen() {
                     update { it.copy(lockedFolderBiometric = v) }
                     if (!v) scope.launch { session?.account?.key?.let { c.appLock.forgetPin(it) } }
                 }
-                GroupSwitch("Read-only mode", "Only the timeline, nothing can be changed. Good for handing the phone to a child.", s.readOnly, Icons.Outlined.ChildCare) { v ->
+                GroupSwitch(stringResource(R.string.read_only_mode), stringResource(R.string.only_the_timeline_nothing_can_be), s.readOnly, Icons.Outlined.ChildCare) { v ->
                     update { it.copy(readOnly = v) }
                 }
                 GroupSwitch(
-                    "Show maps",
-                    "Map tiles come from your server's map provider (Immich's tile server unless your admin chose another), which sees your IP address and the area shown",
+                    stringResource(R.string.show_maps),
+                    stringResource(R.string.map_tiles_come_from_your_server_s),
                     s.showMaps,
                     Icons.Outlined.Map,
                 ) { v -> update { it.copy(showMaps = v) } }
             }
-            Group("Photos", footer = "Pinch the grid to change how many photos fit in a row.") {
+            Group(stringResource(R.string.photos), footer = stringResource(R.string.pinch_the_grid_to_change_how_many)) {
                 GroupChoice(
-                    "Photos per row",
+                    stringResource(R.string.photos_per_row),
                     (SettingsRepository.MIN_COLUMNS..SettingsRepository.MAX_COLUMNS).map { it to it.toString() },
                     s.columns,
                     Icons.Outlined.GridView,
                 ) { v -> update { it.copy(columns = v) } }
-                GroupChoice("Group by", GroupBy.entries.map { it to it.label }, s.groupBy, Icons.Outlined.CalendarViewDay) { v -> update { it.copy(groupBy = v) } }
-                GroupSwitch("Memories", "\"On this day\" at the top of Photos", s.showMemories, Icons.Outlined.AutoAwesome) { v -> update { it.copy(showMemories = v) } }
-                GroupSwitch("Partners' photos in Photos", "For partners you've chosen to show there", s.withPartners, Icons.Outlined.People) { v ->
+                GroupChoice(stringResource(R.string.group_by), GroupBy.entries.map { it to it.label }, s.groupBy, Icons.Outlined.CalendarViewDay) { v -> update { it.copy(groupBy = v) } }
+                GroupSwitch(stringResource(R.string.widget_memories), stringResource(R.string.on_this_day_at_the_top_of_photos), s.showMemories, Icons.Outlined.AutoAwesome) { v -> update { it.copy(showMemories = v) } }
+                GroupSwitch(stringResource(R.string.partners_photos_in_photos), stringResource(R.string.for_partners_you_ve_chosen_to_show), s.withPartners, Icons.Outlined.People) { v ->
                     update { it.copy(withPartners = v) }
                     Sources.refreshAll()
                 }
-                GroupSwitch("Ask before moving to the trash", null, s.confirmDelete, Icons.Outlined.DeleteOutline) { v -> update { it.copy(confirmDelete = v) } }
+                GroupSwitch(stringResource(R.string.ask_before_moving_to_the_trash), null, s.confirmDelete, Icons.Outlined.DeleteOutline) { v -> update { it.copy(confirmDelete = v) } }
             }
-            Group("Viewer") {
-                GroupSwitch("Load originals when zooming", "Sharper zoomed-in photos, uses more data", s.loadOriginal, Icons.Outlined.HighQuality) { v ->
+            Group(stringResource(R.string.viewer)) {
+                GroupSwitch(stringResource(R.string.load_originals_when_zooming), stringResource(R.string.sharper_zoomed_in_photos_uses_more), s.loadOriginal, Icons.Outlined.HighQuality) { v ->
                     update { it.copy(loadOriginal = v) }
                 }
-                GroupSwitch("Play videos automatically", null, s.autoPlayVideos, Icons.Outlined.PlayCircle) { v -> update { it.copy(autoPlayVideos = v) } }
-                GroupSwitch("Loop videos", null, s.loopVideos, Icons.Outlined.Repeat) { v -> update { it.copy(loopVideos = v) } }
+                GroupSwitch(stringResource(R.string.play_videos_automatically), null, s.autoPlayVideos, Icons.Outlined.PlayCircle) { v -> update { it.copy(autoPlayVideos = v) } }
+                GroupSwitch(stringResource(R.string.loop_videos), null, s.loopVideos, Icons.Outlined.Repeat) { v -> update { it.copy(loopVideos = v) } }
             }
-            Group("On this phone") {
-                GroupSwitch("Show photos from this phone", "Photos not backed up yet appear in the timeline", s.showLocal, Icons.Outlined.PhoneAndroid) { v ->
+            Group(stringResource(R.string.on_this_phone)) {
+                GroupSwitch(stringResource(R.string.show_photos_from_this_phone), stringResource(R.string.photos_not_backed_up_yet_appear_in), s.showLocal, Icons.Outlined.PhoneAndroid) { v ->
                     update { it.copy(showLocal = v) }
                     Sources.refreshAll()
                 }
-                GroupSwitch("Backup status on thumbnails", "A cloud badge on photos that are only on the phone, or on both", s.storageIndicator, Icons.Outlined.CloudDone) { v ->
+                GroupSwitch(stringResource(R.string.backup_status_on_thumbnails), stringResource(R.string.a_cloud_badge_on_photos_that_are), s.storageIndicator, Icons.Outlined.CloudDone) { v ->
                     update { it.copy(storageIndicator = v) }
                 }
-                GroupChoice("Share size", ShareSize.entries.map { it to it.label }, s.shareSize, Icons.Outlined.Share) { v -> update { it.copy(shareSize = v) } }
+                GroupChoice(stringResource(R.string.share_size), ShareSize.entries.map { it to it.label }, s.shareSize, Icons.Outlined.Share) { v -> update { it.copy(shareSize = v) } }
                 GroupSwitch(
-                    "Remove location when sharing",
-                    "Takes the GPS position out of JPEG, PNG and WebP photos you send to other apps. Videos and HEIC photos keep theirs.",
+                    stringResource(R.string.remove_location_when_sharing),
+                    stringResource(R.string.takes_the_gps_position_out_of_jpeg),
                     s.shareStripLocation,
                     Icons.Outlined.LocationOff,
                 ) { v -> update { it.copy(shareStripLocation = v) } }
             }
-            Group("Slideshow") {
-                GroupChoice("Each photo shows for", listOf(3, 5, 8, 12, 20).map { it to "$it seconds" }, s.slideSeconds, Icons.Outlined.Timer) { v ->
+            Group(stringResource(R.string.slideshow)) {
+                GroupChoice(stringResource(R.string.each_photo_shows_for), listOf(3, 5, 8, 12, 20).map { it to Strings.str(R.string.seconds, it) }, s.slideSeconds, Icons.Outlined.Timer) { v ->
                     update { it.copy(slideSeconds = v) }
                 }
-                GroupSwitch("Shuffle", null, s.slideShuffle, Icons.Outlined.Shuffle) { v -> update { it.copy(slideShuffle = v) } }
-                GroupSwitch("Start again at the end", null, s.slideLoop, Icons.Outlined.Repeat) { v -> update { it.copy(slideLoop = v) } }
+                GroupSwitch(stringResource(R.string.shuffle), null, s.slideShuffle, Icons.Outlined.Shuffle) { v -> update { it.copy(slideShuffle = v) } }
+                GroupSwitch(stringResource(R.string.start_again_at_the_end), null, s.slideLoop, Icons.Outlined.Repeat) { v -> update { it.copy(slideLoop = v) } }
             }
-            Group("Connection and help") {
-                GroupRow("Networking", "Public or home address, custom headers, client certificate", icon = Icons.Outlined.Wifi, showChevron = true, onClick = { nav.navigate(NetworkingRoute) })
-                GroupRow("Logs", "What the app has been doing, to help track down problems", icon = Icons.Outlined.BugReport, showChevron = true, onClick = { nav.navigate(LogsRoute) })
+            Group(stringResource(R.string.connection_and_help)) {
+                GroupRow(stringResource(R.string.networking), stringResource(R.string.public_or_home_address_custom), icon = Icons.Outlined.Wifi, showChevron = true, onClick = { nav.navigate(NetworkingRoute) })
+                GroupRow(stringResource(R.string.logs), stringResource(R.string.what_the_app_has_been_doing_to_help), icon = Icons.Outlined.BugReport, showChevron = true, onClick = { nav.navigate(LogsRoute) })
             }
-            Group("Storage on this phone", footer = "Thumbnails and previews are kept so the grid scrolls fast offline. Takes effect next time the app starts.") {
+            Group(stringResource(R.string.storage_on_this_phone), footer = stringResource(R.string.thumbnails_and_previews_are_kept_so)) {
                 GroupChoice(
-                    "Image cache",
-                    listOf(256 to "256 MB", 512 to "512 MB", 1024 to "1 GB", 2048 to "2 GB", 4096 to "4 GB"),
+                    stringResource(R.string.image_cache),
+                    listOf(256 to Strings.str(R.string.n_256_mb), 512 to Strings.str(R.string.n_512_mb), 1024 to Strings.str(R.string.n_1_gb), 2048 to Strings.str(R.string.n_2_gb), 4096 to Strings.str(R.string.n_4_gb)),
                     s.cacheMb,
                     Icons.Outlined.SdStorage,
                 ) { v -> update { it.copy(cacheMb = v) } }
@@ -265,9 +266,9 @@ fun AccountsScreen() {
     var removing by remember { mutableStateOf<String?>(null) }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Servers and accounts")
+        ScreenTopBar(stringResource(R.string.servers_and_accounts))
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
-            Group(footer = "Tap an account to switch to it, or the bin to sign out of it.") {
+            Group(footer = stringResource(R.string.tap_an_account_to_switch_to_it_or)) {
                 accounts.forEach { a ->
                     val isActive = a.key == active?.account?.key
                     GroupRow(
@@ -275,17 +276,17 @@ fun AccountsScreen() {
                         listOfNotNull(a.serverName, a.serverVersion, if (a.isEncrypted) null else "HTTP").joinToString("  ·  "),
                         onClick = { if (!isActive) scope.launch { c.sessions.switchTo(a.key) } },
                         trailing = {
-                            if (isActive) Icon(Icons.Filled.Check, "Active", tint = MaterialTheme.colorScheme.primary)
-                            else androidx.compose.material3.IconButton(onClick = { removing = a.key }) { Icon(Icons.Outlined.DeleteOutline, "Sign out") }
+                            if (isActive) Icon(Icons.Filled.Check, stringResource(R.string.active), tint = MaterialTheme.colorScheme.primary)
+                            else androidx.compose.material3.IconButton(onClick = { removing = a.key }) { Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.sign_out)) }
                         },
                     )
                 }
-                GroupRow("Add an account", icon = Icons.Filled.Add, onClick = { nav.navigate(AddAccountRoute) })
+                GroupRow(stringResource(R.string.add_an_account), icon = Icons.Filled.Add, onClick = { nav.navigate(AddAccountRoute) })
             }
         }
     }
     removing?.let { key ->
-        ConfirmDialog("Sign out of this account?", "You can add it again later.", "Sign out", onDismiss = { removing = null }) {
+        ConfirmDialog(stringResource(R.string.sign_out_of_this_account), stringResource(R.string.you_can_add_it_again_later), stringResource(R.string.sign_out), onDismiss = { removing = null }) {
             removing = null
             scope.launch { c.sessions.signOut(key) }
         }

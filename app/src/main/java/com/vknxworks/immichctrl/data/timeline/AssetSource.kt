@@ -19,6 +19,8 @@ import kotlinx.coroutines.sync.withPermit
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /**
  * A run of assets with a heading. Timelines have one per month whose contents load when scrolled
@@ -114,7 +116,7 @@ abstract class AssetSource(val key: String, protected val scope: CoroutineScope)
         }
     }
 
-    protected fun Throwable.readable(): String = message ?: this::class.simpleName ?: "Couldn't load"
+    protected fun Throwable.readable(): String = message ?: this::class.simpleName ?: Strings.str(R.string.couldn_t_load)
 }
 
 /**

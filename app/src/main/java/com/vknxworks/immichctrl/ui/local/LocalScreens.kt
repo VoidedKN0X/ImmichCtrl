@@ -80,6 +80,9 @@ import com.vknxworks.immichctrl.ui.theme.Gutter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /** The phone's own albums (Camera, Screenshots, WhatsApp Images...). */
 @Composable
@@ -93,15 +96,15 @@ fun LocalAlbumsScreen() {
     val albums = rememberLoader("local-albums-$tick") { withContext(Dispatchers.IO) { if (hasAccess) LocalMedia.albums(context) else emptyList() } }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("On this device") {
-            IconButton(onClick = { nav.navigate(FreeUpSpaceRoute) }) { Icon(Icons.Outlined.CleaningServices, "Free up space") }
+        ScreenTopBar(stringResource(R.string.on_this_device)) {
+            IconButton(onClick = { nav.navigate(FreeUpSpaceRoute) }) { Icon(Icons.Outlined.CleaningServices, stringResource(R.string.free_up_space)) }
         }
         if (!hasAccess) {
             MessageView(
                 Icons.Outlined.PhoneAndroid,
-                "Allow access to your photos",
-                "ImmichCtrl needs to see the photos on this phone to show and upload them.",
-                actionLabel = "Allow",
+                stringResource(R.string.allow_access_to_your_photos),
+                stringResource(R.string.immichctrl_needs_to_see_the_photos),
+                actionLabel = stringResource(R.string.allow),
                 onAction = { com.vknxworks.immichctrl.data.security.expectAppReturn(context); permission.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO, Manifest.permission.ACCESS_MEDIA_LOCATION)) },
             )
             return@Column
@@ -123,7 +126,7 @@ fun LocalAlbumsScreen() {
                         }
                         Text(a.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp, start = 2.dp))
                         Text(
-                            countLabel(a.count, "item") + if (a.id in c.settings.settings.value.backupAlbums || c.settings.settings.value.backupEverything) "  ·  Backed up" else "",
+                            if (a.id in c.settings.settings.value.backupAlbums || c.settings.settings.value.backupEverything) stringResource(R.string.count_backed_up, countLabel(a.count, R.plurals.count_items)) else countLabel(a.count, R.plurals.count_items),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 2.dp, bottom = 4.dp),
@@ -149,14 +152,14 @@ fun LocalAlbumScreen(bucketId: String, name: String) {
         topBar = {
             ScreenTopBar(name) {
                 if (notBackedUp.isNotEmpty() && !c.settings.settings.value.readOnly) {
-                    IconButton(onClick = { c.upload(notBackedUp) }) { Icon(Icons.Outlined.CloudUpload, "Upload all ${notBackedUp.size} not backed up") }
+                    IconButton(onClick = { c.upload(notBackedUp) }) { Icon(Icons.Outlined.CloudUpload, stringResource(R.string.upload_all_not_backed_up, notBackedUp.size)) }
                 }
             }
         },
         header = {
             item(key = "local-header") {
                 Text(
-                    if (notBackedUp.isEmpty()) "Everything here is backed up." else "${countLabel(notBackedUp.size, "item")} not backed up yet (no cloud icon). Select them to upload, or tap the cloud above.",
+                    if (notBackedUp.isEmpty()) stringResource(R.string.everything_here_is_backed_up) else stringResource(R.string.not_backed_up_yet_no_cloud_icon, countLabel(notBackedUp.size, R.plurals.count_items)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = Gutter, vertical = 8.dp),
@@ -191,7 +194,7 @@ fun FreeUpSpaceScreen() {
         val session = c.sessions.active.value ?: return
         plan = null
         error = null
-        progress = "Looking for backed-up photos…"
+        progress = Strings.str(R.string.looking_for_backed_up_photos)
         scope.launch {
             try {
                 plan = FreeUpSpace.plan(
@@ -209,29 +212,27 @@ fun FreeUpSpaceScreen() {
     }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Free up space")
+        ScreenTopBar(stringResource(R.string.free_up_space))
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 24.dp)) {
             Text(
-                "Removes photos and videos from this phone that are backed up to Immich and not in its trash. They stay on the server. " +
-                    "Removed items go to the phone's trash first, so empty it there to get the space back. " +
-                    "Photos other apps use (like WhatsApp chats) may look blurry or missing there afterwards; keep those albums below.",
+                stringResource(R.string.free_up_space_intro),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = Gutter, vertical = 4.dp),
             )
-            Group("Only items taken") {
+            Group(stringResource(R.string.only_items_taken)) {
                 FlowRow(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(30 to "Over a month ago", 90 to "Over 3 months ago", 365 to "Over a year ago", null to "Any time").forEach { (d, label) ->
+                    listOf(30 to Strings.str(R.string.over_a_month_ago), 90 to Strings.str(R.string.over_3_months_ago), 365 to Strings.str(R.string.over_a_year_ago), null to Strings.str(R.string.any_time)).forEach { (d, label) ->
                         FilterChip(olderThan == d, onClick = { olderThan = d; plan = null }, label = { Text(label) })
                     }
                 }
             }
-            Group("Keep on this phone") {
-                GroupSwitch("Favourites", null, keepFavorites) { keepFavorites = it; plan = null }
-                GroupSwitch("All photos", null, keepPhotos) { keepPhotos = it; plan = null }
-                GroupSwitch("All videos", null, keepVideos) { keepVideos = it; plan = null }
+            Group(stringResource(R.string.keep_on_this_phone)) {
+                GroupSwitch(stringResource(R.string.favourites), null, keepFavorites) { keepFavorites = it; plan = null }
+                GroupSwitch(stringResource(R.string.all_photos), null, keepPhotos) { keepPhotos = it; plan = null }
+                GroupSwitch(stringResource(R.string.all_videos), null, keepVideos) { keepVideos = it; plan = null }
             }
-            Group("Keep these albums") {
+            Group(stringResource(R.string.keep_these_albums)) {
                 albums.value.orEmpty().forEach { a ->
                     Row(
                         Modifier.fillMaxWidth().clickable {
@@ -245,7 +246,7 @@ fun FreeUpSpaceScreen() {
                             plan = null
                         })
                         Text(a.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                        Text(countLabel(a.count, "item"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(countLabel(a.count, R.plurals.count_items), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -262,21 +263,21 @@ fun FreeUpSpaceScreen() {
                             LinearProgressIndicator(Modifier.fillMaxWidth())
                         }
                         error != null -> Text(error.orEmpty(), color = MaterialTheme.colorScheme.error)
-                        p == null -> Text("Review what would be removed before anything happens.", style = MaterialTheme.typography.bodyMedium)
-                        p.items.isEmpty() -> Text("Nothing to remove with these options.", style = MaterialTheme.typography.titleMedium)
+                        p == null -> Text(stringResource(R.string.review_what_would_be_removed_before), style = MaterialTheme.typography.bodyMedium)
+                        p.items.isEmpty() -> Text(stringResource(R.string.nothing_to_remove_with_these_options), style = MaterialTheme.typography.titleMedium)
                         else -> {
-                            Text("${countLabel(p.items.size, "item")}  ·  ${formatBytes(p.bytes)}", style = MaterialTheme.typography.titleLarge)
+                            Text("${countLabel(p.items.size, R.plurals.count_items)}  ·  ${formatBytes(p.bytes)}", style = MaterialTheme.typography.titleLarge)
                             Text(
-                                "${p.items.count { !it.isVideo }} photos and ${p.items.count { it.isVideo }} videos, all confirmed on the server just now.",
+                                stringResource(R.string.photos_and_videos_all_confirmed_on, p.items.count { !it.isVideo }, p.items.count { it.isVideo }),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
                     if (p != null && p.items.isNotEmpty() && progress == null) {
-                        PillButton("Remove from this phone", onClick = { confirm = true }, modifier = Modifier.fillMaxWidth())
+                        PillButton(stringResource(R.string.remove_from_this_phone), onClick = { confirm = true }, modifier = Modifier.fillMaxWidth())
                     } else if (progress == null) {
-                        PillButton("Review", onClick = ::review, modifier = Modifier.fillMaxWidth())
+                        PillButton(stringResource(R.string.review), onClick = ::review, modifier = Modifier.fillMaxWidth())
                     }
                 }
             }
@@ -287,9 +288,9 @@ fun FreeUpSpaceScreen() {
     val p = plan
     if (confirm && p != null) {
         ConfirmDialog(
-            "Remove ${countLabel(p.items.size, "item")} from this phone?",
-            "They stay in Immich. Android will ask you to confirm, and they go to the phone's trash.",
-            "Remove",
+            stringResource(R.string.remove_from_this_phone_2, countLabel(p.items.size, R.plurals.count_items)),
+            stringResource(R.string.they_stay_in_immich_android_will_ask),
+            stringResource(R.string.remove_2),
             onDismiss = { confirm = false },
         ) {
             confirm = false
@@ -304,7 +305,7 @@ fun FreeUpSpaceScreen() {
                 Sources.refreshAll()
                 plan = null
                 if (removed > 0) {
-                    android.widget.Toast.makeText(context, "Removed ${countLabel(removed, "item")} (${formatBytes(p.items.take(removed).sumOf { it.size })})", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(context, Strings.str(R.string.removed, countLabel(removed, R.plurals.count_items), formatBytes(p.items.take(removed).sumOf { it.size })), android.widget.Toast.LENGTH_LONG).show()
                     nav.back()
                 }
             }

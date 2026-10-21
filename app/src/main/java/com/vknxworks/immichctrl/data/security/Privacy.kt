@@ -12,6 +12,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /**
  * Decides whether the window gets FLAG_SECURE (blank screenshots, screen recordings and casting of
@@ -37,7 +39,7 @@ fun SecureScreen() {
 }
 
 /** Copies text marked as sensitive, so Android hides it from the clipboard preview and keyboards' history. */
-fun copySensitive(context: Context, text: String, label: String = "ImmichCtrl") {
+fun copySensitive(context: Context, text: String, label: String = Strings.str(R.string.app_name)) {
     val clip = ClipData.newPlainText(label, text).apply {
         description.extras = PersistableBundle().apply { putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true) }
     }

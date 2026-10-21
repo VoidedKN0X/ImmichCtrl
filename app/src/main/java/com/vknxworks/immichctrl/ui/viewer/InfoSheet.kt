@@ -69,6 +69,10 @@ import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import com.vknxworks.immichctrl.ui.nav.TagRoute
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /** Everything Immich knows about a photo, with the description and rating editable by the owner. */
 @Composable
@@ -97,12 +101,12 @@ fun InfoSheet(asset: Asset, onDismiss: () -> Unit, onEditDate: () -> Unit = {}, 
 @Composable
 private fun LocalInfo(asset: Asset) {
     Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
-        SheetTitle("Details", "Only on this phone, not backed up")
+        SheetTitle(stringResource(R.string.details), stringResource(R.string.only_on_this_phone_not_backed_up))
         val local = asset.localDateTime
         InfoRow(Icons.Outlined.CalendarToday, longDate(local.toLocalDate()), local.format(DateTimeFormatter.ofPattern("HH:mm")))
         InfoRow(
             Icons.Outlined.Image,
-            asset.fileName ?: "Photo",
+            asset.fileName ?: stringResource(R.string.photo),
             listOfNotNull(asset.fileSize?.let { formatBytes(it) }, asset.durationMs?.let { com.vknxworks.immichctrl.ui.components.formatClock(it) }).joinToString("  ·  "),
         )
     }
@@ -131,15 +135,15 @@ private fun InfoContent(
 
     fun saveDescription() {
         if (description == original) return
-        c.runTask("Description saved") { c.api.updateAsset(d.id, "description" to description) }
+        c.runTask(Strings.str(R.string.description_saved)) { c.api.updateAsset(d.id, "description" to description) }
     }
     Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
-        SheetTitle("Details", if (!mine) d.owner?.name?.let { "Shared by $it" } else null)
+        SheetTitle(stringResource(R.string.details), if (!mine) d.owner?.name?.let { Strings.str(R.string.shared_by, it) } else null)
 
         if (canEdit) {
             OutlinedTextField(
                 description, { description = it },
-                label = { Text("Description") },
+                label = { Text(stringResource(R.string.description)) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 4.dp),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { saveDescription(); focus.clearFocus() }),
@@ -147,7 +151,7 @@ private fun InfoContent(
             )
             if (description != original) {
                 Text(
-                    "Save",
+                    stringResource(R.string.save),
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(horizontal = 28.dp, vertical = 4.dp).clickable { saveDescription(); focus.clearFocus() },
@@ -158,7 +162,7 @@ private fun InfoContent(
                 for (i in 1..5) {
                     Icon(
                         if (i <= rating) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                        "$i stars",
+                        pluralStringResource(R.plurals.stars, i, i),
                         tint = if (i <= rating) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(36.dp).padding(4.dp).clickable {
                             val next = if (rating == i) 0 else i
@@ -176,7 +180,7 @@ private fun InfoContent(
         InfoRow(
             Icons.Outlined.CalendarToday,
             longDate(local.toLocalDate()),
-            listOfNotNull(local.format(DateTimeFormatter.ofPattern("HH:mm")), exif?.timeZone, if (canEdit) "Tap to change" else null).joinToString("  ·  "),
+            listOfNotNull(local.format(DateTimeFormatter.ofPattern("HH:mm")), exif?.timeZone, if (canEdit) Strings.str(R.string.tap_to_change) else null).joinToString("  ·  "),
             onClick = if (canEdit) onEditDate else null,
         )
         InfoRow(
@@ -197,21 +201,21 @@ private fun InfoContent(
                     exif.fNumber?.let { "ƒ/%.1f".format(Locale.US, it) },
                     exif.exposureTime?.let { "${it}s" },
                     exif.focalLength?.let { "%.0f mm".format(Locale.US, it) },
-                    exif.iso?.let { "ISO $it" },
+                    exif.iso?.let { Strings.str(R.string.iso, it) },
                 ).joinToString("  ·  "),
             )
         }
         val lat = exif?.latitude
         val lon = exif?.longitude
         if (canEdit && lat == null) {
-            InfoRow(Icons.Outlined.Place, "No location", "Tap to add one", onClick = onEditLocation)
+            InfoRow(Icons.Outlined.Place, stringResource(R.string.no_location), stringResource(R.string.tap_to_add_one), onClick = onEditLocation)
         }
         if (lat != null && lon != null) {
             MiniMap(lat, lon, Modifier.padding(horizontal = 24.dp, vertical = 8.dp).fillMaxWidth().height(160.dp).clip(MaterialTheme.shapes.medium))
         }
         if (canEdit && lat != null) {
             Text(
-                "Change location",
+                stringResource(R.string.change_location),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 2.dp).clickable(onClick = onEditLocation),
@@ -220,8 +224,8 @@ private fun InfoContent(
         if (exif?.city != null || lat != null) {
             InfoRow(
                 Icons.Outlined.Place,
-                listOfNotNull(exif?.city, exif?.state, exif?.country).joinToString(", ").ifBlank { "Location" },
-                if (lat != null && lon != null) "%.5f, %.5f  ·  Open in maps".format(Locale.US, lat, lon) else null,
+                listOfNotNull(exif?.city, exif?.state, exif?.country).joinToString(", ").ifBlank { Strings.str(R.string.location) },
+                if (lat != null && lon != null) Strings.str(R.string.coords_open_in_maps, "%.5f".format(Locale.US, lat), "%.5f".format(Locale.US, lon)) else null,
                 onClick = if (lat != null && lon != null) {
                     {
                         runCatching {
@@ -235,7 +239,7 @@ private fun InfoContent(
 
         val people = d.people.orEmpty().filter { !it.isHidden }
         if (people.isNotEmpty()) {
-            Section("People")
+            Section(stringResource(R.string.people))
             FlowRow(Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 people.forEach { p ->
                     Column(
@@ -243,13 +247,13 @@ private fun InfoContent(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         PersonFace(p.id, p.updatedAt, Modifier.size(56.dp))
-                        Text(p.name.ifBlank { "Unnamed" }, style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                        Text(p.name.ifBlank { Strings.str(R.string.unnamed) }, style = MaterialTheme.typography.labelMedium, maxLines = 1)
                     }
                 }
             }
         }
         if (albums.isNotEmpty()) {
-            Section("In albums")
+            Section(stringResource(R.string.in_albums))
             FlowRow(Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 albums.forEach { (id, name) ->
                     AssistChip(onClick = { onDismiss(); nav.album(id) }, label = { Text(name) }, leadingIcon = { Icon(Icons.Outlined.PhotoAlbum, null, Modifier.size(18.dp)) })
@@ -258,7 +262,7 @@ private fun InfoContent(
         }
         val tags = d.tags.orEmpty()
         if (tags.isNotEmpty()) {
-            Section("Tags")
+            Section(stringResource(R.string.tags))
             FlowRow(Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 tags.forEach { t ->
                     AssistChip(onClick = { onDismiss(); nav.navigate(TagRoute(t.id, t.value)) }, label = { Text(t.value) }, leadingIcon = { Icon(Icons.Outlined.Sell, null, Modifier.size(18.dp)) })
@@ -266,7 +270,7 @@ private fun InfoContent(
             }
         }
         if (d.owner != null || !mine) {
-            InfoRow(Icons.Outlined.Person, if (mine) "You" else d.owner?.name ?: "Someone else", if (mine) "Owner" else listOfNotNull("Owner", d.owner?.email).joinToString("  ·  "))
+            InfoRow(Icons.Outlined.Person, if (mine) stringResource(R.string.you) else d.owner?.name ?: stringResource(R.string.someone_else), if (mine) stringResource(R.string.owner) else listOfNotNull(Strings.str(R.string.owner), d.owner?.email).joinToString("  ·  "))
         }
     }
 }

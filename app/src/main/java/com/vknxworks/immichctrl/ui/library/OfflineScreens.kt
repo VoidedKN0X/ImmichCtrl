@@ -30,6 +30,9 @@ import com.vknxworks.immichctrl.ui.theme.Gutter
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /** An album saved on the phone; works without a connection. */
 @Composable
@@ -45,21 +48,21 @@ fun OfflineAlbumScreen(albumId: String) {
         SelectionContext.SHARED,
         selectable = false,
         topBar = {
-            ScreenTopBar(album?.name ?: "Offline album") {
+            ScreenTopBar(album?.name ?: stringResource(R.string.offline_album)) {
                 IconButton(onClick = {
                     c.offline.sync(albumId, album?.name ?: "album")
-                    c.toast("Updating the offline copy")
-                }) { Icon(Icons.Outlined.Sync, "Update") }
-                IconButton(onClick = { c.offline.remove(albumId); nav.back() }) { Icon(Icons.Outlined.Delete, "Remove offline copy") }
+                    c.toast(Strings.str(R.string.updating_the_offline_copy))
+                }) { Icon(Icons.Outlined.Sync, stringResource(R.string.update)) }
+                IconButton(onClick = { c.offline.remove(albumId); nav.back() }) { Icon(Icons.Outlined.Delete, stringResource(R.string.remove_offline_copy)) }
             }
         },
         header = {
             item(key = "offline-header") {
                 Text(
-                    if (album == null) "Not saved" else listOfNotNull(
-                        countLabel(album.count, "item"),
+                    if (album == null) stringResource(R.string.not_saved) else listOfNotNull(
+                        countLabel(album.count, R.plurals.count_items),
                         formatBytes(c.offline.bytes(albumId)),
-                        if (album.updatedAt > 0) "Updated " + DateTimeFormatter.ofPattern("d MMM, HH:mm").format(Instant.ofEpochMilli(album.updatedAt).atZone(ZoneId.systemDefault())) else "Saving…",
+                        if (album.updatedAt > 0) stringResource(R.string.offline_updated, DateTimeFormatter.ofPattern("d MMM, HH:mm").format(Instant.ofEpochMilli(album.updatedAt).atZone(ZoneId.systemDefault()))) else stringResource(R.string.saving),
                     ).joinToString("  ·  "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -67,6 +70,6 @@ fun OfflineAlbumScreen(albumId: String) {
                 )
             }
         },
-        empty = { MessageView(Icons.Outlined.CloudOff, "Saving…", "The photos appear here as they download.") },
+        empty = { MessageView(Icons.Outlined.CloudOff, stringResource(R.string.saving), stringResource(R.string.the_photos_appear_here_as_they)) },
     )
 }

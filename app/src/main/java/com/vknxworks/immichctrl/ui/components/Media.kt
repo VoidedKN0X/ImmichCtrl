@@ -54,6 +54,10 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.PluralsRes
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 // ---------- Images ----------
 
@@ -161,7 +165,8 @@ fun formatBytes(bytes: Long): String {
     return "%.1f %s".format(v, units[i])
 }
 
-fun countLabel(n: Int, one: String, many: String = one + "s"): String = if (n == 1) "1 $one" else "%,d $many".format(n)
+/** "1 item", "2,345 photos": a count with its noun, from the plurals in strings.xml. */
+fun countLabel(n: Int, @PluralsRes noun: Int): String = Strings.plural(noun, n, "%,d".format(n))
 
 private val dayFmt = DateTimeFormatter.ofPattern("EEE d MMM")
 private val dayYearFmt = DateTimeFormatter.ofPattern("EEE d MMM yyyy")
@@ -172,8 +177,8 @@ private val shortDateFmt = DateTimeFormatter.ofPattern("d MMM yyyy")
 fun dayLabel(date: LocalDate): String {
     val today = LocalDate.now()
     return when {
-        date == today -> "Today"
-        date == today.minusDays(1) -> "Yesterday"
+        date == today -> Strings.str(R.string.today)
+        date == today.minusDays(1) -> Strings.str(R.string.yesterday)
         date.year == today.year -> date.format(dayFmt)
         else -> date.format(dayYearFmt)
     }
@@ -188,12 +193,12 @@ fun shortDate(iso: String?): String? = iso?.let { s ->
 
 /** "3 years ago" for memories. */
 fun yearsAgo(year: Int?): String {
-    if (year == null) return "On this day"
+    if (year == null) return Strings.str(R.string.on_this_day)
     val n = LocalDate.now().year - year
     return when {
-        n <= 0 -> "This year"
-        n == 1 -> "1 year ago"
-        else -> "$n years ago"
+        n <= 0 -> Strings.str(R.string.this_year)
+        n == 1 -> Strings.str(R.string.n_1_year_ago)
+        else -> Strings.str(R.string.years_ago, n)
     }
 }
 
@@ -262,7 +267,7 @@ fun TextInputDialog(
             )
         },
         confirmButton = { TextButton(onClick = { onConfirm(text.trim()) }, enabled = allowEmpty || text.isNotBlank()) { Text(confirm) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.lock_cancel)) } },
     )
 }
 
@@ -277,7 +282,7 @@ fun ConfirmDialog(title: String, body: String, confirm: String, destructive: Boo
                 Text(confirm, color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.lock_cancel)) } },
     )
 }
 

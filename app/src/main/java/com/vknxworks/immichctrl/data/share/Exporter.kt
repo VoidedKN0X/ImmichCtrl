@@ -24,6 +24,8 @@ import okio.sink
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /** Getting photos out of Immich: saving originals to the phone and sharing them to other apps. */
 object Exporter {
@@ -64,11 +66,11 @@ object Exporter {
             put(MediaStore.MediaColumns.IS_PENDING, 1)
         }
         val resolver = context.contentResolver
-        val uri = resolver.insert(collection, values) ?: throw IOException("Couldn't create $name")
+        val uri = resolver.insert(collection, values) ?: throw IOException(Strings.str(R.string.couldn_t_create, name))
         try {
             client.execute(client.request(client.url("/assets/$id/original")).build()).use { resp ->
-                val body = resp.body ?: throw IOException("Empty response")
-                (resolver.openOutputStream(uri) ?: throw IOException("Couldn't write $name")).use { out ->
+                val body = resp.body ?: throw IOException(Strings.str(R.string.empty_response))
+                (resolver.openOutputStream(uri) ?: throw IOException(Strings.str(R.string.couldn_t_write, name))).use { out ->
                     body.byteStream().copyTo(out)
                 }
             }
@@ -138,12 +140,12 @@ object Exporter {
                         // The location couldn't be removed for sure: never send the original then. Immich's
                         // preview is re-encoded without the photo's metadata; send that (checked too) instead.
                         target.delete()
-                        if (preview) throw IOException("Couldn't remove the location from $original")
+                        if (preview) throw IOException(Strings.str(R.string.couldn_t_remove_the_location_from, original))
                         val fallback = File(target.parentFile, original.substringBeforeLast('.') + ".jpg")
                         fetch(client, previewUrl, fallback)
                         if (!removeLocation(fallback, "image/jpeg")) {
                             fallback.delete()
-                            throw IOException("Couldn't remove the location from $original")
+                            throw IOException(Strings.str(R.string.couldn_t_remove_the_location_from, original))
                         }
                         AppLog.i("Share", "Sent a preview of a photo whose location couldn't be removed from the original")
                         fallback to "image/jpeg"
@@ -190,7 +192,7 @@ object Exporter {
 
     private suspend fun fetch(client: ImmichClient, url: okhttp3.HttpUrl, target: File) {
         client.execute(client.request(url).build()).use { resp ->
-            val body = resp.body ?: throw IOException("Empty response")
+            val body = resp.body ?: throw IOException(Strings.str(R.string.empty_response))
             target.sink().buffer().use { it.writeAll(body.source()) }
         }
     }

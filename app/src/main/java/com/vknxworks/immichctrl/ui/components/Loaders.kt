@@ -43,6 +43,9 @@ import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.UnknownHostException
 import kotlin.coroutines.cancellation.CancellationException
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 sealed interface Load<out T> {
     data object Loading : Load<Nothing>
@@ -51,13 +54,13 @@ sealed interface Load<out T> {
 }
 
 fun Throwable.friendlyMessage(): String = when (this) {
-    is ApiException -> message ?: "Server error"
-    is UnknownHostException -> "Can't reach the server - check the address and your connection"
-    is java.net.ConnectException -> "Connection refused - is the server running?"
-    is java.net.SocketTimeoutException -> "The server took too long to respond"
-    is javax.net.ssl.SSLException -> "Secure connection failed: ${message ?: "certificate problem"}"
-    is IOException -> message ?: "Network error"
-    else -> message ?: this::class.simpleName ?: "Something went wrong"
+    is ApiException -> message ?: Strings.str(R.string.server_error_2)
+    is UnknownHostException -> Strings.str(R.string.can_t_reach_the_server_check_the)
+    is java.net.ConnectException -> Strings.str(R.string.connection_refused_is_the_server)
+    is java.net.SocketTimeoutException -> Strings.str(R.string.the_server_took_too_long_to_respond)
+    is javax.net.ssl.SSLException -> Strings.str(R.string.secure_connection_failed_2, message ?: Strings.str(R.string.certificate_problem))
+    is IOException -> message ?: Strings.str(R.string.network_error)
+    else -> message ?: this::class.simpleName ?: Strings.str(R.string.something_went_wrong)
 }
 
 /** Loads a value once and keeps it for the life of the screen's back stack entry. */
@@ -200,17 +203,17 @@ fun ErrorView(message: String, modifier: Modifier = Modifier, onRetry: (() -> Un
     val scope = rememberCoroutineScope()
     val acc = session?.account
     if (acc?.localUrl == null) {
-        MessageView(Icons.Outlined.ErrorOutline, "Couldn't load this", message, modifier, actionLabel = onRetry?.let { "Retry" }, onAction = onRetry)
+        MessageView(Icons.Outlined.ErrorOutline, stringResource(R.string.couldn_t_load_this), message, modifier, actionLabel = onRetry?.let { Strings.str(R.string.retry) }, onAction = onRetry)
         return
     }
     MessageView(
         Icons.Outlined.ErrorOutline,
-        "Couldn't load this",
-        "$message\n\nConnected through your ${if (usingLocal) "home" else "public"} address.",
+        stringResource(R.string.couldn_t_load_this),
+        stringResource(if (usingLocal) R.string.error_via_home else R.string.error_via_public, message),
         modifier,
-        actionLabel = onRetry?.let { "Retry" },
+        actionLabel = onRetry?.let { Strings.str(R.string.retry) },
         onAction = onRetry,
-        secondaryLabel = if (usingLocal) "Use public address" else "Use home address",
+        secondaryLabel = if (usingLocal) stringResource(R.string.use_public_address) else stringResource(R.string.use_home_address),
         onSecondary = {
             scope.launch {
                 c.useAddress(!usingLocal)

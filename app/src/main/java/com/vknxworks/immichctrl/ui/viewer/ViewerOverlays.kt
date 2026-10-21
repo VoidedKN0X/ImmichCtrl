@@ -65,6 +65,9 @@ import com.vknxworks.immichctrl.ui.components.TextInputDialog
 import com.vknxworks.immichctrl.ui.components.rememberLoader
 import com.vknxworks.immichctrl.ui.components.runTask
 import com.vknxworks.immichctrl.ui.components.toast
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /** Where a [ratio] (w/h) image sits when fitted into a box of [w] x [h] pixels. */
 fun fitRect(w: Float, h: Float, ratio: Float): Rect {
@@ -133,8 +136,8 @@ fun OcrOverlay(asset: Asset, lines: List<OcrDto>, onClose: () -> Unit) {
                 MaterialTheme.colorScheme.primary,
                 null,
             ) {
-                com.vknxworks.immichctrl.data.security.copySensitive(c.context, o.text, "Text from photo")
-                c.toast("Copied \"${o.text.take(40)}\"")
+                com.vknxworks.immichctrl.data.security.copySensitive(c.context, o.text, Strings.str(R.string.text_from_photo))
+                c.toast(Strings.str(R.string.copied_2, o.text.take(40)))
             }
         }
         Row(
@@ -142,10 +145,10 @@ fun OcrOverlay(asset: Asset, lines: List<OcrDto>, onClose: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TextButton(onClick = {
-                com.vknxworks.immichctrl.data.security.copySensitive(c.context, lines.joinToString("\n") { it.text }, "Text from photo")
-                c.toast("Copied all text")
-            }) { Text(if (lines.isEmpty()) "No text found" else "Copy all text", color = Color.White) }
-            TextButton(onClick = onClose) { Text("Done", color = Color.White) }
+                com.vknxworks.immichctrl.data.security.copySensitive(c.context, lines.joinToString("\n") { it.text }, Strings.str(R.string.text_from_photo))
+                c.toast(Strings.str(R.string.copied_all_text))
+            }) { Text(if (lines.isEmpty()) stringResource(R.string.no_text_found) else stringResource(R.string.copy_all_text), color = Color.White) }
+            TextButton(onClick = onClose) { Text(stringResource(R.string.lock_done), color = Color.White) }
         }
     }
 }
@@ -164,7 +167,7 @@ fun FacesOverlay(asset: Asset, faces: List<FaceDto>, onChanged: () -> Unit, onCl
                 img,
                 f.boundingBoxX1 / w, f.boundingBoxY1 / h, f.boundingBoxX2 / w, f.boundingBoxY2 / h,
                 if (f.person == null) MaterialTheme.colorScheme.tertiary else Color.White,
-                f.person?.name?.ifBlank { "Unnamed" } ?: "Who is this?",
+                f.person?.name?.ifBlank { Strings.str(R.string.unnamed) } ?: stringResource(R.string.who_is_this),
             ) { editing = f }
         }
         Row(
@@ -172,12 +175,12 @@ fun FacesOverlay(asset: Asset, faces: List<FaceDto>, onChanged: () -> Unit, onCl
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                if (faces.isEmpty()) "No faces found" else "Tap a face to change who it is",
+                if (faces.isEmpty()) stringResource(R.string.no_faces_found) else stringResource(R.string.tap_a_face_to_change_who_it_is),
                 color = Color.White,
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(start = 16.dp),
             )
-            TextButton(onClick = onClose) { Text("Done", color = Color.White) }
+            TextButton(onClick = onClose) { Text(stringResource(R.string.lock_done), color = Color.White) }
         }
     }
     editing?.let { face -> FaceSheet(face, onDismiss = { editing = null }, onChanged = { editing = null; onChanged() }) }
@@ -189,9 +192,9 @@ private fun FaceSheet(face: FaceDto, onDismiss: () -> Unit, onChanged: () -> Uni
     val people = rememberLoader("face-people") { c.api.people(withHidden = false).people.filter { it.name.isNotBlank() }.sortedBy { it.name.lowercase() } }
     var naming by remember { mutableStateOf(false) }
     if (naming) {
-        TextInputDialog("New person", "Name", "Save", onDismiss = { naming = false }) { name ->
+        TextInputDialog(stringResource(R.string.new_person), stringResource(R.string.name), stringResource(R.string.save), onDismiss = { naming = false }) { name ->
             naming = false
-            c.runTask("Saved as $name") {
+            c.runTask(Strings.str(R.string.saved_as, name)) {
                 val p = c.api.createPerson(name)
                 c.api.reassignFace(face.id, p.id)
                 Sources.refreshAll()
@@ -201,11 +204,11 @@ private fun FaceSheet(face: FaceDto, onDismiss: () -> Unit, onChanged: () -> Uni
     }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         Column(Modifier.navigationBarsPadding()) {
-            SheetTitle(face.person?.name?.ifBlank { null }?.let { "This is $it?" } ?: "Who is this?", "Pick the right person, or add someone new")
-            ActionItem(Icons.Filled.Add, "Someone new") { naming = true }
+            SheetTitle(face.person?.name?.ifBlank { null }?.let { Strings.str(R.string.this_is, it) } ?: stringResource(R.string.who_is_this), stringResource(R.string.pick_the_right_person_or_add_someone))
+            ActionItem(Icons.Filled.Add, stringResource(R.string.someone_new)) { naming = true }
             if (face.person != null) {
-                ActionItem(Icons.Outlined.Delete, "Not a face, remove it", tint = MaterialTheme.colorScheme.error) {
-                    c.runTask("Face removed") { c.api.deleteFace(face.id); onChanged() }
+                ActionItem(Icons.Outlined.Delete, stringResource(R.string.not_a_face_remove_it), tint = MaterialTheme.colorScheme.error) {
+                    c.runTask(Strings.str(R.string.face_removed)) { c.api.deleteFace(face.id); onChanged() }
                 }
             }
             when (val s = people.state) {
@@ -220,7 +223,7 @@ private fun FaceSheet(face: FaceDto, onDismiss: () -> Unit, onChanged: () -> Uni
                     items(s.value, key = { it.id }) { p ->
                         Column(
                             Modifier.clickable {
-                                c.runTask("Changed to ${p.name}") {
+                                c.runTask(Strings.str(R.string.changed_to, p.name)) {
                                     c.api.reassignFace(face.id, p.id)
                                     Sources.refreshAll()
                                     onChanged()

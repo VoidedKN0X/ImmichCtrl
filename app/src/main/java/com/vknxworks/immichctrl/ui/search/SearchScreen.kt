@@ -81,8 +81,11 @@ import com.vknxworks.immichctrl.ui.photos.SelectionContext
 import com.vknxworks.immichctrl.ui.photos.SourceGrid
 import com.vknxworks.immichctrl.ui.photos.rememberPaged
 import com.vknxworks.immichctrl.ui.theme.Gutter
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
-private enum class Mode(val label: String) { SMART("Smart"), FILENAME("File name"), DESCRIPTION("Description"), TEXT("Text in photo") }
+private enum class Mode(val label: String) { SMART(Strings.str(R.string.smart)), FILENAME(Strings.str(R.string.file_name)), DESCRIPTION(Strings.str(R.string.description)), TEXT(Strings.str(R.string.text_in_photo)) }
 
 @Composable
 fun SearchScreen() {
@@ -109,15 +112,15 @@ fun SearchScreen() {
                     value = text,
                     onValueChange = { text = it },
                     placeholder = {
-                        Text(if (mode == Mode.SMART) "Search photos, e.g. \"dog on a beach\"" else "Search by ${mode.label.lowercase()}")
+                        Text(if (mode == Mode.SMART) stringResource(R.string.search_photos_e_g_dog_on_a_beach) else stringResource(R.string.search_by, mode.label.lowercase()))
                     },
                     leadingIcon = { Icon(Icons.Filled.Search, null) },
                     trailingIcon = {
                         Row {
-                            if (text.isNotEmpty()) IconButton(onClick = { text = ""; query = "" }) { Icon(Icons.Filled.Close, "Clear") }
+                            if (text.isNotEmpty()) IconButton(onClick = { text = ""; query = "" }) { Icon(Icons.Filled.Close, stringResource(R.string.clear)) }
                             IconButton(onClick = { editing = true }) {
                                 BadgedBox(badge = { if (filters.active > 0) Badge { Text(filters.active.toString()) } }) {
-                                    Icon(Icons.Outlined.Tune, "Filters")
+                                    Icon(Icons.Outlined.Tune, stringResource(R.string.filters))
                                 }
                             }
                         }
@@ -181,7 +184,7 @@ fun SearchScreen() {
             SelectionContext.TIMELINE,
             topBar = searchBar,
             groupBy = if (smart) GroupBy.MONTH else null,
-            empty = { MessageView(Icons.Outlined.ImageSearch, "No results", "Try different words, fewer filters, or another search type.") },
+            empty = { MessageView(Icons.Outlined.ImageSearch, stringResource(R.string.no_results), stringResource(R.string.try_different_words_fewer_filters_or)) },
         )
     }
 }
@@ -196,7 +199,7 @@ private fun Explore(onSearch: (String) -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = LocalBottomClearance.current + 24.dp)) {
         val ppl = people.value.orEmpty()
         if (ppl.isNotEmpty()) {
-            SectionHeader("People") { nav.navigate(PeopleRoute) }
+            SectionHeader(stringResource(R.string.people)) { nav.navigate(PeopleRoute) }
             LazyRow(contentPadding = PaddingValues(horizontal = Gutter), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 items(ppl, key = { it.id }) { p ->
                     Column(Modifier.width(76.dp).clickable { nav.person(p.id) }, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -208,7 +211,7 @@ private fun Explore(onSearch: (String) -> Unit) {
         }
         val pl = places.value.orEmpty()
         if (pl.isNotEmpty()) {
-            SectionHeader("Places") { nav.navigate(PlacesRoute) }
+            SectionHeader(stringResource(R.string.places)) { nav.navigate(PlacesRoute) }
             LazyRow(contentPadding = PaddingValues(horizontal = Gutter), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(pl, key = { it.value }) { item ->
                     Box(Modifier.size(112.dp).clip(MaterialTheme.shapes.medium).clickable { nav.navigate(PlaceRoute(item.value)) }) {
@@ -226,14 +229,14 @@ private fun Explore(onSearch: (String) -> Unit) {
                 }
             }
         }
-        SectionHeader("Browse", null)
+        SectionHeader(stringResource(R.string.browse), null)
         Column(Modifier.padding(horizontal = Gutter), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            BrowseRow(Icons.Outlined.FavoriteBorder, "Favourites") { nav.navigate(CollectionRoute("favorites")) }
-            BrowseRow(Icons.Outlined.VideoLibrary, "Videos") { nav.navigate(CollectionRoute("videos")) }
-            BrowseRow(Icons.Outlined.NewReleases, "Recently added") { nav.navigate(CollectionRoute("recent")) }
-            BrowseRow(Icons.Outlined.Screenshot, "Screenshots") { onSearch("screenshot") }
-            BrowseRow(Icons.Outlined.People, "People") { nav.navigate(PeopleRoute) }
-            BrowseRow(Icons.Outlined.Place, "Places") { nav.navigate(PlacesRoute) }
+            BrowseRow(Icons.Outlined.FavoriteBorder, stringResource(R.string.favourites)) { nav.navigate(CollectionRoute("favorites")) }
+            BrowseRow(Icons.Outlined.VideoLibrary, stringResource(R.string.videos)) { nav.navigate(CollectionRoute("videos")) }
+            BrowseRow(Icons.Outlined.NewReleases, stringResource(R.string.recently_added)) { nav.navigate(CollectionRoute("recent")) }
+            BrowseRow(Icons.Outlined.Screenshot, stringResource(R.string.screenshots)) { onSearch("screenshot") }
+            BrowseRow(Icons.Outlined.People, stringResource(R.string.people)) { nav.navigate(PeopleRoute) }
+            BrowseRow(Icons.Outlined.Place, stringResource(R.string.places)) { nav.navigate(PlacesRoute) }
         }
     }
 }
@@ -242,7 +245,7 @@ private fun Explore(onSearch: (String) -> Unit) {
 private fun SectionHeader(title: String, onAll: (() -> Unit)?) {
     Row(Modifier.fillMaxWidth().padding(start = Gutter, end = 8.dp, top = 16.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-        if (onAll != null) TextButton(onClick = onAll) { Text("See all") }
+        if (onAll != null) TextButton(onClick = onAll) { Text(stringResource(R.string.see_all)) }
     }
 }
 

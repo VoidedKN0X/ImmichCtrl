@@ -89,6 +89,9 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.geojson.Feature
 import org.maplibre.geojson.FeatureCollection
 import org.maplibre.geojson.Point
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /** Cities your photos were taken in, from Immich's explore data. */
 @Composable
@@ -99,14 +102,14 @@ fun PlacesScreen() {
         c.api.explore().firstOrNull { it.fieldName.contains("city") }?.items.orEmpty().sortedBy { it.value.lowercase() }
     }
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Places") {
-            IconButton(onClick = { nav.navigate(MapRoute) }) { Icon(Icons.Outlined.Map, "Map") }
+        ScreenTopBar(stringResource(R.string.places)) {
+            IconButton(onClick = { nav.navigate(MapRoute) }) { Icon(Icons.Outlined.Map, stringResource(R.string.map)) }
         }
         when (val s = places.state) {
             is Load.Loading -> LoadingView()
             is Load.Err -> ErrorView(s.message) { places.reload() }
             is Load.Ok -> if (s.value.isEmpty()) {
-                MessageView(Icons.Outlined.Place, "No places yet", "Places appear once Immich has read the location of your photos.")
+                MessageView(Icons.Outlined.Place, stringResource(R.string.no_places_yet), stringResource(R.string.places_appear_once_immich_has_read))
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(120.dp),
@@ -179,20 +182,20 @@ fun MapScreen() {
     }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("Map")
+        ScreenTopBar(stringResource(R.string.map))
         Row(
             Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()).padding(horizontal = Gutter, vertical = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            FilterChip(favoritesOnly, onClick = { favoritesOnly = !favoritesOnly }, label = { Text("Favourites") })
-            FilterChip(archived, onClick = { archived = !archived }, label = { Text("Include archived") })
-            listOf<Pair<Int?, String>>(null to "Any time", 1 to "Past year", 5 to "Past 5 years").forEach { (y, label) ->
+            FilterChip(favoritesOnly, onClick = { favoritesOnly = !favoritesOnly }, label = { Text(stringResource(R.string.favourites)) })
+            FilterChip(archived, onClick = { archived = !archived }, label = { Text(stringResource(R.string.include_archived)) })
+            listOf<Pair<Int?, String>>(null to Strings.str(R.string.any_time), 1 to Strings.str(R.string.past_year), 5 to Strings.str(R.string.past_5_years)).forEach { (y, label) ->
                 FilterChip(years == y, onClick = { years = y }, label = { Text(label) })
             }
         }
         markers.value?.let { all ->
             Text(
-                inView?.let { "${countLabel(it, "photo")} in view of ${"%,d".format(all.size)}" } ?: countLabel(all.size, "photo"),
+                inView?.let { Strings.str(R.string.in_view_of, countLabel(it, R.plurals.count_photos), "%,d".format(all.size)) } ?: countLabel(all.size, R.plurals.count_photos),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = Gutter, vertical = 2.dp),
@@ -201,15 +204,15 @@ fun MapScreen() {
         if (styleUrl == null) {
             MessageView(
                 Icons.Outlined.Map,
-                "Maps are off",
-                "Turn on Show maps in Settings, or ask your server's admin to turn on the map.",
+                stringResource(R.string.maps_are_off),
+                stringResource(R.string.turn_on_show_maps_in_settings_or_ask),
             )
         } else when (val s = markers.state) {
             is Load.Loading -> LoadingView()
             is Load.Err -> ErrorView(s.message) { markers.reload() }
             is Load.Ok -> {
                 if (s.value.isEmpty()) {
-                    MessageView(Icons.Outlined.Map, "Nothing on the map", "Photos show up here once they have a location.")
+                    MessageView(Icons.Outlined.Map, stringResource(R.string.nothing_on_the_map), stringResource(R.string.photos_show_up_here_once_they_have_a))
                 } else {
                     MapLibreView(s.value, styleUrl, accent, onAccent, onOpen = ::openAsset, onVisible = { inView = it }, modifier = Modifier.fillMaxSize().navigationBarsPadding())
                 }

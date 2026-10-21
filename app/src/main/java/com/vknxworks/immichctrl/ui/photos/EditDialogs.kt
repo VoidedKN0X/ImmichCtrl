@@ -50,6 +50,9 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /**
  * Pick a date, then a time. Returns the moment as ISO 8601 with the phone's offset, which is what
@@ -63,13 +66,13 @@ fun DateTimeDialog(initial: LocalDateTime, onDismiss: () -> Unit, onPick: (Strin
     if (step == 0) {
         DatePickerDialog(
             onDismissRequest = onDismiss,
-            confirmButton = { TextButton(onClick = { step = 1 }) { Text("Next") } },
-            dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+            confirmButton = { TextButton(onClick = { step = 1 }) { Text(stringResource(R.string.lock_next)) } },
+            dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.lock_cancel)) } },
         ) { DatePicker(dateState) }
     } else {
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("Time taken") },
+            title = { Text(stringResource(R.string.time_taken)) },
             text = { TimePicker(timeState) },
             confirmButton = {
                 TextButton(onClick = {
@@ -77,9 +80,9 @@ fun DateTimeDialog(initial: LocalDateTime, onDismiss: () -> Unit, onPick: (Strin
                     val local = date.atTime(timeState.hour, timeState.minute)
                     val zoned = local.atZone(ZoneId.systemDefault())
                     onPick(zoned.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-                }) { Text("Save") }
+                }) { Text(stringResource(R.string.save)) }
             },
-            dismissButton = { TextButton(onClick = { step = 0 }) { Text("Back") } },
+            dismissButton = { TextButton(onClick = { step = 0 }) { Text(stringResource(R.string.back)) } },
         )
     }
 }
@@ -102,10 +105,10 @@ fun LocationDialog(onDismiss: () -> Unit, onPick: (lat: Double, lon: Double, lab
     val parsed = coords.split(',').map { it.trim().toDoubleOrNull() }.takeIf { it.size == 2 && it.all { v -> v != null } }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Change location") },
+        title = { Text(stringResource(R.string.change_location)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(query, { query = it }, label = { Text("Search for a place") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(query, { query = it }, label = { Text(stringResource(R.string.search_for_a_place)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 LazyColumn(Modifier.heightIn(max = 240.dp)) {
                     items(results, key = { "${it.name}${it.latitude}${it.longitude}" }) { p ->
                         val label = listOfNotNull(p.name, p.admin1name, p.admin2name).joinToString(", ")
@@ -118,7 +121,7 @@ fun LocationDialog(onDismiss: () -> Unit, onPick: (lat: Double, lon: Double, lab
                 }
                 OutlinedTextField(
                     coords, { coords = it },
-                    label = { Text("Or coordinates: latitude, longitude") },
+                    label = { Text(stringResource(R.string.or_coordinates_latitude_longitude)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     modifier = Modifier.fillMaxWidth(),
@@ -132,9 +135,9 @@ fun LocationDialog(onDismiss: () -> Unit, onPick: (lat: Double, lon: Double, lab
                     val (lat, lon) = parsed!!
                     onPick(lat!!, lon!!, "%.5f, %.5f".format(Locale.US, lat, lon))
                 },
-            ) { Text("Use coordinates") }
+            ) { Text(stringResource(R.string.use_coordinates)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.lock_cancel)) } },
     )
 }
 
@@ -144,19 +147,19 @@ fun ShareSizeDialog(onDismiss: () -> Unit, onPick: (large: Boolean, remember: Bo
     var keep by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Share as") },
+        title = { Text(stringResource(R.string.share_as)) },
         text = {
             Column {
                 Text(ShareSize.ORIGINAL.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.fillMaxWidth().clickable { onPick(false, keep) }.padding(vertical = 12.dp))
                 Text(ShareSize.LARGE.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.fillMaxWidth().clickable { onPick(true, keep) }.padding(vertical = 12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { keep = !keep }) {
                     Checkbox(keep, { keep = it })
-                    Text("Always use this", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.always_use_this), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.lock_cancel)) } },
     )
 }
 
@@ -178,7 +181,7 @@ fun SharedLinkDialog(
     title: String,
     initial: LinkOptions = LinkOptions(),
     allowUploadOption: Boolean,
-    confirm: String = "Create link",
+    confirm: String = stringResource(R.string.create_link),
     onDismiss: () -> Unit,
     onConfirm: (LinkOptions) -> Unit,
 ) {
@@ -189,16 +192,16 @@ fun SharedLinkDialog(
         title = { Text(title) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(o.description, { o = o.copy(description = it) }, label = { Text("Description (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                Text("Stops working", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(o.description, { o = o.copy(description = it) }, label = { Text(stringResource(R.string.description_optional)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Text(stringResource(R.string.stops_working), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    listOf(null to "Never", 1 to "1 day", 7 to "7 days", 30 to "30 days").forEach { (d, label) ->
+                    listOf(null to Strings.str(R.string.never), 1 to Strings.str(R.string.n_1_day), 7 to Strings.str(R.string.n_7_days), 30 to Strings.str(R.string.n_30_days)).forEach { (d, label) ->
                         FilterChip(o.expiresInDays == d, onClick = { o = o.copy(expiresInDays = d) }, label = { Text(label) })
                     }
                 }
                 OutlinedTextField(
                     o.password, { o = o.copy(password = it) },
-                    label = { Text("Password (optional)") },
+                    label = { Text(stringResource(R.string.password_optional)) },
                     singleLine = true,
                     visualTransformation = if (showPassword) androidx.compose.ui.text.input.VisualTransformation.None
                     else androidx.compose.ui.text.input.PasswordVisualTransformation(),
@@ -207,19 +210,19 @@ fun SharedLinkDialog(
                         androidx.compose.material3.IconButton(onClick = { showPassword = !showPassword }) {
                             androidx.compose.material3.Icon(
                                 if (showPassword) androidx.compose.material.icons.Icons.Outlined.VisibilityOff else androidx.compose.material.icons.Icons.Outlined.Visibility,
-                                if (showPassword) "Hide password" else "Show password",
+                                if (showPassword) stringResource(R.string.hide_password) else stringResource(R.string.show_password),
                             )
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                ToggleRow("Allow downloads", o.allowDownload) { o = o.copy(allowDownload = it) }
-                if (allowUploadOption) ToggleRow("Let people add photos", o.allowUpload) { o = o.copy(allowUpload = it) }
-                ToggleRow("Show photo details", o.showMetadata) { o = o.copy(showMetadata = it) }
+                ToggleRow(stringResource(R.string.allow_downloads), o.allowDownload) { o = o.copy(allowDownload = it) }
+                if (allowUploadOption) ToggleRow(stringResource(R.string.let_people_add_photos), o.allowUpload) { o = o.copy(allowUpload = it) }
+                ToggleRow(stringResource(R.string.show_photo_details), o.showMetadata) { o = o.copy(showMetadata = it) }
             }
         },
         confirmButton = { TextButton(onClick = { onConfirm(o) }) { Text(confirm) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.lock_cancel)) } },
     )
 }
 

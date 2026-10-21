@@ -41,6 +41,8 @@ import com.vknxworks.immichctrl.ui.nav.LocalHideTabs
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.R
 
 /** Keeps a source alive for the screen's back stack entry and makes it reachable by key (for the viewer). */
 @Composable
@@ -87,7 +89,7 @@ fun SourceGrid(
     selectable: Boolean = true,
     groupBy: GroupBy? = null,
     state: LazyListState = rememberLazyListState(),
-    empty: @Composable () -> Unit = { MessageView(Icons.Outlined.PhotoLibrary, "Nothing here yet") },
+    empty: @Composable () -> Unit = { MessageView(Icons.Outlined.PhotoLibrary, stringResource(R.string.nothing_here_yet)) },
     header: (LazyListScope.() -> Unit)? = null,
 ) {
     val c = LocalContext.current.container

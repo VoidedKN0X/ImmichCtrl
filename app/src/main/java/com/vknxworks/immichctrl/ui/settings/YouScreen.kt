@@ -87,6 +87,7 @@ import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import com.vknxworks.immichctrl.ui.nav.SettingsRoute
 import com.vknxworks.immichctrl.ui.theme.Gutter
 import kotlinx.coroutines.launch
+import com.vknxworks.immichctrl.Strings
 
 private const val SPONSOR_URL = "https://github.com/sponsors/VoidedKN0X"
 private const val REPO_URL = "https://github.com/VoidedKN0X/ImmichCtrl"
@@ -111,42 +112,42 @@ fun YouScreen() {
     var newPassword by remember { mutableStateOf<String?>(null) }
     var avatarMenu by remember { mutableStateOf(false) }
     val pickAvatar = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) c.runTask("Profile picture updated") {
+        if (uri != null) c.runTask(Strings.str(R.string.profile_picture_updated)) {
             val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
-            val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } } ?: error("Couldn't read that picture")
+            val bytes = withContext(Dispatchers.IO) { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } } ?: error(Strings.str(R.string.couldn_t_read_that_picture))
             c.api.setProfileImage(bytes, mime, if (mime.endsWith("png")) "profile.png" else "profile.jpg")
             me.reload(silent = true)
         }
     }
 
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar("You")
+        ScreenTopBar(stringResource(R.string.you))
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp + LocalBottomClearance.current)) {
             Column(Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 8.dp, bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 val m = me.value
                 Box {
                     UserAvatar(acc.userId, acc.name, true, m?.profileChangedAt, m?.avatarColor, Modifier.size(96.dp).clip(CircleShape).clickable { avatarMenu = true })
                     Icon(
-                        Icons.Filled.PhotoCamera, "Change profile picture",
+                        Icons.Filled.PhotoCamera, stringResource(R.string.change_profile_picture),
                         Modifier.align(Alignment.BottomEnd).size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary).padding(5.dp),
                         tint = MaterialTheme.colorScheme.onPrimary,
                     )
                     DropdownMenu(avatarMenu, onDismissRequest = { avatarMenu = false }) {
-                        DropdownMenuItem(text = { Text("Choose a new picture") }, onClick = {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.choose_a_new_picture)) }, onClick = {
                             avatarMenu = false
                             com.vknxworks.immichctrl.data.security.expectAppReturn(context)
                             pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         })
-                        if (!m?.profileImagePath.isNullOrBlank()) DropdownMenuItem(text = { Text("Remove picture") }, onClick = {
+                        if (!m?.profileImagePath.isNullOrBlank()) DropdownMenuItem(text = { Text(stringResource(R.string.remove_picture)) }, onClick = {
                             avatarMenu = false
-                            c.runTask("Profile picture removed") { c.api.deleteProfileImage(); me.reload(silent = true) }
+                            c.runTask(Strings.str(R.string.profile_picture_removed)) { c.api.deleteProfileImage(); me.reload(silent = true) }
                         })
                     }
                 }
                 Spacer(Modifier.height(14.dp))
                 Text(acc.name.ifBlank { acc.email }, style = MaterialTheme.typography.headlineMedium)
                 Text(
-                    listOfNotNull(acc.email.takeIf { it.isNotBlank() && it != acc.name }, if (acc.isAdmin) "Admin" else null).joinToString("  ·  "),
+                    listOfNotNull(acc.email.takeIf { it.isNotBlank() && it != acc.name }, if (acc.isAdmin) Strings.str(R.string.admin) else null).joinToString("  ·  "),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -166,14 +167,14 @@ fun YouScreen() {
             val used = m?.quotaUsageInBytes
             val disk = storage.value
             if ((quota != null && used != null) || disk != null) {
-                Group("Storage") {
+                Group(stringResource(R.string.storage)) {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                         val (label, fraction) = if (quota != null && quota > 0 && used != null) {
-                            "${formatBytes(used)} of ${formatBytes(quota)} used" to (used.toFloat() / quota)
+                            Strings.str(R.string.of_used, formatBytes(used), formatBytes(quota)) to (used.toFloat() / quota)
                         } else if (disk != null) {
-                            "${disk.diskUse} of ${disk.diskSize} used on the server" to (disk.diskUsagePercentage.toFloat() / 100f)
+                            Strings.str(R.string.of_used_on_the_server, disk.diskUse, disk.diskSize) to (disk.diskUsagePercentage.toFloat() / 100f)
                         } else {
-                            "${formatBytes(used ?: 0)} used" to 0f
+                            Strings.str(R.string.used, formatBytes(used ?: 0)) to 0f
                         }
                         Text(label, style = MaterialTheme.typography.bodyLarge)
                         Spacer(Modifier.height(8.dp))
@@ -187,9 +188,8 @@ fun YouScreen() {
             if (major != null && major !in 2..3) {
                 Group {
                     GroupRow(
-                        "Server version not supported",
-                        "This server runs Immich ${acc.serverVersion}. ImmichCtrl is built for Immich 2.x and 3.x, so some things may not work." +
-                            if (major > 3) " Check for an app update." else " Update the server if you can.",
+                        stringResource(R.string.server_version_not_supported),
+                        stringResource(if (major > 3) R.string.server_too_new else R.string.server_too_old, acc.serverVersion.orEmpty()),
                         icon = Icons.Filled.Warning,
                         iconTint = MaterialTheme.colorScheme.error,
                     )
@@ -198,23 +198,23 @@ fun YouScreen() {
 
             Group {
                 GroupRow(
-                    "Backup",
-                    if (settings.backupEnabled) "On  ·  ${if (settings.backupWifiOnly) "Wi-Fi only" else "Wi-Fi and mobile data"}" else "Off",
+                    stringResource(R.string.backup),
+                    if (settings.backupEnabled) stringResource(if (settings.backupWifiOnly) R.string.backup_on_wifi else R.string.backup_on_wifi_mobile) else stringResource(R.string.off),
                     icon = Icons.Filled.CloudUpload,
                     showChevron = true,
                     onClick = { nav.navigate(BackupRoute) },
                 )
             }
 
-            Group("Server") {
+            Group(stringResource(R.string.server)) {
                 GroupRow(
                     acc.serverUrl,
                     listOfNotNull(
-                        acc.serverVersion?.let { "Immich $it" },
-                        if (acc.isEncrypted) null else "Not encrypted (HTTP)",
+                        acc.serverVersion?.let { Strings.str(R.string.immich_2, it) },
+                        if (acc.isEncrypted) null else Strings.str(R.string.not_encrypted_http_2),
                         when (acc.authType) {
-                            AuthType.API_KEY -> "Signed in with an API key"
-                            AuthType.OAUTH -> "Signed in with OAuth"
+                            AuthType.API_KEY -> Strings.str(R.string.signed_in_with_an_api_key)
+                            AuthType.OAUTH -> Strings.str(R.string.signed_in_with_oauth)
                             AuthType.PASSWORD -> null
                         },
                     ).joinToString("  ·  ").ifEmpty { null },
@@ -225,36 +225,36 @@ fun YouScreen() {
                 if (home != null) {
                     val onHome = acc.useLocalUrl
                     GroupRow(
-                        if (onHome) "Use public address" else "Use home address",
-                        "Now using the ${if (onHome) "home" else "public"} address: ${if (onHome) home else acc.serverUrl}",
+                        if (onHome) stringResource(R.string.use_public_address) else stringResource(R.string.use_home_address),
+                        stringResource(if (onHome) R.string.now_using_home else R.string.now_using_public, if (onHome) home else acc.serverUrl),
                         icon = if (onHome) Icons.Filled.Public else Icons.Filled.Home,
                         onClick = {
                             scope.launch {
                                 c.useAddress(!onHome)
-                                c.toast(if (onHome) "Using the public address" else "Using the home address")
+                                c.toast(if (onHome) Strings.str(R.string.using_the_public_address) else Strings.str(R.string.using_the_home_address))
                             }
                         },
                     )
                 }
-                GroupRow("Open in browser", icon = Icons.Filled.OpenInBrowser, onClick = {
+                GroupRow(stringResource(R.string.open_in_browser), icon = Icons.Filled.OpenInBrowser, onClick = {
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(acc.serverUrl))) }
                 })
                 if (acc.isAdmin) {
-                    GroupRow("Server administration", "Storage, users and background jobs", icon = Icons.Filled.AdminPanelSettings, showChevron = true, onClick = { nav.navigate(AdminRoute) })
+                    GroupRow(stringResource(R.string.server_administration), stringResource(R.string.storage_users_and_background_jobs), icon = Icons.Filled.AdminPanelSettings, showChevron = true, onClick = { nav.navigate(AdminRoute) })
                 }
                 if (storage.value != null && acc.isAdmin) {
-                    GroupRow("Server disk", "${storage.value!!.diskAvailable} free of ${storage.value!!.diskSize}", icon = Icons.Filled.Storage)
+                    GroupRow(stringResource(R.string.server_disk), stringResource(R.string.free_of, storage.value!!.diskAvailable, storage.value!!.diskSize), icon = Icons.Filled.Storage)
                 }
             }
 
             Group {
-                GroupRow("Settings", icon = Icons.Filled.Settings, showChevron = true, onClick = { nav.navigate(SettingsRoute) })
-                GroupRow("Servers and accounts", icon = Icons.Filled.SwapHoriz, showChevron = true, onClick = { nav.navigate(AccountsRoute) })
+                GroupRow(stringResource(R.string.settings), icon = Icons.Filled.Settings, showChevron = true, onClick = { nav.navigate(SettingsRoute) })
+                GroupRow(stringResource(R.string.servers_and_accounts), icon = Icons.Filled.SwapHoriz, showChevron = true, onClick = { nav.navigate(AccountsRoute) })
                 if (acc.authType == AuthType.PASSWORD) {
-                    GroupRow("Change password", icon = Icons.Filled.Password, onClick = { changingPassword = true })
+                    GroupRow(stringResource(R.string.change_password), icon = Icons.Filled.Password, onClick = { changingPassword = true })
                 }
                 GroupRow(
-                    "Sign out",
+                    stringResource(R.string.sign_out),
                     icon = Icons.AutoMirrored.Filled.Logout,
                     iconTint = MaterialTheme.colorScheme.error,
                     titleColor = MaterialTheme.colorScheme.error,
@@ -304,9 +304,9 @@ fun YouScreen() {
 
     if (confirmSignOut) {
         ConfirmDialog(
-            "Sign out of ${acc.serverName}?",
-            "Backup stops for this account. Your photos stay on the server.",
-            "Sign out",
+            stringResource(R.string.sign_out_of, acc.serverName),
+            stringResource(R.string.backup_stops_for_this_account_your),
+            stringResource(R.string.sign_out),
             onDismiss = { confirmSignOut = false },
         ) {
             confirmSignOut = false
@@ -314,15 +314,15 @@ fun YouScreen() {
         }
     }
     if (changingPassword) {
-        TextInputDialog("Current password", "Current password", "Next", secret = true, onDismiss = { changingPassword = false }) { old ->
+        TextInputDialog(stringResource(R.string.current_password), stringResource(R.string.current_password), stringResource(R.string.lock_next), secret = true, onDismiss = { changingPassword = false }) { old ->
             changingPassword = false
             newPassword = old
         }
     }
     newPassword?.let { old ->
-        TextInputDialog("New password", "New password", "Change", secret = true, onDismiss = { newPassword = null }) { new ->
+        TextInputDialog(stringResource(R.string.new_password), stringResource(R.string.new_password), stringResource(R.string.change), secret = true, onDismiss = { newPassword = null }) { new ->
             newPassword = null
-            c.runTask("Password changed") { c.api.changePassword(old, new) }
+            c.runTask(Strings.str(R.string.password_changed)) { c.api.changePassword(old, new) }
         }
     }
 }

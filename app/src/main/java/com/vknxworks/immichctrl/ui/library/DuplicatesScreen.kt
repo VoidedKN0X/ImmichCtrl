@@ -64,6 +64,9 @@ import com.vknxworks.immichctrl.ui.components.formatBytes
 import com.vknxworks.immichctrl.ui.components.rememberLoader
 import com.vknxworks.immichctrl.ui.components.runTask
 import com.vknxworks.immichctrl.ui.theme.Gutter
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /**
  * Groups of photos Immich thinks are the same picture. For each group, tap to choose what to keep;
@@ -91,7 +94,7 @@ fun DuplicatesScreen() {
             Triple(g.duplicateId, k, ids.filter { it !in k })
         }
         ready.forEach { done[it.duplicateId] = true }
-        c.runTask(if (ready.size == 1) "Duplicates resolved" else "${ready.size} groups resolved") {
+        c.runTask(if (ready.size == 1) Strings.str(R.string.duplicates_resolved) else Strings.plural(R.plurals.groups_resolved, ready.size, ready.size)) {
             try {
                 c.api.resolveDuplicates(payload)
                 Sources.refreshAll()
@@ -104,18 +107,18 @@ fun DuplicatesScreen() {
 
     Column(Modifier.fillMaxSize()) {
         when (val s = groups.state) {
-            is Load.Loading -> { ScreenTopBar("Duplicates"); LoadingView() }
-            is Load.Err -> { ScreenTopBar("Duplicates"); ErrorView(s.message) { groups.reload() } }
+            is Load.Loading -> { ScreenTopBar(stringResource(R.string.duplicates)); LoadingView() }
+            is Load.Err -> { ScreenTopBar(stringResource(R.string.duplicates)); ErrorView(s.message) { groups.reload() } }
             is Load.Ok -> {
                 val open = s.value.filter { done[it.duplicateId] != true }
-                ScreenTopBar("Duplicates") {
-                    if (open.isNotEmpty()) IconButton(onClick = { confirmAll = true }) { Icon(Icons.Outlined.DoneAll, "Resolve all") }
+                ScreenTopBar(stringResource(R.string.duplicates)) {
+                    if (open.isNotEmpty()) IconButton(onClick = { confirmAll = true }) { Icon(Icons.Outlined.DoneAll, stringResource(R.string.resolve_all)) }
                 }
                 if (open.isEmpty()) {
                     MessageView(
                         Icons.Outlined.FilterNone,
-                        "No duplicates",
-                        "Immich looks for duplicates when its \"Duplicate detection\" job runs (needs smart search).",
+                        stringResource(R.string.no_duplicates),
+                        stringResource(R.string.immich_looks_for_duplicates_when_its),
                     )
                 } else {
                     LazyColumn(
@@ -124,7 +127,7 @@ fun DuplicatesScreen() {
                     ) {
                         item(key = "summary") {
                             Text(
-                                "${countLabel(open.size, "group")}  ·  ${countLabel(open.sumOf { it.assets.size }, "photo")}. Tap the copies to keep.",
+                                stringResource(R.string.tap_the_copies_to_keep, countLabel(open.size, R.plurals.count_groups), countLabel(open.sumOf { it.assets.size }, R.plurals.count_photos)),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = Gutter, vertical = 8.dp),
@@ -141,7 +144,7 @@ fun DuplicatesScreen() {
                                 onResolve = { resolve(listOf(g)) },
                                 onKeepAll = {
                                     done[g.duplicateId] = true
-                                    c.runTask("Kept all") {
+                                    c.runTask(Strings.str(R.string.kept_all)) {
                                         try { c.api.dismissDuplicate(g.duplicateId) } catch (e: Throwable) { done.remove(g.duplicateId); throw e }
                                     }
                                 },
@@ -152,9 +155,9 @@ fun DuplicatesScreen() {
                 if (confirmAll) {
                     val trash = open.sumOf { g -> g.assets.count { it.id !in keepFor(g) } }
                     ConfirmDialog(
-                        "Resolve all ${countLabel(open.size, "group")}?",
-                        "Keeps the selected copy in each group and moves ${countLabel(trash, "other")} to the trash.",
-                        "Resolve all",
+                        stringResource(R.string.resolve_all_2, countLabel(open.size, R.plurals.count_groups)),
+                        stringResource(R.string.keeps_the_selected_copy_in_each, countLabel(trash, R.plurals.count_others)),
+                        stringResource(R.string.resolve_all),
                         onDismiss = { confirmAll = false },
                     ) {
                         confirmAll = false
@@ -197,7 +200,7 @@ private fun DuplicateGroup(
                         AssetThumb(a.toAsset(), Modifier.fillMaxSize())
                         Icon(
                             if (kept) Icons.Filled.CheckCircle else Icons.Filled.Delete,
-                            if (kept) "Keep" else "Trash",
+                            if (kept) stringResource(R.string.keep) else stringResource(R.string.trash),
                             Modifier
                                 .align(Alignment.TopEnd)
                                 .padding(6.dp)
@@ -225,13 +228,13 @@ private fun DuplicateGroup(
         ) {
             val trash = g.assets.size - keep.size
             Text(
-                if (keep.isEmpty()) "Pick at least one to keep" else "Keep ${keep.size}, trash $trash",
+                if (keep.isEmpty()) stringResource(R.string.pick_at_least_one_to_keep) else stringResource(R.string.keep_trash, keep.size, trash),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (keep.isEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onKeepAll) { Text("Not duplicates") }
-            PillButton("Resolve", onClick = onResolve, enabled = keep.isNotEmpty())
+            TextButton(onClick = onKeepAll) { Text(stringResource(R.string.not_duplicates)) }
+            PillButton(stringResource(R.string.resolve), onClick = onResolve, enabled = keep.isNotEmpty())
         }
     }
 }

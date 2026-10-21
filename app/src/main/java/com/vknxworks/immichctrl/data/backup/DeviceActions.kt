@@ -15,6 +15,8 @@ import kotlinx.coroutines.withContext
 import java.time.Instant
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /**
  * Changes to photos stored on the phone. Android shows its own confirmation for each, so requests
@@ -79,7 +81,7 @@ object FreeUpSpace {
         }
         val safe = ArrayList<LocalItem>()
         candidates.chunked(100).forEachIndexed { i, batch ->
-            onProgress("Checking ${minOf((i + 1) * 100, candidates.size)} of ${candidates.size} with the server…")
+            onProgress(Strings.str(R.string.checking_of_with_the_server, minOf((i + 1) * 100, candidates.size), candidates.size))
             val hashes = batch.associateWith { item -> db.cachedHash(item) ?: LocalMedia.sha1(context, item.uri)?.also { db.saveHash(item, it) } }
             val check = client.uploadCheck(hashes.mapNotNull { (item, sha) -> sha?.let { item.id.toString() to it } })
             val onServer = check.results

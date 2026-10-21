@@ -270,7 +270,7 @@ class AppContainer(val context: Context) {
 
     /** Client for the signed-in account. Screens are only shown while signed in. */
     val api: ImmichClient
-        get() = sessions.active.value?.client ?: error("Not signed in")
+        get() = sessions.active.value?.client ?: error(Strings.str(R.string.not_signed_in))
 
     val me: String
         get() = sessions.active.value?.account?.userId.orEmpty()
@@ -278,18 +278,18 @@ class AppContainer(val context: Context) {
     private fun createChannels() {
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(BackupWorker.CHANNEL, "Backup", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Progress while photos and videos are backed up"
+            NotificationChannel(BackupWorker.CHANNEL, Strings.str(R.string.backup), NotificationManager.IMPORTANCE_LOW).apply {
+                description = Strings.str(R.string.progress_while_photos_and_videos_are)
             },
         )
         nm.createNotificationChannel(
-            NotificationChannel(OfflineWorker.CHANNEL, "Offline albums", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Progress while albums are saved for offline viewing"
+            NotificationChannel(OfflineWorker.CHANNEL, Strings.str(R.string.offline_albums), NotificationManager.IMPORTANCE_LOW).apply {
+                description = Strings.str(R.string.progress_while_albums_are_saved_for)
             },
         )
         nm.createNotificationChannel(
-            NotificationChannel(AdminAlertsWorker.CHANNEL, "Server alerts", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "For admins: failed jobs, low disk space and new Immich releases"
+            NotificationChannel(AdminAlertsWorker.CHANNEL, Strings.str(R.string.server_alerts), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = Strings.str(R.string.for_admins_failed_jobs_low_disk)
             },
         )
     }

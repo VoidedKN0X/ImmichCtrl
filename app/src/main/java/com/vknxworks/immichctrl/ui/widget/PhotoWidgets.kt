@@ -33,6 +33,7 @@ import okhttp3.Request
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
+import com.vknxworks.immichctrl.Strings
 
 /** Home screen widget: a photo from today's memories. */
 class MemoriesWidget : PhotoWidget(KIND_MEMORIES)
@@ -69,12 +70,12 @@ class WidgetWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         c.sessions.ready.first { it }
         // With the app lock on, the home screen doesn't show your photos.
         if (c.appLock.enabled(c.settings.current())) {
-            show(manager, ids, null, "ImmichCtrl is locked", null)
+            show(manager, ids, null, Strings.str(R.string.lock_title), null)
             return Result.success()
         }
         val client = c.sessions.active.value?.client
         if (client == null) {
-            show(manager, ids, null, "Sign in to ImmichCtrl", null)
+            show(manager, ids, null, Strings.str(R.string.sign_in_to_immichctrl), null)
             return Result.success()
         }
         return try {
@@ -85,7 +86,7 @@ class WidgetWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 val memories = client.memories(OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)).filter { it.assets.isNotEmpty() }
                 val m = memories.randomOrNull()
                 asset = m?.assets?.filter { it.isImage }?.randomOrNull() ?: m?.assets?.firstOrNull()
-                title = m?.let { if (it.type == "on_this_day") yearsAgo(it.data.year) else it.data.personName ?: "Memory" } ?: "No memories today"
+                title = m?.let { if (it.type == "on_this_day") yearsAgo(it.data.year) else it.data.personName ?: Strings.str(R.string.memory) } ?: Strings.str(R.string.no_memories_today)
                 open = m?.let { "memory:${it.id}" } ?: ""
             } else {
                 asset = client.randomAssets(1).firstOrNull()

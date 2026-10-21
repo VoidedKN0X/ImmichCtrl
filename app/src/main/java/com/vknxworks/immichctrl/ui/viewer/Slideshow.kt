@@ -86,6 +86,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.R
 
 /** One photo or video filling the screen, without zoom (slideshow and memories). */
 @Composable
@@ -186,19 +188,19 @@ fun SlideshowScreen(sourceKey: String, startIndex: Int) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { nav.back() }) { Icon(Icons.Filled.Close, "Close") }
-                        IconButton(onClick = ::prev) { Icon(Icons.Filled.SkipPrevious, "Previous") }
-                        IconButton(onClick = { playing = !playing }) { Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (playing) "Pause" else "Play") }
-                        IconButton(onClick = ::next) { Icon(Icons.Filled.SkipNext, "Next") }
+                        IconButton(onClick = { nav.back() }) { Icon(Icons.Filled.Close, stringResource(R.string.close)) }
+                        IconButton(onClick = ::prev) { Icon(Icons.Filled.SkipPrevious, stringResource(R.string.previous)) }
+                        IconButton(onClick = { playing = !playing }) { Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (playing) stringResource(R.string.pause) else stringResource(R.string.play)) }
+                        IconButton(onClick = ::next) { Icon(Icons.Filled.SkipNext, stringResource(R.string.lock_next)) }
                     }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(3, 5, 10, 20).forEach { s ->
                             FilterChip(settings.slideSeconds == s, onClick = { scope.launch { c.settings.update { it.copy(slideSeconds = s) } } }, label = { Text("${s}s") })
                         }
-                        FilterChip(settings.slideShuffle, onClick = { scope.launch { c.settings.update { it.copy(slideShuffle = !it.slideShuffle) } } }, label = { Text("Shuffle") }, leadingIcon = { Icon(Icons.Outlined.Shuffle, null) })
-                        FilterChip(settings.slideLoop, onClick = { scope.launch { c.settings.update { it.copy(slideLoop = !it.slideLoop) } } }, label = { Text("Loop") }, leadingIcon = { Icon(Icons.Outlined.Repeat, null) })
+                        FilterChip(settings.slideShuffle, onClick = { scope.launch { c.settings.update { it.copy(slideShuffle = !it.slideShuffle) } } }, label = { Text(stringResource(R.string.shuffle)) }, leadingIcon = { Icon(Icons.Outlined.Shuffle, null) })
+                        FilterChip(settings.slideLoop, onClick = { scope.launch { c.settings.update { it.copy(slideLoop = !it.slideLoop) } } }, label = { Text(stringResource(R.string.loop)) }, leadingIcon = { Icon(Icons.Outlined.Repeat, null) })
                     }
-                    Text("${pos + 1} of ${order.size}", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 4.dp))
+                    Text(stringResource(R.string.of, pos + 1, order.size), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }
@@ -291,10 +293,10 @@ private fun Story(memories: List<MemoryDto>, start: Int, onDone: () -> Unit) {
                 }
             }
             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Close", tint = Color.White) }
+                IconButton(onClick = onDone) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.close), tint = Color.White) }
                 Column(Modifier.weight(1f)) {
                     Text(
-                        if (memory.type == "on_this_day") yearsAgo(memory.data.year) else memory.data.personName ?: "Memory",
+                        if (memory.type == "on_this_day") yearsAgo(memory.data.year) else memory.data.personName ?: stringResource(R.string.memory),
                         style = MaterialTheme.typography.titleLarge,
                         color = Color.White,
                     )
@@ -307,8 +309,8 @@ private fun Story(memories: List<MemoryDto>, start: Int, onDone: () -> Unit) {
                 Row(
                     Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp).glass(CircleShape).padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
-                    IconButton(onClick = { paused = !paused }) { Icon(if (paused) Icons.Filled.PlayArrow else Icons.Filled.Pause, if (paused) "Play" else "Pause") }
-                    IconButton(onClick = { paused = true; shareFlow.start(c, listOf(a)) }) { Icon(Icons.Outlined.Share, "Share") }
+                    IconButton(onClick = { paused = !paused }) { Icon(if (paused) Icons.Filled.PlayArrow else Icons.Filled.Pause, if (paused) stringResource(R.string.play) else stringResource(R.string.pause)) }
+                    IconButton(onClick = { paused = true; shareFlow.start(c, listOf(a)) }) { Icon(Icons.Outlined.Share, stringResource(R.string.share)) }
                 }
             }
         }
@@ -351,7 +353,7 @@ fun ExternalViewScreen() {
                 ZoomableImage(asset, loadOriginal = false, onTap = {}, onDismiss = ::close, onSwipeUp = {}, onZoomChange = {})
             }
         }
-        IconButton(onClick = ::close, modifier = Modifier.statusBarsPadding().padding(4.dp)) { Icon(Icons.Filled.Close, "Close", tint = Color.White) }
+        IconButton(onClick = ::close, modifier = Modifier.statusBarsPadding().padding(4.dp)) { Icon(Icons.Filled.Close, stringResource(R.string.close), tint = Color.White) }
         CompositionLocalProvider(LocalHazeState provides haze) {
             Row(
                 Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = if (asset.isVideo) 72.dp else 20.dp)
@@ -359,14 +361,14 @@ fun ExternalViewScreen() {
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 if (!c.settings.settings.value.readOnly) {
-                    IconButton(onClick = { (context as? MainActivity)?.uploadShared(listOf(uri)); close() }) { Icon(Icons.Outlined.CloudUpload, "Upload") }
-                    IconButton(onClick = { pickAlbum = true }) { Icon(Icons.Outlined.LibraryAdd, "Upload to an album") }
+                    IconButton(onClick = { (context as? MainActivity)?.uploadShared(listOf(uri)); close() }) { Icon(Icons.Outlined.CloudUpload, stringResource(R.string.upload)) }
+                    IconButton(onClick = { pickAlbum = true }) { Icon(Icons.Outlined.LibraryAdd, stringResource(R.string.upload_to_an_album)) }
                 }
                 IconButton(onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType(mime.ifBlank { "*/*" }).putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     com.vknxworks.immichctrl.data.security.expectAppReturn(context)
                     context.startActivity(Intent.createChooser(send, null))
-                }) { Icon(Icons.Outlined.Share, "Share") }
+                }) { Icon(Icons.Outlined.Share, stringResource(R.string.share)) }
             }
         }
     }

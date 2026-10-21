@@ -22,6 +22,8 @@ import okhttp3.Response
 import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /** A real answer from the server that says no (wrong password, not found, not allowed). */
 class ApiException(message: String, val code: Int = 0) : Exception(message)
@@ -127,11 +129,11 @@ class ImmichClient(
             else -> null
         }
         return when {
-            code == 401 -> msg?.let { "Not signed in: $it" } ?: "Your session has expired. Sign in again."
-            code == 403 -> msg ?: "You don't have permission to do that"
-            code == 404 -> msg ?: "Not found"
+            code == 401 -> msg?.let { Strings.str(R.string.not_signed_in_2, it) } ?: Strings.str(R.string.your_session_has_expired_sign_in)
+            code == 403 -> msg ?: Strings.str(R.string.you_don_t_have_permission_to_do_that)
+            code == 404 -> msg ?: Strings.str(R.string.not_found)
             !msg.isNullOrBlank() -> msg
-            else -> "Server error ($code)"
+            else -> Strings.str(R.string.server_error, code)
         }
     }
 

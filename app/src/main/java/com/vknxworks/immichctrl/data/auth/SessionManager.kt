@@ -39,6 +39,8 @@ import kotlinx.serialization.builtins.serializer
 import okhttp3.OkHttpClient
 import java.security.MessageDigest
 import java.security.SecureRandom
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 @Serializable
 data class Account(
@@ -75,7 +77,7 @@ data class Account(
  * whether to try plain HTTP (which sends credentials unencrypted) and probes again with [httpUrl].
  */
 class HttpFallbackNeeded(val httpUrl: String, cause: Throwable) :
-    Exception("Couldn't connect securely (HTTPS). The server may only support plain HTTP.", cause)
+    Exception(Strings.str(R.string.couldn_t_connect_securely_https_the), cause)
 
 /** What the sign-in screen needs to know about a server before asking for credentials. */
 data class ServerProbe(
@@ -245,12 +247,12 @@ class SessionManager(
         CleartextPolicy.allowServer(client.baseUrl)
         try {
             val pong = client.ping()
-            if (!pong.res.equals("pong", ignoreCase = true)) throw ApiException("This doesn't look like an Immich server")
+            if (!pong.res.equals("pong", ignoreCase = true)) throw ApiException(Strings.str(R.string.this_doesn_t_look_like_an_immich))
         } catch (e: ApiException) {
-            if (e.code == 404) throw ApiException("No Immich server found at that address")
+            if (e.code == 404) throw ApiException(Strings.str(R.string.no_immich_server_found_at_that))
             throw e
         } catch (e: kotlinx.serialization.SerializationException) {
-            throw ApiException("No Immich server found at that address")
+            throw ApiException(Strings.str(R.string.no_immich_server_found_at_that))
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: java.net.UnknownHostException) {
@@ -260,8 +262,7 @@ class SessionManager(
             if (explicit) throw e
             if (e.isTlsProblem()) {
                 throw ApiException(
-                    "Secure connection failed: ${e.message ?: "TLS error"}. " +
-                        "If your server only supports plain HTTP, type http:// in front of the address.",
+                    Strings.str(R.string.tls_failed_try_http, e.message ?: "TLS"),
                 )
             }
             throw HttpFallbackNeeded("http://$raw", e)
@@ -283,7 +284,7 @@ class SessionManager(
         val me = try {
             client.me()
         } catch (e: ApiException) {
-            if (e.code == 401) throw ApiException("That API key wasn't accepted. It needs at least the user.read permission.") else throw e
+            if (e.code == 401) throw ApiException(Strings.str(R.string.that_api_key_wasn_t_accepted_it)) else throw e
         }
         val draft = Account(
             serverUrl = client.baseUrl,
@@ -313,7 +314,7 @@ class SessionManager(
         val url = anon.oauthAuthorize(OAUTH_REDIRECT, state, challenge).url
         // Only ever open a web page in the browser, whatever the server sends.
         val scheme = Uri.parse(url).scheme?.lowercase()
-        if (scheme != "https" && scheme != "http") throw ApiException("The server sent an invalid sign-in address")
+        if (scheme != "https" && scheme != "http") throw ApiException(Strings.str(R.string.the_server_sent_an_invalid_sign_in))
         pendingOAuth = PendingOAuth(probe, state, verifier)
         _oauthError.value = null
         return url
@@ -336,7 +337,7 @@ class SessionManager(
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Throwable) {
-                _oauthError.value = e.message ?: "OAuth sign-in failed"
+                _oauthError.value = e.message ?: Strings.str(R.string.oauth_sign_in_failed)
             }
         }
     }

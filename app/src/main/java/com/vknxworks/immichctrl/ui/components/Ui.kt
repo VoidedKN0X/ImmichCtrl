@@ -57,6 +57,12 @@ import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import com.vknxworks.immichctrl.ui.nav.YouRoute
 import com.vknxworks.immichctrl.ui.theme.Gutter
+import androidx.compose.ui.res.stringResource
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.foundation.layout.fillMaxSize
+import com.vknxworks.immichctrl.R
 
 // ---------- Top bars ----------
 
@@ -71,7 +77,7 @@ fun ScreenTopBar(
     TopAppBar(
         title = { Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         navigationIcon = {
-            if (showBack) IconButton(onClick = nav::back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+            if (showBack) IconButton(onClick = nav::back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
         },
         actions = actions,
         colors = TopAppBarDefaults.topAppBarColors(
@@ -100,7 +106,10 @@ fun TabTitle(
     }
 }
 
-/** The signed-in user's Immich picture; tapping it opens the You page (not in read-only mode). */
+/**
+ * The signed-in user's Immich picture, as in every Ctrl app: the picture when there is one, otherwise the
+ * initial on a tinted circle. Tapping it opens the You page (not in read-only mode).
+ */
 @Composable
 fun ProfileButton() {
     val c = LocalContext.current.container
@@ -108,8 +117,32 @@ fun ProfileButton() {
     val session by c.sessions.active.collectAsStateWithLifecycle()
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     val acc = session?.account ?: return
-    IconButton(onClick = { if (!settings.readOnly) nav.navigate(YouRoute) }) {
-        UserAvatar(acc.userId, acc.name, true, null, null, Modifier.size(32.dp).semantics { contentDescription = "You" })
+    val label = stringResource(R.string.you)
+    IconButton(onClick = { if (!settings.readOnly) nav.navigate(YouRoute) }, modifier = Modifier.semantics { contentDescription = label }) {
+        ProfileAvatar(acc.userId, acc.name)
+    }
+}
+
+/** The series profile picture: the Immich picture over the initial on a tinted circle. */
+@Composable
+fun ProfileAvatar(userId: String, name: String) {
+    val c = LocalContext.current.container
+    Box(
+        Modifier.size(34.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        val initial = name.trim().take(1).uppercase()
+        if (initial.isEmpty()) {
+            Icon(Icons.Filled.AccountCircle, null, tint = MaterialTheme.colorScheme.primary)
+        } else {
+            Text(initial, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+        }
+        AsyncImage(
+            model = c.api.profileImageUrl(userId, null),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+        )
     }
 }
 
@@ -253,7 +286,7 @@ fun <T> ChoiceSheet(
                         color = if (isSel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                     )
-                    if (isSel) Icon(Icons.Filled.Check, "Selected", tint = MaterialTheme.colorScheme.primary)
+                    if (isSel) Icon(Icons.Filled.Check, stringResource(R.string.selected), tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }

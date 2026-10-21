@@ -10,6 +10,8 @@ import android.util.Base64
 import androidx.core.content.ContextCompat
 import java.io.InputStream
 import java.security.MessageDigest
+import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.R
 
 /** A folder of photos on the phone (MediaStore bucket): Camera, Screenshots, WhatsApp Images... */
 data class LocalAlbum(val id: String, val name: String, val count: Int, val coverUri: Uri?)
@@ -63,7 +65,7 @@ object LocalMedia {
                 val prev = counts[bucket]
                 if (prev == null) {
                     val video = c.getInt(typeCol) == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO
-                    counts[bucket] = Triple(c.getString(nameCol) ?: "Unnamed", 1, contentUri(c.getLong(idCol), video))
+                    counts[bucket] = Triple(c.getString(nameCol) ?: Strings.str(R.string.unnamed), 1, contentUri(c.getLong(idCol), video))
                 } else {
                     counts[bucket] = prev.copy(second = prev.second + 1)
                 }

@@ -37,6 +37,8 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.vknxworks.immichctrl.container
+import androidx.compose.ui.res.stringResource
+import com.vknxworks.immichctrl.R
 
 /**
  * Plays an asset's video (or a live photo's motion part) through the app's HTTP client, so the
@@ -156,7 +158,7 @@ fun VideoControls(player: Player, modifier: Modifier = Modifier) {
                 player.play()
             }
         }) {
-            Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (playing) "Pause" else "Play")
+            Icon(if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow, if (playing) stringResource(R.string.pause) else stringResource(R.string.play))
         }
         Text(clock(if (dragging != null) (fraction * duration).toLong() else position), style = MaterialTheme.typography.labelMedium)
         Slider(
