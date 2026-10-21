@@ -63,7 +63,7 @@ fun OfflineAlbumScreen(albumId: String) {
                         countLabel(album.count, R.plurals.count_items),
                         formatBytes(c.offline.bytes(albumId)),
                         if (album.updatedAt > 0) stringResource(R.string.offline_updated, DateTimeFormatter.ofPattern("d MMM, HH:mm").format(Instant.ofEpochMilli(album.updatedAt).atZone(ZoneId.systemDefault()))) else stringResource(R.string.saving),
-                    ).joinToString("  ·  "),
+                    ).joinToString(Strings.str(R.string.list_separator_wide)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = Gutter, vertical = 8.dp),

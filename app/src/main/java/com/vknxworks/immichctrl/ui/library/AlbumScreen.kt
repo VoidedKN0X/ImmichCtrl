@@ -181,7 +181,7 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
                 Column(Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 8.dp)) {
                     val range = listOfNotNull(shortDate(a.startDate), shortDate(a.endDate)).distinct().joinToString(" – ")
                     Text(
-                        listOfNotNull(range.ifBlank { null }, countLabel(a.assetCount, R.plurals.count_items)).joinToString("  ·  "),
+                        listOfNotNull(range.ifBlank { null }, countLabel(a.assetCount, R.plurals.count_items)).joinToString(Strings.str(R.string.list_separator_wide)),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -411,7 +411,7 @@ private fun ActivitySheet(a: AlbumDto, onDismiss: () -> Unit) {
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(
-                                    listOfNotNull(act.user.name, shortDate(act.createdAt)).joinToString("  ·  "),
+                                    listOfNotNull(act.user.name, shortDate(act.createdAt)).joinToString(Strings.str(R.string.list_separator_wide)),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )

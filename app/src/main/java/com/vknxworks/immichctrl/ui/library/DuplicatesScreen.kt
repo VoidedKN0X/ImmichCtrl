@@ -247,7 +247,7 @@ private fun details(a: AssetDto): String {
         if (w != null && h != null && w > 0 && h > 0) "$w × $h" else null,
         e?.fileSizeInByte?.let { formatBytes(it) },
         a.fileCreatedAt.take(10).ifBlank { null },
-    ).joinToString("  ·  ")
+    ).joinToString(Strings.str(R.string.list_separator_wide))
 }
 
 /** Fallback when the server gives no suggestion: the biggest file. */

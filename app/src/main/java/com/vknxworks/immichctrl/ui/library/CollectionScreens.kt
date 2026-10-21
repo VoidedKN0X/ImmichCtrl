@@ -345,7 +345,7 @@ fun SharedLinksScreen() {
                                         },
                                         if (l.password != null) Strings.str(R.string.password) else null,
                                         if (l.allowUpload) Strings.str(R.string.uploads_allowed) else null,
-                                    ).joinToString("  ·  "),
+                                    ).joinToString(Strings.str(R.string.list_separator_wide)),
                                     icon = Icons.Outlined.Link,
                                     onClick = { open = l },
                                 )

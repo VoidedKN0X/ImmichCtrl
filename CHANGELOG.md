@@ -4,6 +4,12 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.14
+
+### Changed
+
+- **Whole sentences instead of joined pieces, ready for translations**: the " · " between details (album and photo details, shared links, people, partners, server administration, accounts, the viewer's title line and the info sheet) now comes from the app's text resources. The wording stays the same.
+
 ## 0.3.13
 
 ### Changed

@@ -204,7 +204,7 @@ fun PersonScreen(id: String) {
                                 stats.value?.let { countLabel(it.assets, R.plurals.count_photos) },
                                 age?.let { Strings.str(R.string.age, it) },
                                 if (p?.isHidden == true) Strings.str(R.string.hidden_2) else null,
-                            ).joinToString("  ·  "),
+                            ).joinToString(Strings.str(R.string.list_separator_wide)),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
