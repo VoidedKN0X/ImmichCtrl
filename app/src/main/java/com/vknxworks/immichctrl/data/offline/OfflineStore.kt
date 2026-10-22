@@ -123,6 +123,8 @@ class OfflineStore(private val context: Context) {
     /** Starts keeping an album offline (or brings an offline album up to date). */
     fun sync(albumId: String, name: String) {
         if (!isOffline(albumId)) write(OfflineAlbum(albumId, name))
+        // Downloading shows its progress in a notification.
+        com.vknxworks.immichctrl.data.NotifyPermission.want()
         val req = OneTimeWorkRequestBuilder<OfflineWorker>()
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setInputData(workDataOf(OfflineWorker.KEY_ALBUM to albumId))

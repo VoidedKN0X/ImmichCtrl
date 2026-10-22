@@ -23,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BatteryAlert
 import androidx.compose.material.icons.outlined.CleaningServices
 import androidx.compose.material.icons.outlined.DriveFileMove
-import androidx.compose.material.icons.outlined.NotificationsOff
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.PhotoAlbum
 import com.vknxworks.immichctrl.ui.nav.FreeUpSpaceRoute
@@ -65,6 +64,9 @@ import com.vknxworks.immichctrl.ui.components.Group
 import com.vknxworks.immichctrl.ui.components.GroupRow
 import com.vknxworks.immichctrl.ui.components.GroupSwitch
 import com.vknxworks.immichctrl.ui.components.MessageView
+import com.vknxworks.immichctrl.ui.components.NotificationsBlockedRow
+import com.vknxworks.immichctrl.ui.components.rememberNotificationsAllowed
+import com.vknxworks.immichctrl.ui.components.rememberNotifyPermission
 import com.vknxworks.immichctrl.ui.components.PillButton
 import com.vknxworks.immichctrl.ui.components.RemoteImage
 import com.vknxworks.immichctrl.ui.components.ScreenTopBar
@@ -90,9 +92,16 @@ fun BackupScreen() {
     val partial = remember(permissionTick) { LocalMedia.isPartialAccess(context) }
     var confirmReset by remember { mutableStateOf(false) }
 
-    val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissionTick++ }
+    val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        permissionTick++
+        setNotifyOk(com.vknxworks.immichctrl.data.NotifyPermission.allowed(context))
+    }
+    val (notifyOk, setNotifyOk) = rememberNotificationsAllowed()
+    val notify = rememberNotifyPermission { setNotifyOk(it) }
     fun askPermissions() {
         com.vknxworks.immichctrl.data.security.expectAppReturn(context)
+        // Notifications are asked for together with the photos; that counts as the app's one automatic ask.
+        if (com.vknxworks.immichctrl.data.NotifyPermission.permissionMissing(context)) com.vknxworks.immichctrl.data.NotifyPermission.markAsked(context)
         permissions.launch(
             arrayOf(
                 Manifest.permission.READ_MEDIA_IMAGES,
@@ -181,9 +190,6 @@ fun BackupScreen() {
             // Things that quietly stop background backups.
             val pm = context.getSystemService(android.os.PowerManager::class.java)
             val batteryOk = remember(permissionTick, settings.backupEnabled) { pm?.isIgnoringBatteryOptimizations(context.packageName) == true }
-            val notifyOk = remember(permissionTick) {
-                androidx.core.content.ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-            }
             if (settings.backupEnabled && (!batteryOk || !notifyOk)) {
                 Group(stringResource(R.string.backups_may_stop_in_the_background)) {
                     if (!batteryOk) {
@@ -202,14 +208,8 @@ fun BackupScreen() {
                         )
                     }
                     if (!notifyOk) {
-                        GroupRow(
-                            stringResource(R.string.notifications_are_off),
-                            stringResource(R.string.long_backups_need_to_show_their),
-                            icon = Icons.Outlined.NotificationsOff,
-                            iconTint = MaterialTheme.colorScheme.error,
-                            showChevron = true,
-                            onClick = { askPermissions() },
-                        )
+                        // Android's dialog while it still shows, otherwise ImmichCtrl's notification settings.
+                        NotificationsBlockedRow(stringResource(R.string.long_backups_need_to_show_their), notify.request)
                     }
                 }
             }

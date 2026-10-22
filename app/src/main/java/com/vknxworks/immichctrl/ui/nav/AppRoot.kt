@@ -201,6 +201,17 @@ private fun MainScaffold() {
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     val readOnly = settings.readOnly
 
+    // Android 13's notification permission: asked once, by itself, when the main screens show and something
+    // that notifies is on (automatic backup, or server alerts for admins, which are on from the start), or
+    // the first time an upload or offline album starts. After that only Backup and Settings ask.
+    val notify = com.vknxworks.immichctrl.ui.components.rememberNotifyPermission()
+    val notifyWanted by com.vknxworks.immichctrl.data.NotifyPermission.wanted.collectAsStateWithLifecycle()
+    LaunchedEffect(notifyWanted) {
+        val st = c.settings.current()
+        val admin = c.sessions.active.value?.account?.isAdmin == true
+        if (notifyWanted > 0 || st.backupEnabled || (admin && st.adminAlerts)) notify.askOnce()
+    }
+
     // Widgets, notifications and other apps ask for something to be opened.
     val openRequest by c.openRequests.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest) {
