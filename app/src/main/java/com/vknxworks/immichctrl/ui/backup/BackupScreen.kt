@@ -92,12 +92,12 @@ fun BackupScreen() {
     val partial = remember(permissionTick) { LocalMedia.isPartialAccess(context) }
     var confirmReset by remember { mutableStateOf(false) }
 
+    val (notifyOk, setNotifyOk) = rememberNotificationsAllowed()
+    val notify = rememberNotifyPermission { setNotifyOk(it) }
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         permissionTick++
         setNotifyOk(com.vknxworks.immichctrl.data.NotifyPermission.allowed(context))
     }
-    val (notifyOk, setNotifyOk) = rememberNotificationsAllowed()
-    val notify = rememberNotifyPermission { setNotifyOk(it) }
     fun askPermissions() {
         com.vknxworks.immichctrl.data.security.expectAppReturn(context)
         // Notifications are asked for together with the photos; that counts as the app's one automatic ask.
