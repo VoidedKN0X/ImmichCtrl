@@ -104,6 +104,7 @@ class BackupManager(
 
     /** "Back up now": runs whatever the settings, as soon as there's a connection. */
     fun backupNow() {
+        com.vknxworks.immichctrl.data.NotifyPermission.want()
         val req = OneTimeWorkRequestBuilder<BackupWorker>()
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setInputData(workDataOf(BackupWorker.KEY_MODE to BackupWorker.MODE_MANUAL, BackupWorker.KEY_ACCOUNT to activeKey()))
@@ -116,6 +117,7 @@ class BackupManager(
     /** Uploads specific photos from this phone (picked in the app), whatever the backup settings. */
     fun uploadLocal(ids: Collection<Long>) {
         if (ids.isEmpty()) return
+        com.vknxworks.immichctrl.data.NotifyPermission.want()
         // WorkManager input is capped at 10 KB, so big selections go as several jobs.
         ids.chunked(500).forEach { chunk ->
             val req = OneTimeWorkRequestBuilder<BackupWorker>()
@@ -161,6 +163,7 @@ class BackupManager(
      */
     suspend fun uploadShared(uris: List<Uri>, albumId: String? = null): Int = withContext(Dispatchers.IO) {
         val account = activeKey() ?: return@withContext 0
+        com.vknxworks.immichctrl.data.NotifyPermission.want()
         val dir = File(context.cacheDir, "incoming/${UUID.randomUUID()}").apply { mkdirs() }
         val paths = uris.mapIndexedNotNull { i, uri ->
             runCatching {

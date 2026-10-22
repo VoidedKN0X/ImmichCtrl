@@ -201,6 +201,7 @@
     <string name="battery_optimisation_is_on">Battery optimisation is on</string>
     <string name="android_and_coloros_miui_one_ui_may">Android (and ColorOS, MIUI, One UI) may stop background backups. Set ImmichCtrl to \"Unrestricted\" or \"Allow background activity\".</string>
     <string name="notifications_are_off">Notifications are off</string>
+    <string name="server_alerts_can_t_reach_you">Android isn\'t letting ImmichCtrl show notifications, so server alerts can\'t reach you.</string>
     <string name="long_backups_need_to_show_their">Long backups need to show their progress to keep running.</string>
     <string name="automatic_backup">Automatic backup</string>
     <string name="new_photos_are_uploaded_in_the">New photos are uploaded in the background when the conditions below are met. Photos already on the server are skipped.</string>

@@ -62,6 +62,9 @@ import com.vknxworks.immichctrl.ui.components.Group
 import com.vknxworks.immichctrl.ui.components.GroupChoice
 import com.vknxworks.immichctrl.ui.components.GroupRow
 import com.vknxworks.immichctrl.ui.components.GroupSwitch
+import com.vknxworks.immichctrl.ui.components.NotificationsBlockedRow
+import com.vknxworks.immichctrl.ui.components.rememberNotificationsAllowed
+import com.vknxworks.immichctrl.ui.components.rememberNotifyPermission
 import com.vknxworks.immichctrl.ui.components.ScreenTopBar
 import com.vknxworks.immichctrl.ui.nav.AddAccountRoute
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
@@ -83,6 +86,9 @@ fun SettingsScreen() {
     val context = LocalContext.current
     val nav = LocalNavigator.current
     val session by c.sessions.active.collectAsStateWithLifecycle()
+    // The server alerts switch only shows "on" while ImmichCtrl may actually show notifications.
+    val (canNotify, setCanNotify) = rememberNotificationsAllowed()
+    val notify = rememberNotifyPermission { setCanNotify(it) }
 
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar(stringResource(R.string.settings))
@@ -95,10 +101,12 @@ fun SettingsScreen() {
             }
             if (session?.account?.isAdmin == true) {
                 Group(stringResource(R.string.notifications), footer = stringResource(R.string.server_alerts_are_checked_about_once)) {
-                    GroupSwitch(stringResource(R.string.notify_me_about_the_server), stringResource(R.string.failed_jobs_low_disk_space_and_new), s.adminAlerts, Icons.Outlined.NotificationsActive) { v ->
+                    if (!canNotify) NotificationsBlockedRow(stringResource(R.string.server_alerts_can_t_reach_you), notify.request)
+                    GroupSwitch(stringResource(R.string.notify_me_about_the_server), stringResource(R.string.failed_jobs_low_disk_space_and_new), s.adminAlerts && canNotify, Icons.Outlined.NotificationsActive) { v ->
                         update { it.copy(adminAlerts = v) }
+                        if (v && !canNotify) notify.request()
                     }
-                    if (s.adminAlerts) {
+                    if (s.adminAlerts && canNotify) {
                         GroupChoice(stringResource(R.string.warn_when_the_disk_is), listOf(75, 80, 85, 90, 95).map { it to Strings.str(R.string.disk_percent_full, it) }, s.adminDiskPercent, Icons.Outlined.SdStorage) { v ->
                             update { it.copy(adminDiskPercent = v) }
                         }

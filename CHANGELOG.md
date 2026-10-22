@@ -4,6 +4,15 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.3.17
+
+### Fixed
+
+- **ImmichCtrl now asks for permission to show notifications when it needs it.** On Android 13 and later an app has to be allowed to show notifications, but ImmichCtrl only asked when you turned on automatic backup. Server alerts for admins (on from the start), **Back up now**, uploading photos from this phone or shared from another app, and saving albums offline all show notifications, and on a fresh install they were silently dropped, including the progress notification that keeps long backups and downloads running. ImmichCtrl now asks once, by itself, when the main screens show with automatic backup or server alerts on, or the first time an upload or offline album starts, and never nags again after that.
+- **The server alerts switch tells the truth.** While notifications are blocked, **Notify me about the server** in **Settings > Notifications** no longer shows "on". A **Notifications are off** row says so, with an **Allow** button; turning the switch on asks for notifications too.
+- **Allow works even after you've said no.** The **Notifications are off** warning on the **Backup** screen used to ask Android again, which does nothing once you've refused twice. **Allow** now shows Android's dialog while Android still offers it, and otherwise opens ImmichCtrl's notification settings. Coming back from there updates the Backup and Settings screens straight away.
+- Showing Android's notification dialog or settings no longer locks the app when you come back to it.
+
 ## 0.3.16
 
 ### Fixed
