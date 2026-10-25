@@ -190,6 +190,7 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
      * to confirm with, so it goes straight on.
      */
     fun unlockLegacy(activity: FragmentActivity) {
+        if (activity.isFinishing || activity.isDestroyed) return
         if (!canLock()) {
             _locked.value = false
             return

@@ -257,15 +257,19 @@ class TimelineSource(
             loading.remove(b.key)
             return
         }
+        val from = db
         scope.launch {
             try {
-                val assets = merge(b.key, fetchBucket(db, b.key))
+                val assets = merge(b.key, fetchBucket(from, b.key))
                 buckets = buckets.map { if (it.key == b.key) it.copy(count = assets.size, assets = assets) else it }
                 failedAt.remove(b.key)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
                 failedAt[b.key] = System.currentTimeMillis()
+                // The phone's copy was closed under it (account switch, sign-out, sync refused): start again
+                // from whatever the timeline can be drawn from now, instead of leaving the month empty.
+                if (from != null && sync?.dbFor(query) !== from) refresh(silent = true)
             } finally {
                 loading.remove(b.key)
             }

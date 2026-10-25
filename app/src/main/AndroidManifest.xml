@@ -123,6 +123,11 @@
                 tools:node="remove" />
         </provider>
 
+        <!-- WorkManager's debugging receiver isn't needed: no other app or tool gets to poke at the app's jobs. -->
+        <receiver
+            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+            tools:node="remove" />
+
         <!-- Backups run as WorkManager jobs; long ones show a progress notification. -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
