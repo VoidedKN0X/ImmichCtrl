@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.auth
 
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import com.vknxworks.immichctrl.data.net.parseHeaders
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -39,7 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -208,14 +209,19 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Box(Modifier.height(48.dp)) {
+            Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (onCancel != null || probe != null) {
-                    IconButton(onClick = { if (probe != null) probe = null else onCancel?.invoke() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
-                    }
+                    com.vknxworks.immichctrl.ui.components.CtrlSquareButton(
+                        Icons.AutoMirrored.Outlined.ArrowBack,
+                        stringResource(R.string.back),
+                        onClick = { if (probe != null) probe = null else onCancel?.invoke() },
+                    )
+                    Spacer(Modifier.width(14.dp))
                 }
+                com.vknxworks.immichctrl.ui.components.CtrlWordmark()
             }
-            Text(if (onCancel == null) stringResource(R.string.app_name) else stringResource(R.string.add_an_account), style = MaterialTheme.typography.displaySmall)
+            com.vknxworks.immichctrl.ui.components.CtrlLabel("VKNXWorks · Ctrl", Modifier.padding(top = 12.dp))
+            Text(if (onCancel == null) stringResource(R.string.app_name) else stringResource(R.string.add_an_account), style = MaterialTheme.typography.headlineLarge)
 
             val p = probe
             if (p == null) {
@@ -238,19 +244,15 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                     Text(if (showAdvanced) stringResource(R.string.hide_advanced) else if (headerText.isBlank()) stringResource(R.string.advanced_custom_headers_2) else stringResource(R.string.advanced_custom_headers, parseHeaders(headerText).size))
                 }
                 if (showAdvanced) {
-                    TextField(
+                    OutlinedTextField(
                         value = headerText,
                         onValueChange = { headerText = it },
                         label = { Text(stringResource(R.string.headers_one_per_line)) },
                         placeholder = { Text(stringResource(R.string.cf_access_client_id)) },
                         minLines = 2,
                         enabled = !busy,
-                        shape = MaterialTheme.shapes.medium,
-                        colors = TextFieldDefaults.colors(
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent,
-                        ),
+                        shape = com.vknxworks.immichctrl.ui.theme.CtrlShapes.Field,
+                        colors = com.vknxworks.immichctrl.ui.components.ctrlFieldColors(),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Text(
@@ -331,7 +333,13 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                         )
                     }
                     if (p.features.oauth && !useApiKey) {
-                        OutlinedButton(onClick = ::oauth, shape = CircleShape, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                        OutlinedButton(
+                            onClick = ::oauth,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(containerColor = com.vknxworks.immichctrl.ui.theme.CtrlColors.Surface, contentColor = com.vknxworks.immichctrl.ui.theme.CtrlColors.Text),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, com.vknxworks.immichctrl.ui.theme.CtrlColors.ControlBorder),
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                        ) {
                             Icon(Icons.AutoMirrored.Filled.Login, null, Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
                             Text(p.config.oauthButtonText.ifBlank { Strings.str(R.string.sign_in_with_oauth) }, style = MaterialTheme.typography.titleMedium)
@@ -395,7 +403,7 @@ private fun Field(
     visual: VisualTransformation = VisualTransformation.None,
     trailing: (@Composable () -> Unit)? = null,
 ) {
-    TextField(
+    OutlinedTextField(
         value = value,
         onValueChange = onChange,
         label = { Text(label) },
@@ -406,15 +414,8 @@ private fun Field(
         keyboardActions = actions,
         visualTransformation = visual,
         trailingIcon = trailing,
-        shape = MaterialTheme.shapes.medium,
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-        ),
+        shape = com.vknxworks.immichctrl.ui.theme.CtrlShapes.Field,
+        colors = com.vknxworks.immichctrl.ui.components.ctrlFieldColors(),
         modifier = modifier.fillMaxWidth(),
     )
 }

@@ -16,9 +16,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material.icons.filled.Photo
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material.icons.outlined.Photo
 import androidx.compose.material.icons.outlined.Search
@@ -182,9 +179,9 @@ private fun androidx.navigation.NavDestination.blockedInReadOnly(): Boolean =
 private data class TopDest(val route: Any, val item: TabItem)
 
 private val topDestinations = listOf(
-    TopDest(PhotosRoute, TabItem(Strings.str(R.string.photos), Icons.Outlined.Photo, Icons.Filled.Photo)),
-    TopDest(SearchRoute, TabItem(Strings.str(R.string.search), Icons.Outlined.Search, Icons.Filled.Search)),
-    TopDest(LibraryRoute, TabItem(Strings.str(R.string.library), Icons.Outlined.PhotoLibrary, Icons.Filled.PhotoLibrary)),
+    TopDest(PhotosRoute, TabItem(Strings.str(R.string.photos), Icons.Outlined.Photo, Icons.Outlined.Photo)),
+    TopDest(SearchRoute, TabItem(Strings.str(R.string.search), Icons.Outlined.Search, Icons.Outlined.Search)),
+    TopDest(LibraryRoute, TabItem(Strings.str(R.string.library), Icons.Outlined.PhotoLibrary, Icons.Outlined.PhotoLibrary)),
 )
 
 @Composable
@@ -249,6 +246,7 @@ private fun MainScaffold() {
                 Row(Modifier.fillMaxSize()) {
                     NavigationRail(
                         containerColor = MaterialTheme.colorScheme.background,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.fillMaxHeight().statusBarsPadding(),
                     ) {
                         Spacer(Modifier.weight(1f))
@@ -257,8 +255,15 @@ private fun MainScaffold() {
                             NavigationRailItem(
                                 selected = selected,
                                 onClick = { selectTab(i) },
-                                icon = { Icon(if (selected) top.item.selectedIcon else top.item.icon, contentDescription = top.item.label) },
+                                icon = { Icon(if (selected) top.item.selectedIcon else top.item.icon, contentDescription = top.item.label, modifier = Modifier.size(22.dp)) },
                                 label = { Text(top.item.label) },
+                                colors = androidx.compose.material3.NavigationRailItemDefaults.colors(
+                                    selectedIconColor = com.vknxworks.immichctrl.ui.theme.CtrlColors.OnAccent,
+                                    selectedTextColor = com.vknxworks.immichctrl.ui.theme.CtrlColors.Text,
+                                    indicatorColor = com.vknxworks.immichctrl.ui.theme.CtrlColors.Accent,
+                                    unselectedIconColor = com.vknxworks.immichctrl.ui.theme.CtrlColors.Muted,
+                                    unselectedTextColor = com.vknxworks.immichctrl.ui.theme.CtrlColors.Muted,
+                                ),
                             )
                         }
                         Spacer(Modifier.weight(1f))
@@ -308,9 +313,9 @@ private fun PhoneLayout(
                     .align(Alignment.BottomCenter)
                     .onSizeChanged { if (it.height > 0) overlayHeight = with(density) { it.height.toDp() } }
                     .navigationBarsPadding()
-                    .padding(bottom = 12.dp),
+                    .padding(start = 20.dp, end = 20.dp, bottom = com.vknxworks.immichctrl.ui.components.CtrlBottomBarMargin),
             ) {
-                GlassTabBar(
+                com.vknxworks.immichctrl.ui.components.CtrlBottomBar(
                     items = topDestinations.map { it.item },
                     selectedIndex = selectedIndex,
                     onSelect = onSelect,

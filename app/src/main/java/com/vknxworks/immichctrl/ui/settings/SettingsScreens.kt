@@ -30,12 +30,10 @@ import com.vknxworks.immichctrl.ui.components.findActivity
 import com.vknxworks.immichctrl.ui.nav.LogsRoute
 import com.vknxworks.immichctrl.ui.nav.NetworkingRoute
 import androidx.compose.material.icons.outlined.CalendarViewDay
-import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.HighQuality
-import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.outlined.SdStorage
@@ -55,7 +53,6 @@ import com.vknxworks.immichctrl.container
 import com.vknxworks.immichctrl.data.settings.AppSettings
 import com.vknxworks.immichctrl.data.settings.GroupBy
 import com.vknxworks.immichctrl.data.settings.SettingsRepository
-import com.vknxworks.immichctrl.data.settings.ThemeChoice
 import com.vknxworks.immichctrl.data.timeline.Sources
 import com.vknxworks.immichctrl.ui.components.ConfirmDialog
 import com.vknxworks.immichctrl.ui.components.Group
@@ -92,13 +89,8 @@ fun SettingsScreen() {
 
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar(stringResource(R.string.settings))
-        Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding()) {
-            Group(stringResource(R.string.group_appearance)) {
-                GroupChoice(stringResource(R.string.theme), ThemeChoice.entries.map { it to stringResource(it.label) }, s.theme, Icons.Outlined.DarkMode) { v -> update { it.copy(theme = v) } }
-                GroupSwitch(stringResource(R.string.dynamic_colour), stringResource(R.string.dynamic_colour_subtitle), s.dynamicColor, Icons.Outlined.Palette) { v ->
-                    update { it.copy(dynamicColor = v) }
-                }
-            }
+        Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 24.dp)) {
+            // No Appearance group: Ctrl / Signal is dark only, with one accent (no light theme or wallpaper colours).
             if (session?.account?.isAdmin == true) {
                 Group(stringResource(R.string.notifications), footer = stringResource(R.string.server_alerts_are_checked_about_once)) {
                     if (!canNotify) NotificationsBlockedRow(stringResource(R.string.server_alerts_can_t_reach_you), notify.request)

@@ -36,6 +36,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Check
+import com.vknxworks.immichctrl.ui.theme.CtrlColors
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
+import com.vknxworks.immichctrl.ui.theme.CtrlType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Favorite
@@ -418,8 +422,8 @@ fun AssetGrid(
 private fun MonthHeaderRow(label: String) {
     Text(
         label,
-        style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 20.dp, bottom = 4.dp),
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 22.dp, bottom = 4.dp),
     )
 }
 
@@ -431,9 +435,9 @@ private fun DayHeaderRow(item: DayHeader, selection: Selection) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            dayLabel(item.date),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            dayLabel(item.date).uppercase(),
+            style = CtrlType.Label,
+            color = CtrlColors.Muted,
             modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -452,7 +456,7 @@ private fun DayHeaderRow(item: DayHeader, selection: Selection) {
 
 @Composable
 private fun AssetRowView(row: AssetRow, cols: Int, selection: Selection, indicator: Boolean) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    Row(Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         for (i in 0 until cols) {
             val a = row.assets.getOrNull(i)
             Box(Modifier.weight(1f).aspectRatio(1f)) {
@@ -464,11 +468,11 @@ private fun AssetRowView(row: AssetRow, cols: Int, selection: Selection, indicat
 
 @Composable
 private fun PlaceholderRowView(cells: Int, cols: Int) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    Row(Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, bottom = 2.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         for (i in 0 until cols) {
             Box(
                 Modifier.weight(1f).aspectRatio(1f)
-                    .then(if (i < cells) Modifier.background(MaterialTheme.colorScheme.surfaceContainer) else Modifier),
+                    .then(if (i < cells) Modifier.clip(CtrlShapes.Tile).background(CtrlColors.Surface) else Modifier),
             )
         }
     }
@@ -477,10 +481,11 @@ private fun PlaceholderRowView(cells: Int, cols: Int) {
 @Composable
 private fun AssetCell(a: Asset, selected: Boolean, selecting: Boolean, cols: Int, indicator: Boolean) {
     val scale by animateFloatAsState(if (selected) 0.86f else 1f, label = "sel-scale")
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().clip(CtrlShapes.Tile)) {
         AssetThumb(
             a,
-            Modifier.fillMaxSize().scale(scale).clip(if (selected) RoundedCornerShape(10.dp) else RoundedCornerShape(0.dp)),
+            Modifier.fillMaxSize().scale(scale).clip(if (selected) RoundedCornerShape(10.dp) else CtrlShapes.Tile)
+                .then(if (selected) Modifier.border(2.dp, CtrlColors.Accent, RoundedCornerShape(10.dp)) else Modifier),
             size = if (cols <= 2) "preview" else "thumbnail",
         )
         if (indicator && !selecting && cols <= 5 && (a.isLocalOnly || a.onDevice)) {
@@ -511,11 +516,11 @@ private fun AssetCell(a: Asset, selected: Boolean, selecting: Boolean, cols: Int
 @Composable
 fun SelectMark(selected: Boolean) {
     if (selected) {
-        Box(Modifier.size(22.dp).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
-            Icon(Icons.Filled.CheckCircle, stringResource(R.string.selected), Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+        Box(Modifier.size(22.dp).clip(RoundedCornerShape(7.dp)).background(CtrlColors.Accent), contentAlignment = Alignment.Center) {
+            Icon(Icons.Filled.Check, stringResource(R.string.selected), Modifier.size(16.dp), tint = CtrlColors.OnAccent)
         }
     } else {
-        Box(Modifier.size(22.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.2f)).border(2.dp, Color.White, CircleShape))
+        Box(Modifier.size(22.dp).clip(RoundedCornerShape(7.dp)).background(Color.Black.copy(alpha = 0.25f)).border(2.dp, CtrlColors.Text, RoundedCornerShape(7.dp)))
     }
 }
 
@@ -573,8 +578,8 @@ private fun GridFastScroller(
                 Modifier
                     .padding(end = 4.dp)
                     .size(width = 6.dp, height = thumbH)
-                    .clip(CircleShape)
-                    .background(if (dragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)),
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(if (dragging) CtrlColors.Accent else CtrlColors.Muted.copy(alpha = 0.6f)),
             )
         }
     }
@@ -585,12 +590,12 @@ private fun GridFastScroller(
                 Modifier
                     .align(Alignment.TopEnd)
                     .offset { IntOffset(-with(density) { 52.dp.roundToPx() }, thumbY + with(density) { 8.dp.roundToPx() }) }
-                    .clip(RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp, topEnd = 24.dp, bottomEnd = 6.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .clip(CtrlShapes.Button)
+                    .background(CtrlColors.Accent)
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(text.uppercase(), style = CtrlType.Label.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = CtrlColors.OnAccent)
             }
         }
     }

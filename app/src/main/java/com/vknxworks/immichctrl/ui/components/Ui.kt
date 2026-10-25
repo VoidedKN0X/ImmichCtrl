@@ -1,6 +1,16 @@
 package com.vknxworks.immichctrl.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.ui.text.font.FontWeight
+import com.vknxworks.immichctrl.ui.theme.CtrlColors
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,22 +31,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,11 +46,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,13 +60,12 @@ import com.vknxworks.immichctrl.ui.theme.Gutter
 import androidx.compose.ui.res.stringResource
 import coil3.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.foundation.layout.fillMaxSize
 import com.vknxworks.immichctrl.R
 
 // ---------- Top bars ----------
 
-/** Plain top bar for pushed screens: back arrow and a title. */
+/** Top bar for pushed screens: the square back button and a title in Space Grotesk. No fill. */
 @Composable
 fun ScreenTopBar(
     title: String,
@@ -74,20 +73,31 @@ fun ScreenTopBar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     val nav = LocalNavigator.current
-    TopAppBar(
-        title = { Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        navigationIcon = {
-            if (showBack) IconButton(onClick = nav::back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
-        },
-        actions = actions,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            scrolledContainerColor = MaterialTheme.colorScheme.background,
-        ),
-    )
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
+            .padding(start = Gutter, end = 8.dp, top = 8.dp, bottom = 8.dp)
+            .heightIn(min = 48.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (showBack) {
+            CtrlSquareButton(Icons.AutoMirrored.Outlined.ArrowBack, stringResource(R.string.back), onClick = nav::back)
+            Spacer(Modifier.width(14.dp))
+        }
+        Text(
+            title,
+            style = MaterialTheme.typography.titleLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        actions()
+    }
 }
 
-/** Big left-aligned title for the main tabs, with your profile picture at the end. */
+/** A main tab's header: the IMMICH/CTRL wordmark with your profile picture, then the tab's big title. */
 @Composable
 fun TabTitle(
     title: String,
@@ -96,19 +106,19 @@ fun TabTitle(
     showProfile: Boolean = true,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
-    Row(
-        modifier.fillMaxWidth().padding(start = if (padded) Gutter else 0.dp, end = if (padded) 8.dp else 0.dp, top = 12.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(title, style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
-        trailing()
-        if (showProfile) ProfileButton()
+    Column(modifier.fillMaxWidth().padding(start = if (padded) Gutter else 0.dp, end = if (padded) Gutter else 0.dp, top = 12.dp, bottom = 8.dp)) {
+        CtrlTopBar(trailing = {
+            trailing()
+            if (showProfile) ProfileButton()
+        })
+        Spacer(Modifier.height(18.dp))
+        Text(title, style = MaterialTheme.typography.headlineLarge)
     }
 }
 
 /**
- * The signed-in user's Immich picture, as in every Ctrl app: the picture when there is one, otherwise the
- * initial on a tinted circle. Tapping it opens the You page (not in read-only mode).
+ * The signed-in user's Immich picture in the series' square profile button: the picture when there is one,
+ * otherwise the initial. Tapping it opens the You page (not in read-only mode).
  */
 @Composable
 fun ProfileButton() {
@@ -117,25 +127,21 @@ fun ProfileButton() {
     val session by c.sessions.active.collectAsStateWithLifecycle()
     val settings by c.settings.settings.collectAsStateWithLifecycle()
     val acc = session?.account ?: return
-    val label = stringResource(R.string.you)
-    IconButton(onClick = { if (!settings.readOnly) nav.navigate(YouRoute) }, modifier = Modifier.semantics { contentDescription = label }) {
+    CtrlAvatarButton(stringResource(R.string.you), onClick = { if (!settings.readOnly) nav.navigate(YouRoute) }) {
         ProfileAvatar(acc.userId, acc.name)
     }
 }
 
-/** The series profile picture: the Immich picture over the initial on a tinted circle. */
+/** The series profile picture: the Immich picture over the initial, filling its (square) parent. */
 @Composable
-fun ProfileAvatar(userId: String, name: String) {
+fun ProfileAvatar(userId: String, name: String, modifier: Modifier = Modifier.fillMaxSize()) {
     val c = LocalContext.current.container
-    Box(
-        Modifier.size(34.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
-        contentAlignment = Alignment.Center,
-    ) {
-        val initial = name.trim().take(1).uppercase()
+    Box(modifier.background(CtrlColors.Surface), contentAlignment = Alignment.Center) {
+        val initial = name.trim().take(2).uppercase()
         if (initial.isEmpty()) {
-            Icon(Icons.Filled.AccountCircle, null, tint = MaterialTheme.colorScheme.primary)
+            Icon(Icons.Outlined.AccountCircle, null, Modifier.size(22.dp), tint = CtrlColors.Text)
         } else {
-            Text(initial, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+            Text(initial, style = MaterialTheme.typography.labelLarge, color = CtrlColors.Text)
         }
         AsyncImage(
             model = c.api.profileImageUrl(userId, null),
@@ -148,7 +154,10 @@ fun ProfileAvatar(userId: String, name: String) {
 
 // ---------- Grouped lists (settings, profile, admin) ----------
 
-/** A rounded block of related rows, with an optional heading above it. */
+/**
+ * A card of related rows with a mono section label above it. Rows draw a hairline at their top; the first one
+ * sits under the card's own border.
+ */
 @Composable
 fun Group(
     title: String? = null,
@@ -158,20 +167,23 @@ fun Group(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier.fillMaxWidth().padding(horizontal = if (padded) Gutter else 0.dp, vertical = 8.dp)) {
-        if (title != null) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
-            )
-        }
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            modifier = Modifier.fillMaxWidth(),
+        if (title != null) CtrlLabel(title, Modifier.padding(start = 4.dp, bottom = 8.dp))
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(CtrlShapes.Card)
+                .background(CtrlColors.Surface)
+                .border(1.dp, CtrlColors.CardBorder, CtrlShapes.Card),
         ) {
-            Column(Modifier.padding(vertical = 6.dp), content = content)
+            // Shift the rows up by the first row's 1dp divider so it hides under the card's own border.
+            Column(
+                Modifier.fillMaxWidth().layout { measurable, constraints ->
+                    val hair = 1.dp.roundToPx()
+                    val placeable = measurable.measure(constraints)
+                    layout(placeable.width, (placeable.height - hair).coerceAtLeast(0)) { placeable.place(0, -hair) }
+                },
+                content = content,
+            )
         }
         if (footer != null) {
             Text(
@@ -189,44 +201,44 @@ fun GroupRow(
     title: String,
     subtitle: String? = null,
     icon: ImageVector? = null,
-    iconTint: Color = MaterialTheme.colorScheme.primary,
+    iconTint: Color = CtrlColors.Muted,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
     showChevron: Boolean = false,
     onClick: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (icon != null) {
-            Box(
-                Modifier.size(36.dp).clip(CircleShape).background(iconTint.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center,
-            ) { Icon(icon, null, Modifier.size(20.dp), tint = iconTint) }
-            Spacer(Modifier.width(14.dp))
-        }
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge, color = titleColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (!subtitle.isNullOrBlank()) {
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
+    Column(Modifier.fillMaxWidth()) {
+        CtrlDivider()
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 60.dp)
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (icon != null) {
+                Icon(icon, null, Modifier.size(20.dp), tint = iconTint)
+                Spacer(Modifier.width(14.dp))
             }
-        }
-        if (trailing != null) {
-            Spacer(Modifier.width(12.dp))
-            trailing()
-        } else if (showChevron) {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), color = titleColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (trailing != null) {
+                Spacer(Modifier.width(12.dp))
+                trailing()
+            } else if (showChevron) {
+                Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
@@ -241,7 +253,7 @@ fun GroupSwitch(
     onChange: (Boolean) -> Unit,
 ) {
     GroupRow(title, subtitle, icon, onClick = if (enabled) ({ onChange(!checked) }) else null) {
-        Switch(checked, onCheckedChange = onChange, enabled = enabled)
+        CtrlSwitch(checked, onCheckedChange = onChange, enabled = enabled)
     }
 }
 
@@ -271,7 +283,7 @@ fun <T> ChoiceSheet(
     onDismiss: () -> Unit,
     onPick: (T) -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = CtrlColors.Surface, shape = CtrlShapes.Sheet) {
         Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
         LazyColumn(Modifier.navigationBarsPadding(), contentPadding = PaddingValues(bottom = 16.dp)) {
             items(options, key = { it.second }) { (value, label) ->
@@ -286,7 +298,7 @@ fun <T> ChoiceSheet(
                         color = if (isSel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
                     )
-                    if (isSel) Icon(Icons.Filled.Check, stringResource(R.string.selected), tint = MaterialTheme.colorScheme.primary)
+                    if (isSel) Icon(Icons.Outlined.Check, stringResource(R.string.selected), tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -309,16 +321,21 @@ fun PillButton(
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.heightIn(min = 52.dp),
-        shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(containerColor = container, contentColor = content),
+        modifier = modifier.heightIn(min = 56.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = container,
+            contentColor = content,
+            disabledContainerColor = CtrlColors.Raised,
+            disabledContentColor = CtrlColors.Stopped,
+        ),
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
     ) {
         if (icon != null) {
-            Icon(icon, null, Modifier.size(22.dp))
-            Spacer(Modifier.width(8.dp))
+            Icon(icon, null, Modifier.size(20.dp))
+            Spacer(Modifier.width(10.dp))
         }
-        Text(text, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -338,17 +355,18 @@ fun RoundAction(
         Box(
             Modifier
                 .size(48.dp)
-                .clip(CircleShape)
-                .background(if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else MaterialTheme.colorScheme.surfaceContainerHigh),
+                .clip(CtrlShapes.Button)
+                .background(if (active) CtrlColors.Accent else CtrlColors.Surface)
+                .border(1.dp, if (active) CtrlColors.Accent else CtrlColors.ControlBorder, CtrlShapes.Button),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, label, tint = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
+            Icon(icon, label, Modifier.size(20.dp), tint = if (active) CtrlColors.OnAccent else CtrlColors.Text)
         }
         Spacer(Modifier.height(6.dp))
         Text(
             label,
             style = MaterialTheme.typography.labelMedium,
-            color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (active) CtrlColors.Accent else MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
         )
     }

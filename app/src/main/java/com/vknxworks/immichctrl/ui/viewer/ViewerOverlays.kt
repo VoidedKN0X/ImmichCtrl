@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.viewer
 
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -202,7 +203,7 @@ private fun FaceSheet(face: FaceDto, onDismiss: () -> Unit, onChanged: () -> Uni
             }
         }
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
         Column(Modifier.navigationBarsPadding()) {
             SheetTitle(face.person?.name?.ifBlank { null }?.let { Strings.str(R.string.this_is, it) } ?: stringResource(R.string.who_is_this), stringResource(R.string.pick_the_right_person_or_add_someone))
             ActionItem(Icons.Filled.Add, stringResource(R.string.someone_new)) { naming = true }

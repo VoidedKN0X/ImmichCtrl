@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.widthIn
@@ -241,10 +242,11 @@ fun MessageView(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(
-                Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                Modifier.size(72.dp).clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp)).background(com.vknxworks.immichctrl.ui.theme.CtrlColors.Surface)
+                    .border(1.dp, com.vknxworks.immichctrl.ui.theme.CtrlColors.CardBorder, androidx.compose.foundation.shape.RoundedCornerShape(24.dp)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(icon, null, Modifier.size(32.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(icon, null, Modifier.size(30.dp), tint = com.vknxworks.immichctrl.ui.theme.CtrlColors.Accent)
             }
             Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
             if (body != null) {
@@ -256,7 +258,7 @@ fun MessageView(
                 )
             }
             if (actionLabel != null && onAction != null) {
-                FilledTonalButton(onClick = onAction, shape = CircleShape) { Text(actionLabel) }
+                PillButton(actionLabel, onClick = onAction)
             }
             if (secondaryLabel != null && onSecondary != null) {
                 TextButton(onClick = onSecondary) { Text(secondaryLabel) }

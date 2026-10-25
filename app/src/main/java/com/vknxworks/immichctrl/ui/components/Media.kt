@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.components
 
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -42,6 +42,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
 import coil3.compose.AsyncImage
 import coil3.compose.SubcomposeAsyncImage
@@ -114,14 +115,14 @@ fun RemoteImage(
 @Composable
 fun PersonFace(personId: String, updatedAt: String?, modifier: Modifier = Modifier) {
     val c = LocalContext.current.container
-    RemoteImage(remember(personId, updatedAt) { c.api.personThumbUrl(personId, updatedAt) }, modifier.clip(CircleShape), placeholderIcon = Icons.Outlined.Person)
+    RemoteImage(remember(personId, updatedAt) { c.api.personThumbUrl(personId, updatedAt) }, modifier.clip(AvatarShape), placeholderIcon = Icons.Outlined.Person)
 }
 
 /** A user's profile picture, or their initial on their Immich avatar colour. */
 @Composable
 fun UserAvatar(userId: String, name: String, hasImage: Boolean, changedAt: String?, avatarColor: String?, modifier: Modifier = Modifier) {
     val c = LocalContext.current.container
-    Box(modifier.clip(CircleShape).background(colorForAvatar(avatarColor).copy(alpha = 0.28f)), contentAlignment = Alignment.Center) {
+    Box(modifier.clip(AvatarShape).background(colorForAvatar(avatarColor).copy(alpha = 0.22f)), contentAlignment = Alignment.Center) {
         Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = colorForAvatar(avatarColor))
         if (hasImage) {
             AsyncImage(model = c.api.profileImageUrl(userId, changedAt), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
@@ -253,7 +254,7 @@ fun TextInputDialog(
     onConfirm: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(initial) }
-    AlertDialog(
+    CtrlAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
@@ -264,6 +265,7 @@ fun TextInputDialog(
                 visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
                 keyboardOptions = KeyboardOptions(keyboardType = if (numeric) KeyboardType.NumberPassword else if (secret) KeyboardType.Password else KeyboardType.Text),
                 modifier = Modifier.fillMaxWidth(),
+                shape = CtrlShapes.Field, colors = ctrlFieldColors(),
             )
         },
         confirmButton = { TextButton(onClick = { onConfirm(text.trim()) }, enabled = allowEmpty || text.isNotBlank()) { Text(confirm) } },
@@ -273,7 +275,7 @@ fun TextInputDialog(
 
 @Composable
 fun ConfirmDialog(title: String, body: String, confirm: String, destructive: Boolean = true, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
+    CtrlAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = { Text(body) },
@@ -286,17 +288,20 @@ fun ConfirmDialog(title: String, body: String, confirm: String, destructive: Boo
     )
 }
 
-/** Small round pill used for counts and badges over thumbnails. */
+/** Ctrl / Signal avatars and faces: rounded squares, not circles. */
+val AvatarShape = androidx.compose.foundation.shape.RoundedCornerShape(percent = 32)
+
+/** Small badge used for counts and durations over thumbnails: 9dp corners, mono digits. */
 @Composable
 fun Badge(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null) {
     Row(
-        modifier.clip(CircleShape).background(Color.Black.copy(alpha = 0.45f)).padding(horizontal = 6.dp, vertical = 2.dp),
+        modifier.clip(com.vknxworks.immichctrl.ui.theme.CtrlShapes.Badge).background(com.vknxworks.immichctrl.ui.theme.CtrlColors.Background.copy(alpha = 0.62f)).padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) Icon(icon, null, Modifier.size(12.dp), tint = Color.White)
         if (text.isNotEmpty()) {
             if (icon != null) Spacer(Modifier.width(3.dp))
-            Text(text, style = MaterialTheme.typography.labelSmall, color = Color.White)
+            Text(text, style = com.vknxworks.immichctrl.ui.theme.CtrlType.Mono.copy(fontSize = 10.sp), color = Color.White)
         }
     }
 }

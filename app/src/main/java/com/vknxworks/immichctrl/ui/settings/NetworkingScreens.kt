@@ -1,5 +1,7 @@
 package com.vknxworks.immichctrl.ui.settings
 
+import com.vknxworks.immichctrl.ui.components.ctrlFieldColors
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import android.content.Intent
 import android.security.KeyChain
 import androidx.compose.foundation.layout.Column
@@ -126,6 +128,7 @@ fun NetworkingScreen() {
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false),
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                    shape = CtrlShapes.Field, colors = ctrlFieldColors(),
                 )
             }
             Group(
@@ -139,6 +142,7 @@ fun NetworkingScreen() {
                     textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                     keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+                    shape = CtrlShapes.Field, colors = ctrlFieldColors(),
                 )
             }
             Group(

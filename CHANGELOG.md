@@ -4,6 +4,34 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.4.0
+
+ImmichCtrl gets the new Ctrl / Signal look shared by every Ctrl app: near-black, one violet accent, hairline borders and two new typefaces. Only the look changes; every screen, feature, setting and gesture works as before.
+
+### Changed
+
+- **New colours, dark only.** The background is now near-black (#08080A), cards and sheets are a slightly lighter graphite (#141417) with a thin border instead of tints and shadows, text is off-white, and everything that's "on", selected or the main action uses one violet accent (#B48CFF) instead of periwinkle. The status and navigation bars match the background and always use light icons.
+- **New fonts.** Space Grotesk for all text and headings, JetBrains Mono for numbers, counts, dates in the timeline, server addresses and section labels. Both fonts are built into the app (no font downloads, nothing from Google). The home-screen photo widgets use Space Grotesk too.
+- **New header on Photos, Search and Library.** The top of each tab now shows the IMMICH/CTRL wordmark on the left and a square profile button (44dp, rounded corners) on the right, with a small violet square in its corner while you're signed in. Tapping it still opens the You page; long-pressing it on Photos still toggles read-only mode. On Photos, the backup button is a matching square button (violet when backup is on, a progress ring while backing up) and a small label above the big "Photos" title says whether backup is on, off or running.
+- **Pushed screens** (albums, people, places, settings, backup and so on) have a square back button and the title next to it, without a coloured bar behind.
+- **Floating tab bar.** The bottom tabs are a floating bar with rounded corners and a thin border, 20dp from the screen sides and a little higher above the gesture bar. The selected tab is a violet block with its icon and name; the other tabs show only their icon. The frosted-glass blur is gone. On tablets the side rail uses the same colours.
+- **Photo grid.** Thumbnails now have small rounded corners (6dp) with the 2dp gaps kept, including at the screen edges. Day headings are in small uppercase mono type. Selected photos get a violet outline and a violet square tick instead of a round check, and the month bubble while dragging the fast scroller is a violet rounded rectangle.
+- **Albums as cards.** In Library, album covers sit in bordered cards with the name underneath and the item count, owner and date in mono type. The list view uses the same cards as rows. Library's shortcuts (Favourites, People, Places and the rest) are bordered tiles with a violet icon, "Available offline" albums are plain rows with a status and a small square dot, and the album count is shown next to "Albums".
+- **Memories** on Photos have 22dp rounded corners and a thin border.
+- **Viewer and slideshow controls.** The floating controls at the bottom of the photo viewer, the video seek bar, the selection bar and the slideshow controls are solid graphite panels with a thin border and rounded corners instead of blurred glass pills. The viewer's back button is a square button, the time and place line under the date uses mono type, and slideshow progress bars are violet.
+- **Switches.** Every switch is the series' rounded-rectangle switch: violet with a dark knob when on, dark grey with a grey knob when off. Screen readers still announce them as switches.
+- **Settings and You.** Groups of settings have small uppercase section labels and sit in bordered cards, with a thin line between rows and plain grey icons. The You page shows your picture (or your initials on violet) in a rounded square next to your name and server address, a violet card with your photo and video count, and a violet **Support ImmichCtrl** button at the bottom above the "GOOGLE-FREE · TELEMETRY-FREE · ARM64" line. Storage bars are thicker (6dp) and violet.
+- **App lock.** The lock screen has a violet rounded-square lock badge, a "VKNXWORKS · CTRL" label, a large title and square PIN cells (violet when filled). The keypad is a full-width 3-column grid of rounded keys in JetBrains Mono, with a violet-outlined fingerprint key bottom-left (when fingerprint unlock is on), 0 in the middle and delete on the right. With fingerprint on and a PIN of a different length than usual, an **OK** button appears under the keypad. **Forgot PIN?** is still below. The PIN, fingerprint and lockout behaviour is unchanged. The PIN setup and change screens use the same keypad.
+- **Dialogs, sheets and text fields.** Dialogs and bottom sheets are graphite with 26dp rounded corners and a thin border. Text fields (sign-in, search, album search, comments, descriptions, Networking and the edit dialogs) are graphite boxes with a thin border that turns violet, with a violet cursor, while you type.
+- **Buttons.** Main buttons are violet blocks with dark text and rounded corners (56dp tall) instead of round pills; secondary buttons (such as **Sign in with OAuth** and **Stop** in Backup) are graphite with a thin border. Empty-screen messages use a rounded-square icon badge and the same main button.
+- **Avatars and faces** (people, partners, album members, the viewer's "whose photo" chip) are rounded squares instead of circles. Video length and stack count badges on thumbnails use mono digits.
+- **Sign-in** shows the IMMICH/CTRL wordmark and a "VKNXWORKS · CTRL" label above the title.
+
+### Removed
+
+- **Settings › Appearance** (the **Theme** choice of Follow system, Dark, Light or Pure black, and **Use wallpaper colours**) is gone, because the Ctrl / Signal look is dark only with one accent. Whatever you had chosen is kept in your settings but no longer changes the colours, so if you used the light theme or wallpaper colours, ImmichCtrl now shows the dark Signal colours.
+- The Manrope font is no longer included; Space Grotesk and JetBrains Mono replace it. Their licences (SIL Open Font License 1.1) are included in the app and the repository.
+
 ## 0.3.17
 
 ### Fixed

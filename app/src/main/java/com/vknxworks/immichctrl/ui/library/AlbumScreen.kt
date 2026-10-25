@@ -1,5 +1,7 @@
 package com.vknxworks.immichctrl.ui.library
 
+import com.vknxworks.immichctrl.ui.components.ctrlFieldColors
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -202,7 +204,7 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
     )
 
     if (addMenu) {
-        ModalBottomSheet(onDismissRequest = { addMenu = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+        ModalBottomSheet(onDismissRequest = { addMenu = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
             Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(stringResource(R.string.add_to, a.albumName))
                 ActionItem(Icons.Outlined.PhotoLibrary, stringResource(R.string.from_your_immich_library)) { addMenu = false; nav.navigate(PickAssetsRoute(a.id)) }
@@ -220,6 +222,7 @@ private fun AlbumContent(a: AlbumDto, onChanged: () -> Unit, onGone: () -> Unit)
             onDismissRequest = { menu = false },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            shape = CtrlShapes.Sheet,
         ) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(a.albumName, a.ownerUser?.name?.let { if (isOwner) null else Strings.str(R.string.shared_by, it) })
@@ -320,7 +323,7 @@ private fun ShareAlbumSheet(a: AlbumDto, onDismiss: () -> Unit, onChanged: () ->
     val c = LocalContext.current.container
     var adding by remember { mutableStateOf(false) }
     val users = rememberLoader("users") { c.api.users() }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
             SheetTitle(stringResource(R.string.shared_with), if (a.members.isEmpty()) stringResource(R.string.only_you_can_see_this_album) else null)
             a.members.forEach { m ->
@@ -382,7 +385,7 @@ private fun ActivitySheet(a: AlbumDto, onDismiss: () -> Unit) {
     var removing by remember { mutableStateOf<ActivityDto?>(null) }
     val myLike = list.value?.firstOrNull { it.type == "like" && it.assetId == null && it.user.id == c.me }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
         Column(Modifier.navigationBarsPadding().imePadding()) {
             Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.activity), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
@@ -427,7 +430,7 @@ private fun ActivitySheet(a: AlbumDto, onDismiss: () -> Unit) {
                 }
             }
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(text, { text = it }, placeholder = { Text(stringResource(R.string.say_something)) }, modifier = Modifier.weight(1f), maxLines = 4)
+                OutlinedTextField(text, { text = it }, placeholder = { Text(stringResource(R.string.say_something)) }, modifier = Modifier.weight(1f), maxLines = 4, shape = CtrlShapes.Field, colors = ctrlFieldColors())
                 IconButton(onClick = {
                     val t = text.trim()
                     if (t.isNotEmpty()) {

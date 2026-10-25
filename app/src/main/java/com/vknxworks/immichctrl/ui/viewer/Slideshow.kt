@@ -184,7 +184,7 @@ fun SlideshowScreen(sourceKey: String, startIndex: Int) {
         AnimatedVisibility(controls, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
             CompositionLocalProvider(LocalHazeState provides haze) {
                 Column(
-                    Modifier.navigationBarsPadding().padding(16.dp).glass(RoundedCornerShape(28.dp)).padding(12.dp),
+                    Modifier.navigationBarsPadding().padding(16.dp).glass(com.vknxworks.immichctrl.ui.theme.CtrlShapes.Card).padding(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -287,7 +287,7 @@ private fun Story(memories: List<MemoryDto>, start: Int, onDone: () -> Unit) {
                     LinearProgressIndicator(
                         progress = { if (k < i) 1f else if (k == i) progress else 0f },
                         modifier = Modifier.weight(1f).height(3.dp),
-                        color = Color.White,
+                        color = com.vknxworks.immichctrl.ui.theme.CtrlColors.Accent,
                         trackColor = Color.White.copy(alpha = 0.3f),
                     )
                 }
@@ -307,7 +307,7 @@ private fun Story(memories: List<MemoryDto>, start: Int, onDone: () -> Unit) {
         asset?.let { a ->
             CompositionLocalProvider(LocalHazeState provides haze) {
                 Row(
-                    Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp).glass(CircleShape).padding(horizontal = 8.dp, vertical = 4.dp),
+                    Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(16.dp).glass(com.vknxworks.immichctrl.ui.theme.CtrlShapes.Card).padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
                     IconButton(onClick = { paused = !paused }) { Icon(if (paused) Icons.Filled.PlayArrow else Icons.Filled.Pause, if (paused) stringResource(R.string.play) else stringResource(R.string.pause)) }
                     IconButton(onClick = { paused = true; shareFlow.start(c, listOf(a)) }) { Icon(Icons.Outlined.Share, stringResource(R.string.share)) }
@@ -357,7 +357,7 @@ fun ExternalViewScreen() {
         CompositionLocalProvider(LocalHazeState provides haze) {
             Row(
                 Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = if (asset.isVideo) 72.dp else 20.dp)
-                    .glass(CircleShape).padding(horizontal = 8.dp, vertical = 4.dp),
+                    .glass(com.vknxworks.immichctrl.ui.theme.CtrlShapes.Card).padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 if (!c.settings.settings.value.readOnly) {

@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.local
 
+import com.vknxworks.immichctrl.ui.components.CtrlProgress
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,7 +32,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -251,8 +251,9 @@ fun FreeUpSpaceScreen() {
                 }
             }
             Surface(
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surfaceContainer,
+                shape = com.vknxworks.immichctrl.ui.theme.CtrlShapes.Card,
+                color = com.vknxworks.immichctrl.ui.theme.CtrlColors.Surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, com.vknxworks.immichctrl.ui.theme.CtrlColors.CardBorder),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 8.dp),
             ) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -260,7 +261,7 @@ fun FreeUpSpaceScreen() {
                     when {
                         progress != null -> {
                             Text(progress.orEmpty(), style = MaterialTheme.typography.bodyMedium)
-                            LinearProgressIndicator(Modifier.fillMaxWidth())
+                            CtrlProgress(Modifier.fillMaxWidth())
                         }
                         error != null -> Text(error.orEmpty(), color = MaterialTheme.colorScheme.error)
                         p == null -> Text(stringResource(R.string.review_what_would_be_removed_before), style = MaterialTheme.typography.bodyMedium)
