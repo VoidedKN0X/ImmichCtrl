@@ -520,7 +520,7 @@ fun SelectMark(selected: Boolean) {
             Icon(Icons.Filled.Check, stringResource(R.string.selected), Modifier.size(16.dp), tint = CtrlColors.OnAccent)
         }
     } else {
-        Box(Modifier.size(22.dp).clip(RoundedCornerShape(7.dp)).background(Color.Black.copy(alpha = 0.25f)).border(2.dp, CtrlColors.Text, RoundedCornerShape(7.dp)))
+        Box(Modifier.size(22.dp).clip(RoundedCornerShape(7.dp)).background(Color.Black.copy(alpha = 0.25f)).border(2.dp, Color.White, RoundedCornerShape(7.dp)))
     }
 }
 

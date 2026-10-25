@@ -335,7 +335,7 @@ private fun AppNavHost(navController: NavHostController) {
 
         composable<ViewerRoute> {
             val r = it.toRoute<ViewerRoute>()
-            ViewerScreen(r.source, r.index, r.assetId)
+            DarkScreen { ViewerScreen(r.source, r.index, r.assetId) }
         }
         composable<AlbumsRoute> { AlbumsScreen(it.toRoute<AlbumsRoute>().shared) }
         composable<AlbumRoute> { AlbumScreen(it.toRoute<AlbumRoute>().id) }
@@ -359,7 +359,7 @@ private fun AppNavHost(navController: NavHostController) {
             TagScreen(r.id, r.name)
         }
         composable<FoldersRoute> { FoldersScreen(it.toRoute<FoldersRoute>().path) }
-        composable<MemoryRoute> { MemoryScreen(it.toRoute<MemoryRoute>().id) }
+        composable<MemoryRoute> { DarkScreen { MemoryScreen(it.toRoute<MemoryRoute>().id) } }
         composable<BackupRoute> { BackupScreen() }
         composable<SettingsRoute> { SettingsScreen() }
         composable<AccountsRoute> { AccountsScreen() }
@@ -370,11 +370,11 @@ private fun AppNavHost(navController: NavHostController) {
             LocalAlbumScreen(r.bucketId, r.name)
         }
         composable<FreeUpSpaceRoute> { FreeUpSpaceScreen() }
-        composable<ExternalViewRoute> { ExternalViewScreen() }
-        composable<EditorRoute> { EditorScreen(it.toRoute<EditorRoute>().assetId) }
+        composable<ExternalViewRoute> { DarkScreen { ExternalViewScreen() } }
+        composable<EditorRoute> { DarkScreen { EditorScreen(it.toRoute<EditorRoute>().assetId) } }
         composable<SlideshowRoute> {
             val r = it.toRoute<SlideshowRoute>()
-            SlideshowScreen(r.source, r.index)
+            DarkScreen { SlideshowScreen(r.source, r.index) }
         }
         composable<DuplicatesRoute> { DuplicatesScreen() }
         composable<OfflineAlbumRoute> { OfflineAlbumScreen(it.toRoute<OfflineAlbumRoute>().albumId) }
@@ -383,5 +383,28 @@ private fun AppNavHost(navController: NavHostController) {
         composable<AddAccountRoute> {
             SignInScreen(onDone = { navController.popBackStack(PhotosRoute, false) }, onCancel = { navController.popBackStack() })
         }
+    }
+}
+
+/**
+ * The photo viewer, slideshows, memories and the editor stay dark in light mode too (photos first): the dark
+ * Signal palette, with light status and navigation bar icons while they're open.
+ */
+@Composable
+private fun DarkScreen(content: @Composable () -> Unit) {
+    val view = androidx.compose.ui.platform.LocalView.current
+    val systemDark = androidx.compose.foundation.isSystemInDarkTheme()
+    androidx.compose.runtime.DisposableEffect(view, systemDark) {
+        val window = (view.context.findActivity())?.window
+        val ctl = window?.let { androidx.core.view.WindowCompat.getInsetsController(it, view) }
+        ctl?.isAppearanceLightStatusBars = false
+        ctl?.isAppearanceLightNavigationBars = false
+        onDispose {
+            ctl?.isAppearanceLightStatusBars = !systemDark
+            ctl?.isAppearanceLightNavigationBars = !systemDark
+        }
+    }
+    com.vknxworks.immichctrl.ui.theme.CtrlDarkTheme {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { content() }
     }
 }

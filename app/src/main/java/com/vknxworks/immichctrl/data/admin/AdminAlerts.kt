@@ -102,6 +102,7 @@ class AdminAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
             5000 + id,
             NotificationCompat.Builder(applicationContext, CHANNEL)
                 .setSmallIcon(R.drawable.ic_notification)
+                .setColor(androidx.core.content.ContextCompat.getColor(applicationContext, R.color.accent_text))
                 .setContentTitle(title)
                 .setContentText(text)
                 .setContentIntent(open)
@@ -111,6 +112,7 @@ class AdminAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
                 .setPublicVersion(
                     NotificationCompat.Builder(applicationContext, CHANNEL)
                         .setSmallIcon(R.drawable.ic_notification)
+                        .setColor(androidx.core.content.ContextCompat.getColor(applicationContext, R.color.accent_text))
                         .setContentTitle(Strings.str(R.string.immich_server_alert))
                         .build(),
                 )

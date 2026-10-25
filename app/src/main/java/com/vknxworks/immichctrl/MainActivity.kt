@@ -12,7 +12,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.graphics.toArgb
+import com.vknxworks.immichctrl.ui.theme.CtrlColors
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.core.content.IntentCompat
@@ -40,7 +43,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT), navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
+        enableEdgeToEdge()
         val c = container
         setContent {
             val settings by c.settings.settings.collectAsStateWithLifecycle()
@@ -54,11 +57,14 @@ class MainActivity : FragmentActivity() {
                 if (secure) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             }
-            // Ctrl / Signal is dark only: light status and navigation bar icons over the app's background, edge to edge.
-            DisposableEffect(Unit) {
-                val style = SystemBarStyle.dark(Color.TRANSPARENT)
+            // Ctrl / Signal follows the phone's dark theme: edge to edge over the app's background, with light bar
+            // icons in dark mode and dark icons in light mode.
+            val dark = isSystemInDarkTheme()
+            DisposableEffect(dark) {
+                val style = if (dark) SystemBarStyle.dark(Color.TRANSPARENT)
+                else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
-                window.decorView.setBackgroundColor(BG)
+                window.decorView.setBackgroundColor((if (dark) CtrlColors.Dark else CtrlColors.Light).background.toArgb())
                 onDispose { }
             }
             ImmichCtrlTheme(settings.theme, settings.dynamicColor) {
@@ -136,8 +142,5 @@ class MainActivity : FragmentActivity() {
     companion object {
         /** Intent extra: what to open ("memory:<id>", "asset:<id>", "admin"). */
         const val EXTRA_OPEN = "open"
-
-        /** The window behind the app: Ctrl / Signal's background (#08080A). */
-        private val BG = 0xFF08080A.toInt()
     }
 }

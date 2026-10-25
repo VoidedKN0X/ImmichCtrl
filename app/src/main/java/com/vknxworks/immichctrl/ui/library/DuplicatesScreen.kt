@@ -206,9 +206,9 @@ private fun DuplicateGroup(
                                 .padding(6.dp)
                                 .size(26.dp)
                                 .clip(RoundedCornerShape(50))
-                                .background(if (kept) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.errorContainer)
+                                .background(if (kept) com.vknxworks.immichctrl.ui.theme.CtrlColors.Accent else MaterialTheme.colorScheme.errorContainer)
                                 .padding(4.dp),
-                            tint = if (kept) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onErrorContainer,
+                            tint = if (kept) com.vknxworks.immichctrl.ui.theme.CtrlColors.OnAccent else MaterialTheme.colorScheme.onErrorContainer,
                         )
                     }
                     Spacer(Modifier.height(6.dp))

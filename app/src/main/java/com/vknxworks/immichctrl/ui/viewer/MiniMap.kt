@@ -40,7 +40,7 @@ fun rememberMapStyleUrl(): String? {
     val config by c.serverConfig.collectAsStateWithLifecycle()
     // The stored value, not the start-up placeholder, so a map never loads before the setting is known.
     val stored by c.settings.stored.collectAsStateWithLifecycle(initialValue = null)
-    val dark = isSystemInDarkTheme()
+    val dark = com.vknxworks.immichctrl.ui.theme.LocalCtrlColors.current.isDark
     if (!features.map || stored?.showMaps != true) return null
     val url = (if (dark) config.mapDarkStyleUrl else config.mapLightStyleUrl).ifBlank {
         if (dark) "https://tiles.immich.cloud/v1/style/dark.json" else "https://tiles.immich.cloud/v1/style/light.json"
@@ -53,7 +53,7 @@ fun rememberMapStyleUrl(): String? {
 fun MiniMap(lat: Double, lon: Double, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val styleUrl = rememberMapStyleUrl() ?: return
-    val accent = MaterialTheme.colorScheme.primary.toArgb()
+    val accent = com.vknxworks.immichctrl.ui.theme.CtrlColors.Accent.toArgb()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val mapView = remember {
         MapLibre.getInstance(context)

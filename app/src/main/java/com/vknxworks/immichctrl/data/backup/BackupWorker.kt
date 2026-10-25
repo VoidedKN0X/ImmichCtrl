@@ -231,6 +231,7 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             DONE_ID,
             NotificationCompat.Builder(applicationContext, CHANNEL)
                 .setSmallIcon(R.drawable.ic_notification)
+                .setColor(androidx.core.content.ContextCompat.getColor(applicationContext, R.color.accent_text))
                 .setContentTitle(Strings.str(R.string.backup_finished))
                 .setContentText(text)
                 .setAutoCancel(true)
@@ -349,6 +350,7 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
     private fun notification(done: Int, total: Int, name: String?) =
         NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(androidx.core.content.ContextCompat.getColor(applicationContext, R.color.accent_text))
             .setContentTitle(Strings.str(R.string.backing_up_of, done, total))
             .setContentText(name ?: Strings.str(R.string.checking_what_s_new))
             .setProgress(total, done, total == 0)
@@ -360,6 +362,7 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
             .setPublicVersion(
                 NotificationCompat.Builder(applicationContext, CHANNEL)
                     .setSmallIcon(R.drawable.ic_notification)
+                    .setColor(androidx.core.content.ContextCompat.getColor(applicationContext, R.color.accent_text))
                     .setContentTitle(Strings.str(R.string.backing_up_photos))
                     .setProgress(total, done, total == 0)
                     .setSilent(true)

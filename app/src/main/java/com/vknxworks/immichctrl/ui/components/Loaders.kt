@@ -246,7 +246,7 @@ fun MessageView(
                     .border(1.dp, com.vknxworks.immichctrl.ui.theme.CtrlColors.CardBorder, androidx.compose.foundation.shape.RoundedCornerShape(24.dp)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(icon, null, Modifier.size(30.dp), tint = com.vknxworks.immichctrl.ui.theme.CtrlColors.Accent)
+                Icon(icon, null, Modifier.size(30.dp), tint = com.vknxworks.immichctrl.ui.theme.CtrlColors.AccentText)
             }
             Text(title, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
             if (body != null) {

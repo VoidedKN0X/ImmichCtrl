@@ -468,7 +468,7 @@ private fun PinPad(
         )
         Spacer(Modifier.height(28.dp))
         Box(Modifier.height(20.dp).offset { IntOffset(shake.roundToInt(), 0) }, contentAlignment = Alignment.Center) {
-            if (checking) CircularProgressIndicator(Modifier.size(20.dp), color = CtrlColors.Accent, strokeWidth = 2.dp)
+            if (checking) CircularProgressIndicator(Modifier.size(20.dp), color = CtrlColors.AccentText, strokeWidth = 2.dp)
             else Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 repeat(maxOf(pin.length, LockVault.PIN_MIN)) { i ->
                     val shape = RoundedCornerShape(5.dp)
@@ -493,11 +493,11 @@ private fun PinPad(
                     onFingerprint != null && !showConfirm -> PadKey(
                         keyMod,
                         enabled = true,
-                        border = CtrlColors.Accent,
+                        border = CtrlColors.AccentText,
                         container = Color.Transparent,
                         label = stringResource(R.string.lock_use_fingerprint),
                         onClick = onFingerprint,
-                    ) { Icon(Icons.Outlined.Fingerprint, null, Modifier.size(26.dp), tint = CtrlColors.Accent) }
+                    ) { Icon(Icons.Outlined.Fingerprint, null, Modifier.size(26.dp), tint = CtrlColors.AccentText) }
                     else -> PadKey(
                         keyMod,
                         enabled = enabled && showConfirm,

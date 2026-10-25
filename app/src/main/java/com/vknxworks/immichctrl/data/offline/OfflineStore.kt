@@ -231,6 +231,7 @@ class OfflineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
     private fun notification(done: Int, total: Int, name: String) =
         NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(androidx.core.content.ContextCompat.getColor(applicationContext, R.color.accent_text))
             .setContentTitle(Strings.str(R.string.saving_for_offline, name))
             .setContentText(Strings.str(R.string.of, done, total))
             .setProgress(total, done, total == 0)
@@ -241,6 +242,7 @@ class OfflineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             .setPublicVersion(
                 NotificationCompat.Builder(applicationContext, CHANNEL)
                     .setSmallIcon(R.drawable.ic_notification)
+                    .setColor(androidx.core.content.ContextCompat.getColor(applicationContext, R.color.accent_text))
                     .setContentTitle(Strings.str(R.string.saving_an_album_for_offline))
                     .setProgress(total, done, total == 0)
                     .setSilent(true)
