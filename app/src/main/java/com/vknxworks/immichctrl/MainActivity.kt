@@ -12,7 +12,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,7 +24,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.vknxworks.immichctrl.data.backup.DeviceActions
 import com.vknxworks.immichctrl.data.security.ScreenPrivacy
 import com.vknxworks.immichctrl.data.security.isForeignContentUri
-import com.vknxworks.immichctrl.data.settings.ThemeChoice
 import com.vknxworks.immichctrl.ui.nav.AppRoot
 import com.vknxworks.immichctrl.ui.theme.ImmichCtrlTheme
 import kotlinx.coroutines.flow.first
@@ -42,7 +40,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT), navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT))
         val c = container
         setContent {
             val settings by c.settings.settings.collectAsStateWithLifecycle()
@@ -56,16 +54,11 @@ class MainActivity : FragmentActivity() {
                 if (secure) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             }
-            val dark = when (settings.theme) {
-                ThemeChoice.SYSTEM -> isSystemInDarkTheme()
-                ThemeChoice.LIGHT -> false
-                ThemeChoice.DARK, ThemeChoice.BLACK -> true
-            }
-            // Keep status and navigation bar icons readable when the app theme differs from the system's.
-            DisposableEffect(dark) {
-                val style = if (dark) SystemBarStyle.dark(Color.TRANSPARENT)
-                else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+            // Ctrl / Signal is dark only: light status and navigation bar icons over the app's background, edge to edge.
+            DisposableEffect(Unit) {
+                val style = SystemBarStyle.dark(Color.TRANSPARENT)
                 enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+                window.decorView.setBackgroundColor(BG)
                 onDispose { }
             }
             ImmichCtrlTheme(settings.theme, settings.dynamicColor) {
@@ -143,5 +136,8 @@ class MainActivity : FragmentActivity() {
     companion object {
         /** Intent extra: what to open ("memory:<id>", "asset:<id>", "admin"). */
         const val EXTRA_OPEN = "open"
+
+        /** The window behind the app: Ctrl / Signal's background (#08080A). */
+        private val BG = 0xFF08080A.toInt()
     }
 }

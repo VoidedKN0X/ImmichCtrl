@@ -1,5 +1,18 @@
 package com.vknxworks.immichctrl.ui.settings
 
+import com.vknxworks.immichctrl.ui.theme.CtrlType
+import com.vknxworks.immichctrl.ui.theme.CtrlColors
+import com.vknxworks.immichctrl.ui.components.PillButton
+import com.vknxworks.immichctrl.ui.components.CtrlHeroCard
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.border
+import com.vknxworks.immichctrl.ui.components.CtrlProgress
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -8,9 +21,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -30,22 +42,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Gavel
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.OpenInBrowser
-import androidx.compose.material.icons.filled.Password
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material.icons.automirrored.outlined.Logout
+import androidx.compose.material.icons.outlined.AdminPanelSettings
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Gavel
+import androidx.compose.material.icons.outlined.CloudUpload
+import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.OpenInBrowser
+import androidx.compose.material.icons.outlined.Password
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -123,14 +134,21 @@ fun YouScreen() {
     Column(Modifier.fillMaxSize()) {
         ScreenTopBar(stringResource(R.string.you))
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp + LocalBottomClearance.current)) {
-            Column(Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 8.dp, bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 8.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
                 val m = me.value
                 Box {
-                    UserAvatar(acc.userId, acc.name, true, m?.profileChangedAt, m?.avatarColor, Modifier.size(96.dp).clip(CircleShape).clickable { avatarMenu = true })
+                    val shape = RoundedCornerShape(22.dp)
+                    Box(Modifier.size(68.dp).clip(shape).background(CtrlColors.Accent).clickable { avatarMenu = true }, contentAlignment = Alignment.Center) {
+                        Text(acc.name.ifBlank { acc.email }.trim().take(2).uppercase(), style = MaterialTheme.typography.headlineSmall, color = CtrlColors.OnAccent)
+                        if (!m?.profileImagePath.isNullOrBlank()) {
+                            UserAvatar(acc.userId, acc.name, true, m?.profileChangedAt, m?.avatarColor, Modifier.fillMaxSize())
+                        }
+                    }
                     Icon(
-                        Icons.Filled.PhotoCamera, stringResource(R.string.change_profile_picture),
-                        Modifier.align(Alignment.BottomEnd).size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary).padding(5.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary,
+                        Icons.Outlined.PhotoCamera, stringResource(R.string.change_profile_picture),
+                        Modifier.align(Alignment.BottomEnd).offset(x = 4.dp, y = 4.dp).size(24.dp).clip(RoundedCornerShape(8.dp))
+                            .background(CtrlColors.Surface).border(1.dp, CtrlColors.ControlBorder, RoundedCornerShape(8.dp)).padding(4.dp),
+                        tint = CtrlColors.Text,
                     )
                     DropdownMenu(avatarMenu, onDismissRequest = { avatarMenu = false }) {
                         DropdownMenuItem(text = { Text(stringResource(R.string.choose_a_new_picture)) }, onClick = {
@@ -144,21 +162,35 @@ fun YouScreen() {
                         })
                     }
                 }
-                Spacer(Modifier.height(14.dp))
-                Text(acc.name.ifBlank { acc.email }, style = MaterialTheme.typography.headlineMedium)
-                Text(
-                    listOfNotNull(acc.email.takeIf { it.isNotBlank() && it != acc.name }, if (acc.isAdmin) Strings.str(R.string.admin) else null).joinToString(Strings.str(R.string.list_separator_wide)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                stats.value?.let {
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        "%,d photos  ·  %,d videos".format(it.images, it.videos),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 6.dp),
+                        acc.name.ifBlank { acc.email },
+                        style = MaterialTheme.typography.headlineSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
+                    Text(
+                        acc.serverUrl.removePrefix("https://").removePrefix("http://"),
+                        style = CtrlType.Mono,
+                        color = CtrlColors.Muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    val sub = listOfNotNull(acc.email.takeIf { it.isNotBlank() && it != acc.name }, if (acc.isAdmin) Strings.str(R.string.admin) else null)
+                    if (sub.isNotEmpty()) {
+                        Text(sub.joinToString(Strings.str(R.string.list_separator_wide)), style = MaterialTheme.typography.bodySmall, color = CtrlColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
+            }
+            // The hero: how much is in your library.
+            stats.value?.let {
+                CtrlHeroCard(
+                    label = stringResource(R.string.photos),
+                    trailingLabel = "%,d %s".format(it.videos, stringResource(R.string.videos)),
+                    value = "%,d".format(it.images),
+                    modifier = Modifier.padding(horizontal = Gutter, vertical = 8.dp),
+                )
             }
 
             // Storage: your quota if you have one, else the server's disk.
@@ -168,7 +200,7 @@ fun YouScreen() {
             val disk = storage.value
             if ((quota != null && used != null) || disk != null) {
                 Group(stringResource(R.string.storage)) {
-                    Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                    Column(Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
                         val (label, fraction) = if (quota != null && quota > 0 && used != null) {
                             Strings.str(R.string.of_used, formatBytes(used), formatBytes(quota)) to (used.toFloat() / quota)
                         } else if (disk != null) {
@@ -176,9 +208,9 @@ fun YouScreen() {
                         } else {
                             Strings.str(R.string.used, formatBytes(used ?: 0)) to 0f
                         }
-                        Text(label, style = MaterialTheme.typography.bodyLarge)
-                        Spacer(Modifier.height(8.dp))
-                        LinearProgressIndicator(progress = { fraction.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
+                        Text(label, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium))
+                        Spacer(Modifier.height(10.dp))
+                        CtrlProgress(progress = { fraction.coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth(), accent = true)
                     }
                 }
             }
@@ -190,7 +222,7 @@ fun YouScreen() {
                     GroupRow(
                         stringResource(R.string.server_version_not_supported),
                         stringResource(if (major > 3) R.string.server_too_new else R.string.server_too_old, acc.serverVersion.orEmpty()),
-                        icon = Icons.Filled.Warning,
+                        icon = Icons.Outlined.Warning,
                         iconTint = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -200,7 +232,7 @@ fun YouScreen() {
                 GroupRow(
                     stringResource(R.string.backup),
                     if (settings.backupEnabled) stringResource(if (settings.backupWifiOnly) R.string.backup_on_wifi else R.string.backup_on_wifi_mobile) else stringResource(R.string.off),
-                    icon = Icons.Filled.CloudUpload,
+                    icon = Icons.Outlined.CloudUpload,
                     showChevron = true,
                     onClick = { nav.navigate(BackupRoute) },
                 )
@@ -218,7 +250,7 @@ fun YouScreen() {
                             AuthType.PASSWORD -> null
                         },
                     ).joinToString(Strings.str(R.string.list_separator_wide)).ifEmpty { null },
-                    icon = Icons.Filled.Dns,
+                    icon = Icons.Outlined.Dns,
                 )
                 // Two saved addresses: switching is always the user's choice, never automatic.
                 val home = acc.localUrl
@@ -227,7 +259,7 @@ fun YouScreen() {
                     GroupRow(
                         if (onHome) stringResource(R.string.use_public_address) else stringResource(R.string.use_home_address),
                         stringResource(if (onHome) R.string.now_using_home else R.string.now_using_public, if (onHome) home else acc.serverUrl),
-                        icon = if (onHome) Icons.Filled.Public else Icons.Filled.Home,
+                        icon = if (onHome) Icons.Outlined.Public else Icons.Outlined.Home,
                         onClick = {
                             scope.launch {
                                 c.useAddress(!onHome)
@@ -236,26 +268,26 @@ fun YouScreen() {
                         },
                     )
                 }
-                GroupRow(stringResource(R.string.open_in_browser), icon = Icons.Filled.OpenInBrowser, onClick = {
+                GroupRow(stringResource(R.string.open_in_browser), icon = Icons.Outlined.OpenInBrowser, onClick = {
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(acc.serverUrl))) }
                 })
                 if (acc.isAdmin) {
-                    GroupRow(stringResource(R.string.server_administration), stringResource(R.string.storage_users_and_background_jobs), icon = Icons.Filled.AdminPanelSettings, showChevron = true, onClick = { nav.navigate(AdminRoute) })
+                    GroupRow(stringResource(R.string.server_administration), stringResource(R.string.storage_users_and_background_jobs), icon = Icons.Outlined.AdminPanelSettings, showChevron = true, onClick = { nav.navigate(AdminRoute) })
                 }
                 if (storage.value != null && acc.isAdmin) {
-                    GroupRow(stringResource(R.string.server_disk), stringResource(R.string.free_of, storage.value!!.diskAvailable, storage.value!!.diskSize), icon = Icons.Filled.Storage)
+                    GroupRow(stringResource(R.string.server_disk), stringResource(R.string.free_of, storage.value!!.diskAvailable, storage.value!!.diskSize), icon = Icons.Outlined.Storage)
                 }
             }
 
             Group {
-                GroupRow(stringResource(R.string.settings), icon = Icons.Filled.Settings, showChevron = true, onClick = { nav.navigate(SettingsRoute) })
-                GroupRow(stringResource(R.string.servers_and_accounts), icon = Icons.Filled.SwapHoriz, showChevron = true, onClick = { nav.navigate(AccountsRoute) })
+                GroupRow(stringResource(R.string.settings), icon = Icons.Outlined.Settings, showChevron = true, onClick = { nav.navigate(SettingsRoute) })
+                GroupRow(stringResource(R.string.servers_and_accounts), icon = Icons.Outlined.SwapHoriz, showChevron = true, onClick = { nav.navigate(AccountsRoute) })
                 if (acc.authType == AuthType.PASSWORD) {
-                    GroupRow(stringResource(R.string.change_password), icon = Icons.Filled.Password, onClick = { changingPassword = true })
+                    GroupRow(stringResource(R.string.change_password), icon = Icons.Outlined.Password, onClick = { changingPassword = true })
                 }
                 GroupRow(
                     stringResource(R.string.sign_out),
-                    icon = Icons.AutoMirrored.Filled.Logout,
+                    icon = Icons.AutoMirrored.Outlined.Logout,
                     iconTint = MaterialTheme.colorScheme.error,
                     titleColor = MaterialTheme.colorScheme.error,
                     onClick = { confirmSignOut = true },
@@ -264,39 +296,52 @@ fun YouScreen() {
 
             Group(stringResource(R.string.group_about)) {
                 GroupRow(
-                    stringResource(R.string.support_title),
-                    stringResource(R.string.support_subtitle),
-                    icon = Icons.Filled.Favorite,
-                    showChevron = true,
-                    onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SPONSOR_URL))) } },
-                )
-                GroupRow(
                     stringResource(R.string.bugs_title),
                     stringResource(R.string.bugs_subtitle),
-                    icon = Icons.Filled.BugReport,
+                    icon = Icons.Outlined.BugReport,
                     showChevron = true,
                     onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ISSUES_URL))) } },
                 )
                 GroupRow(
                     stringResource(R.string.source_title),
                     stringResource(R.string.source_subtitle),
-                    icon = Icons.Filled.Code,
+                    icon = Icons.Outlined.Code,
                     showChevron = true,
                     onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(REPO_URL))) } },
                 )
                 GroupRow(
                     stringResource(R.string.licence_title),
                     stringResource(R.string.licence_subtitle),
-                    icon = Icons.Filled.Gavel,
+                    icon = Icons.Outlined.Gavel,
                     showChevron = true,
                     onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(LICENCE_URL))) } },
                 )
             }
+            PillButton(
+                stringResource(R.string.support_title),
+                onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(SPONSOR_URL))) } },
+                icon = Icons.Outlined.FavoriteBorder,
+                modifier = Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 16.dp),
+            )
             Text(
-                stringResource(R.string.about_footer, BuildConfig.VERSION_NAME),
+                stringResource(R.string.support_subtitle),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                color = CtrlColors.Muted,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 8.dp),
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                stringResource(R.string.about_footer, BuildConfig.VERSION_NAME).uppercase(),
+                style = CtrlType.Label.copy(letterSpacing = 0.12.em),
+                color = CtrlColors.Muted,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 4.dp),
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                "GOOGLE-FREE · TELEMETRY-FREE · ARM64",
+                style = CtrlType.Label.copy(letterSpacing = 0.12.em),
+                color = CtrlColors.Muted,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 4.dp),
                 textAlign = TextAlign.Center,
             )
         }

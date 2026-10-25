@@ -1,5 +1,7 @@
 package com.vknxworks.immichctrl.ui.settings
 
+import com.vknxworks.immichctrl.ui.components.CtrlProgress
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +22,6 @@ import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -106,7 +107,7 @@ fun AdminScreen() {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                         Text(stringResource(R.string.of_used_free, d.diskUse, d.diskSize, d.diskAvailable), style = MaterialTheme.typography.bodyLarge)
                         Spacer(Modifier.height(8.dp))
-                        LinearProgressIndicator(progress = { (d.diskUsagePercentage / 100).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
+                        CtrlProgress(progress = { (d.diskUsagePercentage / 100).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                     }
                 }
             }
@@ -161,7 +162,7 @@ fun AdminScreen() {
 
     open?.let { q ->
         val label = queueLabels[q.name] ?: q.name
-        ModalBottomSheet(onDismissRequest = { open = null }, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+        ModalBottomSheet(onDismissRequest = { open = null }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
             Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
                 SheetTitle(label)
                 fun act(done: String, block: suspend () -> Unit) {

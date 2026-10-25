@@ -1,5 +1,9 @@
 package com.vknxworks.immichctrl.ui.photos
 
+import com.vknxworks.immichctrl.ui.components.CtrlAlertDialog
+import com.vknxworks.immichctrl.ui.components.CtrlSwitch
+import com.vknxworks.immichctrl.ui.components.ctrlFieldColors
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,14 +17,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -70,7 +72,7 @@ fun DateTimeDialog(initial: LocalDateTime, onDismiss: () -> Unit, onPick: (Strin
             dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.lock_cancel)) } },
         ) { DatePicker(dateState) }
     } else {
-        AlertDialog(
+        CtrlAlertDialog(
             onDismissRequest = onDismiss,
             title = { Text(stringResource(R.string.time_taken)) },
             text = { TimePicker(timeState) },
@@ -103,12 +105,12 @@ fun LocationDialog(onDismiss: () -> Unit, onPick: (lat: Double, lon: Double, lab
         results = runCatching { c.api.searchPlaces(query) }.getOrDefault(emptyList())
     }
     val parsed = coords.split(',').map { it.trim().toDoubleOrNull() }.takeIf { it.size == 2 && it.all { v -> v != null } }
-    AlertDialog(
+    CtrlAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.change_location)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(query, { query = it }, label = { Text(stringResource(R.string.search_for_a_place)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(query, { query = it }, label = { Text(stringResource(R.string.search_for_a_place)) }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = CtrlShapes.Field, colors = ctrlFieldColors())
                 LazyColumn(Modifier.heightIn(max = 240.dp)) {
                     items(results, key = { "${it.name}${it.latitude}${it.longitude}" }) { p ->
                         val label = listOfNotNull(p.name, p.admin1name, p.admin2name).joinToString(", ")
@@ -125,6 +127,7 @@ fun LocationDialog(onDismiss: () -> Unit, onPick: (lat: Double, lon: Double, lab
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     modifier = Modifier.fillMaxWidth(),
+                    shape = CtrlShapes.Field, colors = ctrlFieldColors(),
                 )
             }
         },
@@ -145,7 +148,7 @@ fun LocationDialog(onDismiss: () -> Unit, onPick: (lat: Double, lon: Double, lab
 @Composable
 fun ShareSizeDialog(onDismiss: () -> Unit, onPick: (large: Boolean, remember: Boolean) -> Unit) {
     var keep by remember { mutableStateOf(false) }
-    AlertDialog(
+    CtrlAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.share_as)) },
         text = {
@@ -187,12 +190,12 @@ fun SharedLinkDialog(
 ) {
     var o by remember { mutableStateOf(initial) }
     var showPassword by remember { mutableStateOf(false) }
-    AlertDialog(
+    CtrlAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(o.description, { o = o.copy(description = it) }, label = { Text(stringResource(R.string.description_optional)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(o.description, { o = o.copy(description = it) }, label = { Text(stringResource(R.string.description_optional)) }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = CtrlShapes.Field, colors = ctrlFieldColors())
                 Text(stringResource(R.string.stops_working), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                     listOf(null to Strings.str(R.string.never), 1 to Strings.str(R.string.n_1_day), 7 to Strings.str(R.string.n_7_days), 30 to Strings.str(R.string.n_30_days)).forEach { (d, label) ->
@@ -215,6 +218,7 @@ fun SharedLinkDialog(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
+                    shape = CtrlShapes.Field, colors = ctrlFieldColors(),
                 )
                 ToggleRow(stringResource(R.string.allow_downloads), o.allowDownload) { o = o.copy(allowDownload = it) }
                 if (allowUploadOption) ToggleRow(stringResource(R.string.let_people_add_photos), o.allowUpload) { o = o.copy(allowUpload = it) }
@@ -230,6 +234,6 @@ fun SharedLinkDialog(
 private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth().clickable { onChange(!checked) }, verticalAlignment = Alignment.CenterVertically) {
         Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Switch(checked, onChange)
+        CtrlSwitch(checked, onChange)
     }
 }

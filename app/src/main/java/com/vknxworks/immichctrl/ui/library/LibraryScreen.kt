@@ -1,5 +1,14 @@
 package com.vknxworks.immichctrl.ui.library
 
+import com.vknxworks.immichctrl.ui.theme.CtrlType
+import com.vknxworks.immichctrl.ui.theme.CtrlColors
+import com.vknxworks.immichctrl.ui.components.CtrlLabel
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
+import com.vknxworks.immichctrl.ui.components.ctrlFieldColors
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import com.vknxworks.immichctrl.data.api.partners
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -183,20 +192,28 @@ fun LibraryScreen() {
             fullWidth("albums-title") {
                 Column {
                     if (offline.isNotEmpty()) {
-                        Text(stringResource(R.string.available_offline), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
-                        offline.forEach { o ->
+                        CtrlLabel(stringResource(R.string.available_offline), Modifier.padding(top = 18.dp, bottom = 6.dp, start = 4.dp))
+                        offline.forEachIndexed { i, o ->
+                            if (i > 0) com.vknxworks.immichctrl.ui.components.CtrlDivider()
                             Row(
-                                Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable { nav.navigate(OfflineAlbumRoute(o.albumId)) }.padding(vertical = 8.dp),
+                                Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable { nav.navigate(OfflineAlbumRoute(o.albumId)) }.padding(horizontal = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(Icons.Outlined.OfflinePin, null, tint = MaterialTheme.colorScheme.primary)
-                                Text(o.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                                Text(if (o.complete) countLabel(o.count, R.plurals.count_items) else stringResource(R.string.saving), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(Icons.Outlined.OfflinePin, null, Modifier.size(20.dp), tint = CtrlColors.Accent)
+                                Text(o.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(start = 14.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    (if (o.complete) countLabel(o.count, R.plurals.count_items) else stringResource(R.string.saving)).uppercase(),
+                                    style = CtrlType.Mono,
+                                    color = if (o.complete) CtrlColors.Accent else CtrlColors.Stopped,
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                com.vknxworks.immichctrl.ui.components.CtrlDot(if (o.complete) CtrlColors.Accent else CtrlColors.Stopped)
                             }
                         }
                     }
-                    Row(Modifier.fillMaxWidth().padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.albums), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+                    Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.albums), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        albums.value?.let { Text("${it.size}", style = CtrlType.Mono, color = CtrlColors.Muted, modifier = Modifier.padding(end = 4.dp)) }
                         IconButton(onClick = { sorting = true }) { Icon(Icons.AutoMirrored.Outlined.Sort, stringResource(R.string.sort)) }
                         IconButton(onClick = { scope.launch { c.settings.update { it.copy(albumGrid = !it.albumGrid) } } }) {
                             Icon(if (settings.albumGrid) Icons.AutoMirrored.Outlined.ViewList else Icons.Outlined.GridView, if (settings.albumGrid) stringResource(R.string.list) else stringResource(R.string.grid))
@@ -208,8 +225,8 @@ fun LibraryScreen() {
                         placeholder = { Text(stringResource(R.string.find_an_album)) },
                         leadingIcon = { Icon(Icons.Outlined.Search, null) },
                         singleLine = true,
-                        shape = CircleShape,
                         modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        shape = CtrlShapes.Field, colors = ctrlFieldColors(),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         AlbumFilter.entries.forEach { f ->
@@ -274,22 +291,28 @@ private fun sortAlbums(list: List<AlbumDto>, sort: AlbumSort): List<AlbumDto> = 
 private fun AlbumRow(a: AlbumDto, onClick: () -> Unit) {
     val c = LocalContext.current.container
     Row(
-        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).clickable(onClick = onClick).padding(vertical = 4.dp),
+        Modifier
+            .fillMaxWidth()
+            .clip(CtrlShapes.Card)
+            .background(CtrlColors.Surface)
+            .border(1.dp, CtrlColors.CardBorder, CtrlShapes.Card)
+            .clickable(onClick = onClick)
+            .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(64.dp).clip(MaterialTheme.shapes.small)) {
+        Box(Modifier.size(60.dp).clip(RoundedCornerShape(14.dp))) {
             RemoteImage(a.albumThumbnailAssetId?.let { c.api.thumbnailUrl(it) }, Modifier.fillMaxSize(), placeholderIcon = Icons.Outlined.PhotoAlbum)
         }
         Column(Modifier.weight(1f).padding(start = 14.dp)) {
-            Text(a.albumName.ifBlank { Strings.str(R.string.untitled) }, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(a.albumName.ifBlank { Strings.str(R.string.untitled) }, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 listOfNotNull(
                     countLabel(a.assetCount, R.plurals.count_items),
                     if (a.ownerUserId != c.me) a.ownerUser?.name?.let { Strings.str(R.string.by, it) } else if (a.shared) Strings.str(R.string.shared) else null,
                     shortDate(a.startDate),
                 ).joinToString(Strings.str(R.string.list_separator_wide)),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = CtrlType.Mono,
+                color = CtrlColors.Muted,
                 maxLines = 1,
             )
         }
@@ -335,27 +358,34 @@ private fun TileRow(a: Tile, b: Tile?) {
 
 @Composable
 private fun TileView(t: Tile, modifier: Modifier) {
-    Surface(
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = modifier.clip(MaterialTheme.shapes.medium).clickable(onClick = t.onClick),
+    Row(
+        modifier
+            .clip(CtrlShapes.Button)
+            .background(CtrlColors.Surface)
+            .border(1.dp, CtrlColors.CardBorder, CtrlShapes.Button)
+            .clickable(onClick = t.onClick)
+            .heightIn(min = 52.dp)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center,
-            ) { Icon(t.icon, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
-            Spacer(Modifier.width(12.dp))
-            Text(t.label, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
+        Icon(t.icon, null, Modifier.size(20.dp), tint = CtrlColors.Accent)
+        Spacer(Modifier.width(12.dp))
+        Text(t.label, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
 fun AlbumCard(a: AlbumDto, onClick: () -> Unit) {
     val c = LocalContext.current.container
-    Column(Modifier.clip(MaterialTheme.shapes.medium).clickable(onClick = onClick)) {
-        Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(MaterialTheme.shapes.medium)) {
+    Column(
+        Modifier
+            .clip(CtrlShapes.Card)
+            .background(CtrlColors.Surface)
+            .border(1.dp, CtrlColors.CardBorder, CtrlShapes.Card)
+            .clickable(onClick = onClick)
+            .padding(6.dp),
+    ) {
+        Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(16.dp))) {
             RemoteImage(
                 a.albumThumbnailAssetId?.let { c.api.thumbnailUrl(it, "preview") },
                 Modifier.fillMaxSize(),
@@ -364,10 +394,10 @@ fun AlbumCard(a: AlbumDto, onClick: () -> Unit) {
         }
         Text(
             a.albumName.ifBlank { Strings.str(R.string.untitled) },
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 6.dp, start = 2.dp),
+            modifier = Modifier.padding(top = 10.dp, start = 8.dp, end = 8.dp),
         )
         Text(
             listOfNotNull(
@@ -375,11 +405,11 @@ fun AlbumCard(a: AlbumDto, onClick: () -> Unit) {
                 if (a.ownerUserId != c.me) a.ownerUser?.name?.let { Strings.str(R.string.by, it) } else if (a.shared) Strings.str(R.string.shared) else null,
                 if (a.ownerUserId == c.me && !a.shared) shortDate(a.startDate) else null,
             ).joinToString(Strings.str(R.string.list_separator_wide)),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = CtrlType.Mono,
+            color = CtrlColors.Muted,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(start = 2.dp, bottom = 4.dp),
+            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 2.dp, bottom = 8.dp),
         )
     }
 }
@@ -390,7 +420,7 @@ private fun PartnerRow(partners: List<com.vknxworks.immichctrl.data.api.PartnerD
     val nav = LocalNavigator.current
     Column(Modifier.padding(bottom = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.shared_with_you), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            CtrlLabel(stringResource(R.string.shared_with_you), Modifier.weight(1f).padding(start = 4.dp))
             androidx.compose.material3.TextButton(onClick = { nav.navigate(PartnersRoute) }) { Text(stringResource(R.string.manage)) }
         }
         androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {

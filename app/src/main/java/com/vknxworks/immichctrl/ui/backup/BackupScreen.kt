@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.backup
 
+import com.vknxworks.immichctrl.ui.components.CtrlProgress
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
@@ -35,7 +36,6 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -143,8 +143,9 @@ fun BackupScreen() {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 24.dp)) {
             // ---- Status ----
             Surface(
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surfaceContainer,
+                shape = com.vknxworks.immichctrl.ui.theme.CtrlShapes.Card,
+                color = com.vknxworks.immichctrl.ui.theme.CtrlColors.Surface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, com.vknxworks.immichctrl.ui.theme.CtrlColors.CardBorder),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = Gutter, vertical = 8.dp),
             ) {
                 Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -156,9 +157,14 @@ fun BackupScreen() {
                         running.progress.getString(BackupWorker.KEY_CURRENT)?.let {
                             Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                         }
-                        if (total > 0) LinearProgressIndicator(progress = { done.toFloat() / total }, modifier = Modifier.fillMaxWidth())
-                        else LinearProgressIndicator(Modifier.fillMaxWidth())
-                        OutlinedButton(onClick = { c.backup.cancel() }) { Text(stringResource(R.string.stop)) }
+                        if (total > 0) CtrlProgress(progress = { done.toFloat() / total }, modifier = Modifier.fillMaxWidth())
+                        else CtrlProgress(Modifier.fillMaxWidth())
+                        OutlinedButton(
+                            onClick = { c.backup.cancel() },
+                            shape = com.vknxworks.immichctrl.ui.theme.CtrlShapes.Button,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, com.vknxworks.immichctrl.ui.theme.CtrlColors.ControlBorder),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(contentColor = com.vknxworks.immichctrl.ui.theme.CtrlColors.Text),
+                        ) { Text(stringResource(R.string.stop)) }
                     } else {
                         Text(
                             when {
@@ -175,7 +181,7 @@ fun BackupScreen() {
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            if (cnt.total > 0) LinearProgressIndicator(progress = { cnt.done.toFloat() / cnt.total }, modifier = Modifier.fillMaxWidth())
+                            if (cnt.total > 0) CtrlProgress(progress = { cnt.done.toFloat() / cnt.total }, modifier = Modifier.fillMaxWidth())
                         }
                         PillButton(
                             stringResource(R.string.back_up_now),

@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.viewer
 
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import com.vknxworks.immichctrl.data.api.users
 import com.vknxworks.immichctrl.ui.components.rememberLoader
 import com.vknxworks.immichctrl.ui.components.UserAvatar
@@ -291,19 +292,25 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)))
+                    .background(Brush.verticalGradient(listOf(com.vknxworks.immichctrl.ui.theme.CtrlColors.Background.copy(alpha = 0.7f), Color.Transparent)))
                     .statusBarsPadding()
                     .padding(horizontal = 4.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = { nav.back() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), tint = Color.White) }
+                com.vknxworks.immichctrl.ui.components.CtrlSquareButton(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    stringResource(R.string.back),
+                    onClick = { nav.back() },
+                    container = com.vknxworks.immichctrl.ui.theme.CtrlColors.Surface.copy(alpha = 0.85f),
+                    modifier = Modifier.padding(start = 12.dp, end = 12.dp),
+                )
                 Column(Modifier.weight(1f)) {
                     if (current != null) {
                         val dt = current.localDateTime
                         Text(dt.format(titleDate), style = MaterialTheme.typography.titleMedium, color = Color.White)
                         Text(
                             listOfNotNull(dt.format(titleTime), current.city, current.country, if (current.isLocalOnly) Strings.str(R.string.only_on_this_phone) else null).joinToString(Strings.str(R.string.list_separator_wide)),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = com.vknxworks.immichctrl.ui.theme.CtrlType.Mono,
                             color = Color.White.copy(alpha = 0.8f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -314,7 +321,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                             Row(
                                 Modifier
                                     .padding(top = 4.dp)
-                                    .clip(RoundedCornerShape(50))
+                                    .clip(com.vknxworks.immichctrl.ui.theme.CtrlShapes.Badge)
                                     .background(Color.White.copy(alpha = 0.18f))
                                     .padding(start = 3.dp, end = 10.dp, top = 3.dp, bottom = 3.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -362,14 +369,14 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                     CompositionLocalProvider(LocalHazeState provides haze) {
                         VideoControls(
                             vp,
-                            Modifier.fillMaxWidth().padding(horizontal = 16.dp).glass(RoundedCornerShape(28.dp)).padding(horizontal = 4.dp),
+                            Modifier.fillMaxWidth().padding(horizontal = 16.dp).glass(com.vknxworks.immichctrl.ui.theme.CtrlShapes.Card).padding(horizontal = 4.dp),
                         )
                     }
                     Spacer(Modifier.height(10.dp))
                 }
                 CompositionLocalProvider(LocalHazeState provides haze) {
                     Row(
-                        Modifier.glass(CircleShape).padding(horizontal = 8.dp, vertical = 4.dp),
+                        Modifier.glass(com.vknxworks.immichctrl.ui.theme.CtrlShapes.Card).padding(horizontal = 8.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -432,6 +439,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
             onDismissRequest = { more = false },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            shape = CtrlShapes.Sheet,
         ) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(a.localDateTime.format(titleDate))
@@ -554,5 +562,5 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
 
 @Composable
 private fun IslandAction(icon: ImageVector, label: String, onClick: () -> Unit) {
-    IconButton(onClick = onClick) { Icon(icon, label) }
+    IconButton(onClick = onClick) { Icon(icon, label, Modifier.size(22.dp)) }
 }

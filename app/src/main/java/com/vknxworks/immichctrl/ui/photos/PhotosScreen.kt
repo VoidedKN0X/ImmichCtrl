@@ -1,8 +1,14 @@
 package com.vknxworks.immichctrl.ui.photos
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Spacer
+import com.vknxworks.immichctrl.ui.components.CtrlAvatarButton
+import com.vknxworks.immichctrl.ui.components.CtrlLabel
+import com.vknxworks.immichctrl.ui.components.CtrlSquareButton
+import com.vknxworks.immichctrl.ui.components.CtrlTopBar
+import com.vknxworks.immichctrl.ui.theme.CtrlColors
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
@@ -35,7 +41,6 @@ import androidx.compose.material.icons.outlined.CloudUpload
 import androidx.compose.material.icons.outlined.PhotoLibrary
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -121,37 +126,59 @@ fun PhotosScreen() {
         header = {
             item(key = "photos-header") {
                 Column {
-                    Row(
-                        Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 12.dp, bottom = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(stringResource(R.string.photos), style = MaterialTheme.typography.headlineLarge, modifier = Modifier.weight(1f))
-                        if (settings.readOnly) {
-                            Icon(Icons.Outlined.Lock, stringResource(R.string.read_only_mode), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 4.dp))
-                        } else IconButton(onClick = { nav.navigate(BackupRoute) }) {
-                            Box(contentAlignment = Alignment.Center) {
-                                when {
-                                    backingUp -> {
-                                        CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.dp)
-                                        Icon(Icons.Outlined.CloudUpload, stringResource(R.string.backing_up), Modifier.size(16.dp))
+                    Column(Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 12.dp, bottom = 4.dp)) {
+                        CtrlTopBar(trailing = {
+                            if (settings.readOnly) {
+                                Icon(Icons.Outlined.Lock, stringResource(R.string.read_only_mode), tint = CtrlColors.Accent, modifier = Modifier.padding(end = 4.dp).size(20.dp))
+                            } else {
+                                val backupLabel = when {
+                                    backingUp -> stringResource(R.string.backing_up)
+                                    settings.backupEnabled -> stringResource(R.string.backup_is_on)
+                                    else -> stringResource(R.string.backup_is_off)
+                                }
+                                CtrlSquareButton(
+                                    when {
+                                        backingUp -> Icons.Outlined.CloudUpload
+                                        settings.backupEnabled -> Icons.Outlined.CloudDone
+                                        else -> Icons.Outlined.CloudOff
+                                    },
+                                    backupLabel,
+                                    onClick = { nav.navigate(BackupRoute) },
+                                    tint = if (settings.backupEnabled || backingUp) CtrlColors.Accent else CtrlColors.Muted,
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        if (backingUp) CircularProgressIndicator(Modifier.size(28.dp), color = CtrlColors.Accent, trackColor = CtrlColors.ProgressTrack, strokeWidth = 2.dp)
+                                        Icon(
+                                            when {
+                                                backingUp -> Icons.Outlined.CloudUpload
+                                                settings.backupEnabled -> Icons.Outlined.CloudDone
+                                                else -> Icons.Outlined.CloudOff
+                                            },
+                                            null,
+                                            Modifier.size(if (backingUp) 14.dp else 20.dp),
+                                            tint = if (settings.backupEnabled || backingUp) CtrlColors.Accent else CtrlColors.Muted,
+                                        )
                                     }
-                                    settings.backupEnabled -> Icon(Icons.Outlined.CloudDone, stringResource(R.string.backup_is_on))
-                                    else -> Icon(Icons.Outlined.CloudOff, stringResource(R.string.backup_is_off), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
-                        }
-                        if (acc != null) {
-                            // Long-press the avatar for read-only mode (handy before handing the phone to a child).
-                            Box(
-                                Modifier.size(48.dp).clip(CircleShape).combinedClickable(
+                            if (acc != null) {
+                                // Long-press the avatar for read-only mode (handy before handing the phone to a child).
+                                CtrlAvatarButton(
+                                    stringResource(R.string.you),
                                     onClick = { if (!settings.readOnly) nav.navigate(YouRoute) },
                                     onLongClick = { toggleReadOnly = true },
-                                ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                ProfileAvatar(acc.userId, acc.name)
+                                ) { ProfileAvatar(acc.userId, acc.name) }
                             }
-                        }
+                        })
+                        Spacer(Modifier.height(18.dp))
+                        CtrlLabel(
+                            if (settings.readOnly) stringResource(R.string.read_only_mode)
+                            else if (backingUp) stringResource(R.string.backing_up)
+                            else if (settings.backupEnabled) stringResource(R.string.backup_is_on)
+                            else stringResource(R.string.backup_is_off),
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(stringResource(R.string.photos), style = MaterialTheme.typography.headlineLarge)
                     }
                     val list = memories.value.orEmpty()
                     if (settings.showMemories && list.isNotEmpty()) {
@@ -203,17 +230,18 @@ private fun MemoryCard(m: MemoryDto, onClick: () -> Unit) {
         Modifier
             .width(112.dp)
             .height(160.dp)
-            .clip(MaterialTheme.shapes.medium)
+            .clip(CtrlShapes.Card)
+            .border(1.dp, CtrlColors.CardBorder, CtrlShapes.Card)
             .clickable(onClick = onClick),
     ) {
         AssetThumb(cover.id, cover.thumbhash, Modifier.fillMaxSize(), size = "preview")
         Box(
-            Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)))),
+            Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, CtrlColors.Background.copy(alpha = 0.78f)))),
         )
         Text(
             if (m.type == "on_this_day") yearsAgo(m.data.year) else m.data.personName ?: stringResource(R.string.memory),
             style = MaterialTheme.typography.titleSmall,
-            color = Color.White,
+            color = CtrlColors.Text,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.align(Alignment.BottomStart).padding(10.dp),

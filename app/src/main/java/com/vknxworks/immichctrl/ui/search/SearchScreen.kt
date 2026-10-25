@@ -1,5 +1,7 @@
 package com.vknxworks.immichctrl.ui.search
 
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -41,7 +43,7 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -106,15 +108,16 @@ fun SearchScreen() {
     }
 
     val searchBar: @Composable () -> Unit = {
-        Column(Modifier.statusBarsPadding().padding(top = 8.dp)) {
+        Column(Modifier.statusBarsPadding().padding(top = 12.dp)) {
+            com.vknxworks.immichctrl.ui.components.CtrlWordmark(modifier = Modifier.padding(start = Gutter, end = Gutter, bottom = 14.dp))
             Row(Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter), verticalAlignment = Alignment.CenterVertically) {
-                TextField(
+                OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
                     placeholder = {
                         Text(if (mode == Mode.SMART) stringResource(R.string.search_photos_e_g_dog_on_a_beach) else stringResource(R.string.search_by, mode.label.lowercase()))
                     },
-                    leadingIcon = { Icon(Icons.Filled.Search, null) },
+                    leadingIcon = { Icon(Icons.Outlined.Search, null, Modifier.size(20.dp)) },
                     trailingIcon = {
                         Row {
                             if (text.isNotEmpty()) IconButton(onClick = { text = ""; query = "" }) { Icon(Icons.Filled.Close, stringResource(R.string.clear)) }
@@ -128,15 +131,11 @@ fun SearchScreen() {
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { submit() }),
-                    shape = CircleShape,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                    ),
+                    shape = com.vknxworks.immichctrl.ui.theme.CtrlShapes.Field,
+                    colors = com.vknxworks.immichctrl.ui.components.ctrlFieldColors(),
                     modifier = Modifier.weight(1f),
                 )
+                Spacer(Modifier.width(10.dp))
                 ProfileButton()
             }
             Row(

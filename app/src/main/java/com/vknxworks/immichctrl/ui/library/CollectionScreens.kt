@@ -1,5 +1,7 @@
 package com.vknxworks.immichctrl.ui.library
 
+import com.vknxworks.immichctrl.ui.components.CtrlSwitch
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.immichctrl.ui.components.findActivity
 import androidx.compose.foundation.clickable
@@ -38,7 +40,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -358,7 +359,7 @@ fun SharedLinksScreen() {
     }
     open?.let { l ->
         val url = Exporter.sharedLinkUrl(c.api, c.serverConfig.value.externalDomain, l.key, l.slug)
-        ModalBottomSheet(onDismissRequest = { open = null }, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+        ModalBottomSheet(onDismissRequest = { open = null }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
             Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(l.album?.albumName ?: countLabel(l.assets.size, R.plurals.count_photos), url)
                 ActionItem(Icons.Outlined.ContentCopy, stringResource(R.string.copy_link)) {
@@ -446,7 +447,7 @@ fun PartnersScreen() {
                     onClick = { nav.navigate(PartnerRoute(p.id, p.name)) },
                     trailing = {
                         Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                            Switch(p.inTimeline == true, onCheckedChange = { on ->
+                            CtrlSwitch(p.inTimeline == true, onCheckedChange = { on ->
                                 c.runTask { c.api.updatePartner(p.id, on); withMe.reload(silent = true); Sources.refreshAll() }
                             })
                             Text(stringResource(R.string.also_in_photos), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -469,7 +470,7 @@ fun PartnersScreen() {
     if (adding) {
         val users = rememberLoader("users") { c.api.users() }
         val existing = byMe.value.orEmpty().map { it.id }.toSet() + c.me
-        ModalBottomSheet(onDismissRequest = { adding = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+        ModalBottomSheet(onDismissRequest = { adding = false }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
             SheetTitle(stringResource(R.string.share_your_photos_with))
             when (val s = users.state) {
                 is Load.Loading -> LoadingView(Modifier.height(160.dp))
@@ -579,7 +580,7 @@ fun TagScreen(id: String, name: String) {
         },
     )
     if (menu) {
-        ModalBottomSheet(onDismissRequest = { menu = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+        ModalBottomSheet(onDismissRequest = { menu = false }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
             Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(name)
                 ActionItem(Icons.Outlined.Delete, stringResource(R.string.delete_tag), tint = MaterialTheme.colorScheme.error) { menu = false; confirm = true }

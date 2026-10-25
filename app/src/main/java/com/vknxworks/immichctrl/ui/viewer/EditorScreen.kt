@@ -215,7 +215,7 @@ private fun Editor(asset: AssetDto, existing: EditsDto?) {
 @Composable
 private fun ToolButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        IconButton(onClick = onClick, modifier = Modifier.background(Color.White.copy(alpha = 0.12f), CircleShape)) {
+        IconButton(onClick = onClick, modifier = Modifier.background(Color.White.copy(alpha = 0.12f), com.vknxworks.immichctrl.ui.theme.CtrlShapes.Control)) {
             Icon(icon, label, tint = Color.White)
         }
         Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f), modifier = Modifier.padding(top = 4.dp))

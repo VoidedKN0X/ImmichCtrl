@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.library
 
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import com.vknxworks.immichctrl.data.api.peopleShared
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -219,6 +220,7 @@ fun PersonScreen(id: String) {
             onDismissRequest = { menu = false },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            shape = CtrlShapes.Sheet,
         ) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(p.name.ifBlank { Strings.str(R.string.unnamed_person) })
@@ -273,7 +275,7 @@ private fun MergeSheet(into: PersonDto, onDismiss: () -> Unit, onPick: (PersonDt
     val c = LocalContext.current.container
     val people = rememberLoader("people-merge") { c.api.people(withHidden = false) }
     var confirm by remember { mutableStateOf<PersonDto?>(null) }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
         SheetTitle(stringResource(R.string.merge_into, into.name.ifBlank { Strings.str(R.string.this_person) }), stringResource(R.string.pick_who_else_these_photos_show))
         when (val s = people.state) {
             is Load.Loading -> Box(Modifier.fillMaxWidth().padding(32.dp)) { LoadingView() }
@@ -287,7 +289,7 @@ private fun MergeSheet(into: PersonDto, onDismiss: () -> Unit, onPick: (PersonDt
             ) {
                 items(s.value.people.filter { it.id != into.id }, key = { it.id }) { p ->
                     Column(Modifier.clickable { confirm = p }, horizontalAlignment = Alignment.CenterHorizontally) {
-                        PersonFace(p.id, p.updatedAt, Modifier.size(64.dp).clip(CircleShape))
+                        PersonFace(p.id, p.updatedAt, Modifier.size(64.dp))
                         Text(p.name.ifBlank { Strings.str(R.string.unnamed) }, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }

@@ -1,5 +1,6 @@
 package com.vknxworks.immichctrl.ui.photos
 
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -357,7 +358,7 @@ fun SelectionBar(
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 12.dp, vertical = 12.dp)
-            .glass(MaterialTheme.shapes.extraLarge)
+            .glass(com.vknxworks.immichctrl.ui.theme.CtrlShapes.Card)
             .padding(horizontal = 8.dp, vertical = 6.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -401,6 +402,7 @@ fun SelectionBar(
             onDismissRequest = { more = false },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            shape = CtrlShapes.Sheet,
         ) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
                 SheetTitle(stringResource(R.string.count_selected, countLabel(assets.size, R.plurals.count_items)))
@@ -527,7 +529,7 @@ fun AlbumPickerSheet(onDismiss: () -> Unit, onPick: (id: String?, name: String) 
             onPick(null, name)
         }
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
         SheetTitle(stringResource(R.string.add_to_album))
         ActionItem(Icons.Filled.Add, stringResource(R.string.new_album)) { naming = true }
         when (val s = albums.state) {
@@ -578,7 +580,7 @@ fun TagPickerSheet(assets: List<Asset>, onDismiss: () -> Unit) {
             }
         }
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
         SheetTitle(stringResource(R.string.tag_2, countLabel(ids.size, R.plurals.count_items)))
         ActionItem(Icons.Filled.Add, stringResource(R.string.new_tag)) { naming = true }
         when (val s = tags.state) {

@@ -1,5 +1,7 @@
 package com.vknxworks.immichctrl.ui.viewer
 
+import com.vknxworks.immichctrl.ui.components.ctrlFieldColors
+import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
@@ -82,6 +84,7 @@ fun InfoSheet(asset: Asset, onDismiss: () -> Unit, onEditDate: () -> Unit = {}, 
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        shape = CtrlShapes.Sheet,
     ) {
         if (asset.isLocalOnly || asset.id.startsWith("external:")) {
             LocalInfo(asset)
@@ -148,6 +151,7 @@ private fun InfoContent(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { saveDescription(); focus.clearFocus() }),
                 maxLines = 4,
+                shape = CtrlShapes.Field, colors = ctrlFieldColors(),
             )
             if (description != original) {
                 Text(
