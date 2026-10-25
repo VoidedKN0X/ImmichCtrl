@@ -411,7 +411,7 @@ fun AssetGrid(
 
     PullToRefreshBox(
         isRefreshing = source.refreshing,
-        onRefresh = { source.refresh(silent = true) },
+        onRefresh = { source.pullRefresh() },
         modifier = modifier.fillMaxSize(),
     ) {
         content()

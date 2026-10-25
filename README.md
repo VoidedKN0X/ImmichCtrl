@@ -18,6 +18,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Memories** ("On this day") along the top, played full screen like stories
 - **Slideshow** of any album, search or timeline, with timing, shuffle and loop options
 - **Live updates**: new uploads, edits and deletions from other devices appear without refreshing
+- **Timeline sync** with Immich's sync stream: the timeline is kept on the phone and only changes are downloaded, so it opens instantly; **Reset sync** in Settings starts it over (older servers and API-key sign-ins load month by month)
 
 **Viewer**
 - Zoom, videos, live photos, swipe down to close; the actions sit in a floating glass island

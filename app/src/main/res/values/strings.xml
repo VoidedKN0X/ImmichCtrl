@@ -877,4 +877,22 @@
     <!-- Whole sentences instead of joined pieces -->
     <string name="list_separator">" · "</string>
     <string name="list_separator_wide">"  ·  "</string>
+    <!-- Timeline sync (sync stream) -->
+    <string name="timeline_sync">Timeline sync</string>
+    <string name="timeline_sync_footer">Your timeline, albums and partners\' photos are kept on this phone (only the list of photos, not the photos themselves) and only changes are downloaded, so Photos opens straight away. Nothing from the locked folder is kept. Reset sync deletes this copy and downloads it again.</string>
+    <string name="sync_status">Status</string>
+    <string name="sync_off">Not signed in</string>
+    <string name="sync_unsupported_api_key">Not available when signed in with an API key; the timeline loads month by month</string>
+    <string name="sync_unsupported_server">Not available on this server; the timeline loads month by month</string>
+    <string name="sync_first">Downloading your timeline… %1$s items</string>
+    <string name="sync_running">Syncing changes…</string>
+    <string name="sync_ready">%1$s items · synced %2$s</string>
+    <string name="sync_failed">Last sync failed: %1$s</string>
+    <string name="sync_now">Sync now</string>
+    <string name="sync_now_subtitle">Download what changed on the server</string>
+    <string name="sync_reset">Reset sync</string>
+    <string name="sync_reset_subtitle">Delete the timeline copy on this phone and download it again</string>
+    <string name="sync_reset_title">Reset sync?</string>
+    <string name="sync_reset_body">The copy of your timeline on this phone is deleted and downloaded again from the server. Your photos aren\'t touched. Until it\'s done, Photos loads month by month.</string>
+    <string name="sync_just_now">just now</string>
 </resources>

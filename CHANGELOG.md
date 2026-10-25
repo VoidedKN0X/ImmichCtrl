@@ -4,6 +4,23 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.6.0
+
+### New
+
+- **Timeline sync.** On Immich 2.x and 3.x servers, ImmichCtrl now keeps a copy of your timeline on the phone using Immich's sync stream, the same way the official app does. The first time, it downloads the list of your photos and videos (not the photos themselves) in the background; after that only what changed comes down. Photos, Favourites, Archive and your albums then open straight from the phone, with no waiting for each month to load, and fast scrolling through a big library no longer pauses on months that haven't loaded yet.
+- **What's kept:** your own photos and videos, partners' photos (for partners you show in your timeline), photos in albums shared with you, which photos are in which album, stacks, and the date, place, size and file name shown on thumbnails and in the viewer. Nothing from the locked folder is ever kept on the phone; a photo moved into it disappears from the copy. Trashed photos are left out of the timeline as before.
+- **It stays up to date by itself:** a sync runs when the app opens or comes back to the foreground, when you pull to refresh (the spinner stays until the sync is done), when live updates say something changed on the server (a new upload, an edit, a deletion, an album change from another device), and after you favourite, archive, delete, restore or add photos to an album in the app. Each sync only downloads changes since the last one, and is picked up where it stopped if the connection drops.
+- **Settings › Timeline sync** shows what the sync is doing (downloading the first time with a running count, syncing changes, or how many items are synced and when), with **Sync now** to sync straight away and **Reset sync** to delete the copy on the phone and download it again from scratch (after a confirmation). Your photos on the server aren't touched by either.
+
+### Changed
+
+- **Large libraries use little memory while syncing:** the sync stream is read one line at a time and saved in batches of 1,000 items, each in one database write, and every saved batch is confirmed to the server straight away, so an interrupted first sync doesn't start over.
+- If the server asks for a fresh start (for example after the phone was away for more than 30 days, or the server's sync data was reset), ImmichCtrl clears its copy and downloads it again by itself. A new sign-in to the same account starts a new copy too, because the server keeps sync progress per sign-in.
+- **Older servers and API keys keep working as before.** Immich only allows the sync stream for email/password and OAuth sign-ins, so accounts added with an API key, servers older than Immich 2, and servers that refuse the sync stream load the timeline month by month like 0.5.0 did; Settings › Timeline sync says so. Until the first sync has finished, the timeline also loads month by month, so nothing is blank while it downloads.
+- People, tags, a partner's own page, the trash, the locked folder and Recently added still come straight from the server. Album contents come from the phone's copy on Immich 3; on Immich 2 albums still load from the server.
+- **Signing out deletes that account's timeline copy** along with its offline albums and cached photos. The copy is never included in phone backups or device transfers.
+
 ## 0.5.0
 
 ### New
