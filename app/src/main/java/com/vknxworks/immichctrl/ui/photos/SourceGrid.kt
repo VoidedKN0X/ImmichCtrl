@@ -60,7 +60,7 @@ fun <S : AssetSource> rememberSource(key: String, create: (CoroutineScope) -> S)
 fun rememberTimeline(key: String, query: TimelineQuery, withLocal: Boolean = false): TimelineSource {
     val c = LocalContext.current.container
     return rememberSource(key) { scope ->
-        TimelineSource(key, c.api, query, scope, local = if (withLocal) suspend { c.local.snapshot() } else null)
+        TimelineSource(key, c.api, query, scope, local = if (withLocal) suspend { c.local.snapshot() } else null, sync = c.sync)
     }
 }
 

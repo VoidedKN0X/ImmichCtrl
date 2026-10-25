@@ -9,6 +9,10 @@ import com.vknxworks.immichctrl.data.api.TimelineQuery
 import com.vknxworks.immichctrl.data.api.timeBucket
 import com.vknxworks.immichctrl.data.api.timeBuckets
 import com.vknxworks.immichctrl.data.backup.LocalSnapshot
+import com.vknxworks.immichctrl.data.sync.SyncDb
+import com.vknxworks.immichctrl.data.sync.SyncEngine
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.YearMonth
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -61,6 +65,15 @@ abstract class AssetSource(val key: String, protected val scope: CoroutineScope)
     open fun loadMore() {}
 
     abstract fun refresh(silent: Boolean = false)
+
+    /** Drawn from the phone's synced copy of the timeline (so refreshing means syncing first). */
+    open val fromLocalCopy: Boolean get() = false
+
+    /** Should redraw after the synced copy changed: drawn from it now, or it just became usable / unusable. */
+    open val followsSync: Boolean get() = false
+
+    /** Pull to refresh. */
+    open fun pullRefresh() = refresh(silent = true)
 
     /** Ask for a bucket's contents (no-op when loaded or loading). */
     open fun ensureLoaded(index: Int) {}
@@ -130,7 +143,37 @@ class TimelineSource(
     private val query: TimelineQuery,
     scope: CoroutineScope,
     private val local: (suspend () -> LocalSnapshot)? = null,
+    private val sync: SyncEngine? = null,
 ) : AssetSource(key, scope) {
+    /** The synced copy this timeline is drawn from right now; null while it comes from the server's buckets. */
+    @Volatile private var db: SyncDb? = null
+
+    override val fromLocalCopy: Boolean get() = db != null
+
+    override val followsSync: Boolean get() = db != null || (sync?.dbFor(query) != null)
+
+    override fun pullRefresh() {
+        val engine = sync
+        if (engine == null || db == null) {
+            refresh(silent = true)
+            return
+        }
+        refreshing = true
+        scope.launch {
+            try {
+                engine.syncNow()
+            } finally {
+                refresh(silent = true)
+            }
+        }
+    }
+
+    private suspend fun fetchBuckets(d: SyncDb?): List<com.vknxworks.immichctrl.data.api.TimeBucketDto> =
+        if (d != null) withContext(Dispatchers.IO) { d.buckets(query) } else client.timeBuckets(query)
+
+    private suspend fun fetchBucket(d: SyncDb?, bucket: String): List<Asset> =
+        if (d != null) withContext(Dispatchers.IO) { d.bucket(query, bucket) } else gate.withPermit { client.timeBucket(query, bucket) }
+
     private var snapshot = LocalSnapshot()
     private val loading = ConcurrentHashMap.newKeySet<String>()
     private val failedAt = ConcurrentHashMap<String, Long>()
@@ -147,7 +190,19 @@ class TimelineSource(
         refreshing = silent
         listJob = scope.launch {
             try {
-                val fresh = client.timeBuckets(query)
+                var d = sync?.dbFor(query)
+                val fresh = try {
+                    fetchBuckets(d)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    // The copy couldn't be read (account switch, reset): ask the server.
+                    if (d == null) throw e
+                    d = null
+                    client.timeBuckets(query)
+                }
+                val switched = (db != null) != (d != null)
+                db = d
                 snapshot = local?.invoke() ?: LocalSnapshot()
                 val old = buckets.associateBy { it.key }
                 val remoteMonths = HashSet<YearMonth>()
@@ -156,7 +211,7 @@ class TimelineSource(
                     val month = monthOf(dto.timeBucket)
                     month?.let { remoteMonths += it }
                     val localCount = month?.let { snapshot.localOnly[it]?.size } ?: 0
-                    Bucket(dto.timeBucket, monthLabel(dto.timeBucket), dto.count + localCount, if (silent) prev?.assets else null)
+                    Bucket(dto.timeBucket, monthLabel(dto.timeBucket), dto.count + localCount, if (silent && !switched) prev?.assets else null)
                 }.toMutableList()
                 // Months with photos only on this phone.
                 snapshot.localOnly.filterKeys { it !in remoteMonths }.forEach { (month, items) ->
@@ -172,7 +227,7 @@ class TimelineSource(
                 buckets = next
                 state = SourceState.Ready
                 // Reload what was already on screen so changes show without a jump.
-                if (silent) next.forEachIndexed { i, b -> if (b.assets != null) load(i, force = true) }
+                if (silent && !switched) next.forEachIndexed { i, b -> if (b.assets != null) load(i, force = true) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -204,7 +259,7 @@ class TimelineSource(
         }
         scope.launch {
             try {
-                val assets = merge(b.key, gate.withPermit { client.timeBucket(query, b.key) })
+                val assets = merge(b.key, fetchBucket(db, b.key))
                 buckets = buckets.map { if (it.key == b.key) it.copy(count = assets.size, assets = assets) else it }
                 failedAt.remove(b.key)
             } catch (e: CancellationException) {
@@ -362,6 +417,18 @@ object Sources {
 
     fun removeEverywhere(ids: Set<String>) = map.values.forEach { it.removeIds(ids) }
 
+    /**
+     * Asks for a sync of the phone's timeline copy; true when one is kept (its timelines then redraw
+     * by themselves once the sync has stored the change).
+     */
+    @Volatile var syncHook: (() -> Boolean)? = null
+
     /** After something moved between views (archived, restored, added to an album), refetch quietly. */
-    fun refreshAll(except: String? = null) = map.values.forEach { if (it.key != except) it.refresh(silent = true) }
+    fun refreshAll(except: String? = null) {
+        val synced = syncHook?.invoke() == true
+        map.values.forEach { if (it.key != except && !(synced && it.fromLocalCopy)) it.refresh(silent = true) }
+    }
+
+    /** The synced copy changed (or a sync finished): redraw the timelines drawn from it, straight from the phone. */
+    fun reloadAll() = map.values.forEach { if (it.followsSync) it.refresh(silent = true) }
 }

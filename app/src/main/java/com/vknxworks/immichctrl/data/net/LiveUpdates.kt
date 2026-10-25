@@ -77,7 +77,10 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
         }
     }
 
-    /** Several events usually arrive together (a batch upload); refresh once. */
+    /**
+     * Several events usually arrive together (a batch upload); refresh once. With a synced timeline
+     * copy this asks for an incremental sync, and the timelines redraw once it has stored the change.
+     */
     private fun refreshSoon() {
         refreshJob?.cancel()
         refreshJob = scope.launch(Dispatchers.Main) {
@@ -126,6 +129,8 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
             "on_asset_delete", "on_asset_hidden" -> {
                 val id = (data as? JsonPrimitive)?.contentOrNull ?: return
                 scope.launch(Dispatchers.Main) { Sources.removeEverywhere(setOf(id)) }
+                // The synced timeline copy learns about it from the sync stream.
+                refreshSoon()
             }
             "on_asset_trash" -> {
                 val ids = (data as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }?.toSet().orEmpty()

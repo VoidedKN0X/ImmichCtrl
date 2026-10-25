@@ -74,6 +74,10 @@ import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.Layers
 import com.vknxworks.immichctrl.data.security.PinRequest
 import com.vknxworks.immichctrl.Strings
+import com.vknxworks.immichctrl.data.sync.SyncEngine
+import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.RestartAlt
+import androidx.compose.material.icons.outlined.Info
 
 @Composable
 fun SettingsScreen() {
@@ -240,6 +244,7 @@ fun SettingsScreen() {
                 GroupSwitch(stringResource(R.string.shuffle), null, s.slideShuffle, Icons.Outlined.Shuffle) { v -> update { it.copy(slideShuffle = v) } }
                 GroupSwitch(stringResource(R.string.start_again_at_the_end), null, s.slideLoop, Icons.Outlined.Repeat) { v -> update { it.copy(slideLoop = v) } }
             }
+            TimelineSyncGroup()
             Group(stringResource(R.string.connection_and_help)) {
                 GroupRow(stringResource(R.string.networking), stringResource(R.string.public_or_home_address_custom), icon = Icons.Outlined.Wifi, showChevron = true, onClick = { nav.navigate(NetworkingRoute) })
                 GroupRow(stringResource(R.string.logs), stringResource(R.string.what_the_app_has_been_doing_to_help), icon = Icons.Outlined.BugReport, showChevron = true, onClick = { nav.navigate(LogsRoute) })
@@ -290,6 +295,57 @@ fun AccountsScreen() {
         ConfirmDialog(stringResource(R.string.sign_out_of_this_account), stringResource(R.string.you_can_add_it_again_later), stringResource(R.string.sign_out), onDismiss = { removing = null }) {
             removing = null
             scope.launch { c.sessions.signOut(key) }
+        }
+    }
+}
+
+/** Settings › Timeline sync: what the phone's copy of the timeline is doing, Sync now and Reset sync. */
+@Composable
+private fun TimelineSyncGroup() {
+    val c = LocalContext.current.container
+    val status by c.sync.status.collectAsStateWithLifecycle()
+    var confirmReset by remember { mutableStateOf(false) }
+    val usable = status is SyncEngine.Status.Ready || status is SyncEngine.Status.Failed || status is SyncEngine.Status.Syncing
+    val text = when (val st = status) {
+        SyncEngine.Status.Off -> stringResource(R.string.sync_off)
+        is SyncEngine.Status.Unsupported -> stringResource(
+            if (st.reason == SyncEngine.Reason.API_KEY) R.string.sync_unsupported_api_key else R.string.sync_unsupported_server,
+        )
+        is SyncEngine.Status.Syncing -> if (st.first) stringResource(R.string.sync_first, "%,d".format(st.received)) else stringResource(R.string.sync_running)
+        is SyncEngine.Status.Ready -> stringResource(
+            R.string.sync_ready,
+            "%,d".format(st.items),
+            if (st.syncedAt <= 0L || System.currentTimeMillis() - st.syncedAt < 60_000L) stringResource(R.string.sync_just_now)
+            else android.text.format.DateUtils.getRelativeTimeSpanString(st.syncedAt, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS).toString(),
+        )
+        is SyncEngine.Status.Failed -> stringResource(R.string.sync_failed, st.message)
+    }
+    Group(stringResource(R.string.timeline_sync), footer = stringResource(R.string.timeline_sync_footer)) {
+        GroupRow(stringResource(R.string.sync_status), text, icon = Icons.Outlined.Info)
+        if (usable) {
+            GroupRow(
+                stringResource(R.string.sync_now),
+                stringResource(R.string.sync_now_subtitle),
+                icon = Icons.Outlined.Sync,
+                onClick = { c.sync.requestSync() },
+            )
+            GroupRow(
+                stringResource(R.string.sync_reset),
+                stringResource(R.string.sync_reset_subtitle),
+                icon = Icons.Outlined.RestartAlt,
+                onClick = { confirmReset = true },
+            )
+        }
+    }
+    if (confirmReset) {
+        ConfirmDialog(
+            stringResource(R.string.sync_reset_title),
+            stringResource(R.string.sync_reset_body),
+            stringResource(R.string.sync_reset),
+            onDismiss = { confirmReset = false },
+        ) {
+            confirmReset = false
+            c.sync.reset()
         }
     }
 }

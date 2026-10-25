@@ -29,6 +29,7 @@ import com.vknxworks.immichctrl.data.offline.OfflineWorker
 import com.vknxworks.immichctrl.data.security.AppLock
 import com.vknxworks.immichctrl.data.lock.LockVault
 import com.vknxworks.immichctrl.data.settings.SettingsRepository
+import com.vknxworks.immichctrl.data.sync.SyncEngine
 import com.vknxworks.immichctrl.data.timeline.Sources
 import com.vknxworks.immichctrl.ui.widget.WidgetWorker
 import kotlinx.coroutines.CoroutineScope
@@ -140,6 +141,9 @@ class AppContainer(val context: Context) {
     }
     val live = LiveUpdates(http, appScope)
 
+    /** The phone's copy of the timeline, kept up to date with Immich's sync stream. */
+    val sync = SyncEngine(context, appScope)
+
     /** Server capabilities for the active account (smart search, map, OAuth...). */
     private val _features = MutableStateFlow(ServerFeaturesDto())
     val features: StateFlow<ServerFeaturesDto> = _features.asStateFlow()
@@ -175,8 +179,19 @@ class AppContainer(val context: Context) {
         }
         // Share and upload copies of photos never stay in the app's cache for long.
         appScope.launch(Dispatchers.IO) { runCatching { com.vknxworks.immichctrl.data.share.Exporter.cleanUp(context) } }
+        // The synced timeline copy changed: open timelines redraw from it. Live updates and edits ask for a sync.
+        sync.onChanged = { Sources.reloadAll() }
+        Sources.syncHook = {
+            if (sync.active) {
+                sync.requestSync()
+                true
+            } else {
+                false
+            }
+        }
         // Signing out leaves nothing of that account's photos on the phone.
         sessions.onSignedOut = { acc ->
+            runCatching { sync.forget(acc.key) }
             withContext(Dispatchers.IO) {
                 // Each step on its own, so one failing doesn't leave the rest behind.
                 runCatching { offline.deleteAccount(acc.key) }
@@ -236,6 +251,10 @@ class AppContainer(val context: Context) {
                 WidgetWorker.refreshAll(context)
             }
         }
+        // A new login for the same account (signed in again) gets its own sync session on the server too.
+        appScope.launch {
+            sessions.active.distinctUntilChangedBy { it?.account?.key to it?.client }.collect { s -> sync.setSession(s) }
+        }
         // Admin alerts run only while an admin account is signed in and they're turned on.
         appScope.launch {
             combine(sessions.active, settings.settings) { s, st -> s?.account?.isAdmin == true && st.adminAlerts }
@@ -246,6 +265,8 @@ class AppContainer(val context: Context) {
             ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) {
                     live.setForeground(true)
+                    // Catch up on what changed while the app was away.
+                    sync.requestSync()
                     appScope.launch { appLock.onForeground() }
                 }
 
