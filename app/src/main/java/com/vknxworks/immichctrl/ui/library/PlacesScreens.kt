@@ -168,8 +168,8 @@ fun MapScreen() {
         c.api.mapMarkersBetween(settings.withPartners, if (favoritesOnly) true else null, after, null, if (archived) null else false)
     }
     val styleUrl = rememberMapStyleUrl()
-    val accent = MaterialTheme.colorScheme.primary.toArgb()
-    val onAccent = MaterialTheme.colorScheme.onPrimary.toArgb()
+    val accent = com.vknxworks.immichctrl.ui.theme.CtrlColors.Accent.toArgb()
+    val onAccent = com.vknxworks.immichctrl.ui.theme.CtrlColors.OnAccent.toArgb()
 
     fun openAsset(id: String) {
         // The map only knows ids; fetch this one so the viewer has what it needs.

@@ -129,7 +129,7 @@ fun PhotosScreen() {
                     Column(Modifier.fillMaxWidth().padding(start = Gutter, end = Gutter, top = 12.dp, bottom = 4.dp)) {
                         CtrlTopBar(trailing = {
                             if (settings.readOnly) {
-                                Icon(Icons.Outlined.Lock, stringResource(R.string.read_only_mode), tint = CtrlColors.Accent, modifier = Modifier.padding(end = 4.dp).size(20.dp))
+                                Icon(Icons.Outlined.Lock, stringResource(R.string.read_only_mode), tint = CtrlColors.AccentText, modifier = Modifier.padding(end = 4.dp).size(20.dp))
                             } else {
                                 val backupLabel = when {
                                     backingUp -> stringResource(R.string.backing_up)
@@ -144,10 +144,10 @@ fun PhotosScreen() {
                                     },
                                     backupLabel,
                                     onClick = { nav.navigate(BackupRoute) },
-                                    tint = if (settings.backupEnabled || backingUp) CtrlColors.Accent else CtrlColors.Muted,
+                                    tint = if (settings.backupEnabled || backingUp) CtrlColors.AccentText else CtrlColors.Muted,
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        if (backingUp) CircularProgressIndicator(Modifier.size(28.dp), color = CtrlColors.Accent, trackColor = CtrlColors.ProgressTrack, strokeWidth = 2.dp)
+                                        if (backingUp) CircularProgressIndicator(Modifier.size(28.dp), color = CtrlColors.AccentText, trackColor = CtrlColors.ProgressTrack, strokeWidth = 2.dp)
                                         Icon(
                                             when {
                                                 backingUp -> Icons.Outlined.CloudUpload
@@ -156,7 +156,7 @@ fun PhotosScreen() {
                                             },
                                             null,
                                             Modifier.size(if (backingUp) 14.dp else 20.dp),
-                                            tint = if (settings.backupEnabled || backingUp) CtrlColors.Accent else CtrlColors.Muted,
+                                            tint = if (settings.backupEnabled || backingUp) CtrlColors.AccentText else CtrlColors.Muted,
                                         )
                                     }
                                 }
@@ -236,12 +236,12 @@ private fun MemoryCard(m: MemoryDto, onClick: () -> Unit) {
     ) {
         AssetThumb(cover.id, cover.thumbhash, Modifier.fillMaxSize(), size = "preview")
         Box(
-            Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, CtrlColors.Background.copy(alpha = 0.78f)))),
+            Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.62f)))),
         )
         Text(
             if (m.type == "on_this_day") yearsAgo(m.data.year) else m.data.personName ?: stringResource(R.string.memory),
             style = MaterialTheme.typography.titleSmall,
-            color = CtrlColors.Text,
+            color = Color.White,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.align(Alignment.BottomStart).padding(10.dp),

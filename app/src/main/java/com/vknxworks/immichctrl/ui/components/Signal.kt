@@ -68,7 +68,7 @@ fun CtrlWordmark(name: String = "IMMICH", modifier: Modifier = Modifier) {
     Text(
         buildAnnotatedString {
             append(name.uppercase())
-            withStyle(SpanStyle(color = CtrlColors.Accent)) { append("/") }
+            withStyle(SpanStyle(color = CtrlColors.AccentText)) { append("/") }
             append("CTRL")
         },
         style = CtrlType.Wordmark,
@@ -244,7 +244,7 @@ fun CtrlSwitch(
     val haptics = LocalHapticFeedback.current
     val bias by animateFloatAsState(if (checked) 1f else -1f, label = "switch-knob")
     val track by animateColorAsState(if (checked) CtrlColors.Accent else CtrlColors.SwitchTrackOff, label = "switch-track")
-    val knob by animateColorAsState(if (checked) CtrlColors.OnAccent else CtrlColors.Stopped, label = "switch-knob-color")
+    val knob by animateColorAsState(if (checked) CtrlColors.OnAccent else CtrlColors.SwitchKnobOff, label = "switch-knob-color")
     Box(
         modifier
             .size(width = 52.dp, height = 32.dp)
@@ -304,11 +304,11 @@ fun ctrlFieldColors(): TextFieldColors = OutlinedTextFieldDefaults.colors(
     unfocusedContainerColor = CtrlColors.Surface,
     disabledContainerColor = CtrlColors.Surface,
     errorContainerColor = CtrlColors.Surface,
-    focusedBorderColor = CtrlColors.Accent,
+    focusedBorderColor = CtrlColors.AccentText,
     unfocusedBorderColor = CtrlColors.ControlBorder,
     disabledBorderColor = CtrlColors.CardBorder,
-    cursorColor = CtrlColors.Accent,
-    focusedLabelColor = CtrlColors.Accent,
+    cursorColor = CtrlColors.AccentText,
+    focusedLabelColor = CtrlColors.AccentText,
     unfocusedLabelColor = CtrlColors.Muted,
     focusedLeadingIconColor = CtrlColors.Muted,
     unfocusedLeadingIconColor = CtrlColors.Muted,
@@ -343,7 +343,7 @@ fun CtrlListRow(
             if (meta != null) Text(meta, style = CtrlType.Mono, color = CtrlColors.Muted)
             Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (status != null) {
-                val color = if (active) CtrlColors.Accent else CtrlColors.Stopped
+                val color = if (active) CtrlColors.AccentText else CtrlColors.Stopped
                 Text(status.uppercase(), style = CtrlType.Label.copy(letterSpacing = 0.1.em), color = color)
                 CtrlDot(color)
             }
@@ -444,7 +444,7 @@ fun CtrlAlertDialog(
         text = text,
         shape = CtrlShapes.Hero,
         containerColor = CtrlColors.Surface,
-        iconContentColor = CtrlColors.Accent,
+        iconContentColor = CtrlColors.AccentText,
         titleContentColor = CtrlColors.Text,
         textContentColor = CtrlColors.Muted,
         tonalElevation = 0.dp,

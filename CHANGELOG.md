@@ -4,6 +4,28 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.5.0
+
+### New
+
+- **Light mode that follows the device theme.** ImmichCtrl now switches between the dark Ctrl / Signal look and a new light one ("Signal Light") by itself, whenever you switch your phone's dark theme on or off, including on a schedule or at sunset. There is no setting for it inside the app, and wallpaper colours (Material You) are still not used.
+- **Signal Light colours:** a warm off-white background (#F5F5F1), white cards and sheets with light grey hairline borders, near-black text and grey secondary text. Accent fills (the selected tab, main buttons, switches that are on, the You page card, filled PIN cells, selected photos) keep the same violet (#B48CFF) with dark content. Violet text and icons (the slash in IMMICH/CTRL, "on" statuses, links, focused text fields, the fingerprint key, Library shortcut icons, text buttons in dialogs) use a deeper violet (#6A3BDB) in light mode so they stay readable on white.
+- **Status and navigation bars** match the background in both modes, with dark icons in light mode and light icons in dark mode.
+
+### Changed
+
+- **Every screen works in light mode:** Photos, Search, Library, albums, people, places and the map, shared links, partners, tags, folders, trash, the locked folder, backup and Free up space, sign-in, Settings, the You page, Networking and logs, and server administration. The same goes for the floating tab bar (white at 92% with a grey border), switches (light grey track and grey knob when off), progress bars (light track with a near-black fill, violet for storage), text fields, dialogs, bottom sheets and menus.
+- **The lock and PIN screens** follow the theme too: white keys with a light grey border, empty PIN cells with a grey outline, and the same violet lock badge and filled cells.
+- **Maps** (Map, Places and the small map in a photo's details) use the server's light map style in light mode and its dark style in dark mode.
+- **Notifications** for backup, offline albums and server alerts are tinted with the ImmichCtrl violet: the deep violet in light mode, the bright one in dark mode.
+- **Home-screen photo widgets** use a light grey placeholder behind the photo in light mode (dark grey in dark mode).
+- **Profile pictures without a photo** keep Immich's avatar colour, stronger in light mode, with the initial in near-black so it stays readable.
+- Captions and badges drawn over photos (memories, video length, stack count, favourite and backup icons, the selection box) stay white on a dark shade in both modes, so they're readable on any photo.
+
+### Kept dark
+
+- **The photo viewer, slideshows, memories, "Open with ImmichCtrl" and the editor stay dark in light mode as well**, with light status bar icons while they're open, so photos and videos are seen on black without a bright frame. Their sheets (details, faces, "more" menu) are dark too. Everything else follows the phone.
+
 ## 0.4.0
 
 ImmichCtrl gets the new Ctrl / Signal look shared by every Ctrl app: near-black, one violet accent, hairline borders and two new typefaces. Only the look changes; every screen, feature, setting and gesture works as before.

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Ctrl / Signal: dark only, #08080A behind everything, light system bar icons. -->
-    <style name="Theme.ImmichCtrl" parent="android:Theme.Material.NoActionBar">
+    <!-- Ctrl / Signal: follows the phone's dark theme (values-night/bools.xml flips the bar icons). -->
+    <style name="Theme.ImmichCtrl" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/window_bg</item>
         <item name="android:colorBackground">@color/window_bg</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
-        <item name="android:colorAccent">#FFB48CFF</item>
+        <item name="android:windowLightStatusBar">@bool/light_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/light_bars</item>
+        <item name="android:colorAccent">@color/accent_text</item>
     </style>
 </resources>

@@ -122,8 +122,10 @@ fun PersonFace(personId: String, updatedAt: String?, modifier: Modifier = Modifi
 @Composable
 fun UserAvatar(userId: String, name: String, hasImage: Boolean, changedAt: String?, avatarColor: String?, modifier: Modifier = Modifier) {
     val c = LocalContext.current.container
-    Box(modifier.clip(AvatarShape).background(colorForAvatar(avatarColor).copy(alpha = 0.22f)), contentAlignment = Alignment.Center) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = colorForAvatar(avatarColor))
+    Box(modifier.clip(AvatarShape).background(colorForAvatar(avatarColor).copy(alpha = if (com.vknxworks.immichctrl.ui.theme.LocalCtrlColors.current.isDark) 0.22f else 0.55f)), contentAlignment = Alignment.Center) {
+        // Immich's avatar colours are pastel: readable on dark, too pale as text on the light palette.
+        val light = !com.vknxworks.immichctrl.ui.theme.LocalCtrlColors.current.isDark
+        Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleMedium, color = if (light) com.vknxworks.immichctrl.ui.theme.CtrlColors.Text else colorForAvatar(avatarColor))
         if (hasImage) {
             AsyncImage(model = c.api.profileImageUrl(userId, changedAt), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         }
@@ -295,7 +297,7 @@ val AvatarShape = androidx.compose.foundation.shape.RoundedCornerShape(percent =
 @Composable
 fun Badge(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null) {
     Row(
-        modifier.clip(com.vknxworks.immichctrl.ui.theme.CtrlShapes.Badge).background(com.vknxworks.immichctrl.ui.theme.CtrlColors.Background.copy(alpha = 0.62f)).padding(horizontal = 6.dp, vertical = 2.dp),
+        modifier.clip(com.vknxworks.immichctrl.ui.theme.CtrlShapes.Badge).background(Color.Black.copy(alpha = 0.5f)).padding(horizontal = 6.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) Icon(icon, null, Modifier.size(12.dp), tint = Color.White)

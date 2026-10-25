@@ -199,15 +199,15 @@ fun LibraryScreen() {
                                 Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable { nav.navigate(OfflineAlbumRoute(o.albumId)) }.padding(horizontal = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Icon(Icons.Outlined.OfflinePin, null, Modifier.size(20.dp), tint = CtrlColors.Accent)
+                                Icon(Icons.Outlined.OfflinePin, null, Modifier.size(20.dp), tint = CtrlColors.AccentText)
                                 Text(o.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f).padding(start = 14.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     (if (o.complete) countLabel(o.count, R.plurals.count_items) else stringResource(R.string.saving)).uppercase(),
                                     style = CtrlType.Mono,
-                                    color = if (o.complete) CtrlColors.Accent else CtrlColors.Stopped,
+                                    color = if (o.complete) CtrlColors.AccentText else CtrlColors.Stopped,
                                 )
                                 Spacer(Modifier.width(10.dp))
-                                com.vknxworks.immichctrl.ui.components.CtrlDot(if (o.complete) CtrlColors.Accent else CtrlColors.Stopped)
+                                com.vknxworks.immichctrl.ui.components.CtrlDot(if (o.complete) CtrlColors.AccentText else CtrlColors.Stopped)
                             }
                         }
                     }
@@ -368,7 +368,7 @@ private fun TileView(t: Tile, modifier: Modifier) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(t.icon, null, Modifier.size(20.dp), tint = CtrlColors.Accent)
+        Icon(t.icon, null, Modifier.size(20.dp), tint = CtrlColors.AccentText)
         Spacer(Modifier.width(12.dp))
         Text(t.label, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
