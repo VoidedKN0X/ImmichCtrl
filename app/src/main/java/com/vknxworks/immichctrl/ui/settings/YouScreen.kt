@@ -355,7 +355,8 @@ fun YouScreen() {
             onDismiss = { confirmSignOut = false },
         ) {
             confirmSignOut = false
-            scope.launch { c.sessions.signOut(acc.key) }
+            // App-wide: signing out of the account on screen replaces this screen, which would stop the clean-up halfway.
+            c.appScope.launch { c.sessions.signOut(acc.key) }
         }
     }
     if (changingPassword) {

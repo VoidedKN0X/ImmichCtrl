@@ -175,6 +175,8 @@ fun PinLockScreen() {
 
     fun askFingerprint() {
         val a = activity ?: return
+        // Leaving the app (Back on the first screen, swiped away) can lock it on the way out: no prompt then.
+        if (a.isFinishing || a.isDestroyed) return
         val cipher = vault.biometricUnlockCipher() ?: run {
             if (!vault.biometricEnabled) message = context.getString(R.string.lock_fingerprint_changed)
             return
@@ -251,7 +253,8 @@ fun PinLockScreen() {
             onDismiss = { forgetting = false },
         ) {
             forgetting = false
-            scope.launch { c.forgetEverything() }
+            // App-wide: the lock screen goes away while this runs, and every account must still be signed out.
+            c.appScope.launch { c.forgetEverything() }
         }
     }
 }

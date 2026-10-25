@@ -14,6 +14,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +30,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Keeps a copy of the signed-in account's timeline on the phone with Immich's sync stream
@@ -58,8 +63,22 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
     @Volatile private var db: SyncDb? = null
     @Volatile private var proto: Int = 0
     private var startJob: Job? = null
-    private var job: Job? = null
+    @Volatile private var job: Job? = null
     @Volatile private var again = false
+    /** Opening or closing an account's copy, by account; deleting its file waits for these. */
+    private val busy = HashMap<String, MutableList<Job>>()
+
+    private fun track(accountKey: String, j: Job) {
+        busy.getOrPut(accountKey) { mutableListOf() }.apply {
+            removeAll { it.isCompleted }
+            add(j)
+        }
+    }
+
+    /** Status from a sync of [d], unless that copy has been replaced or closed in the meantime. */
+    private fun post(d: SyncDb, st: Status) {
+        if (db === d) _status.value = st
+    }
 
     /** The local copy to draw [q] from, or null to ask the server (not synced yet, not supported, other filters). */
     fun dbFor(q: TimelineQuery): SyncDb? {
@@ -72,6 +91,7 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
     val active: Boolean get() = db?.complete == true
 
     /** The account changed (or signed out / locked). */
+    @Synchronized
     fun setSession(s: ActiveSession?) {
         if (s?.account?.key == session?.account?.key && s?.client === session?.client) return
         startJob?.cancel()
@@ -82,43 +102,69 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
         if (old != null) {
             // Timelines drawn from it go back to the server until the new copy is ready.
             notifyChanged()
-            scope.launch(Dispatchers.IO) { runCatching { old.close() } }
+            track(old.accountKey, scope.launch(Dispatchers.IO) { runCatching { old.close() } })
         }
         session = s
         proto = 0
         _status.value = Status.Off
         if (s == null) return
         startJob = scope.launch {
-            val client = s.client
-            if (client.authType == AuthType.API_KEY) {
-                _status.value = Status.Unsupported(Reason.API_KEY)
-                return@launch
+            try {
+                start(s)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                // A copy that can't be opened or read (storage full, damaged file): timelines load from the server.
+                AppLog.w("Sync", "Couldn't open the timeline copy: ${e.message ?: e::class.simpleName}")
             }
-            val major = runCatching { client.serverVersion().major }.getOrNull()
-                ?: (s.account.serverVersion?.removePrefix("v")?.substringBefore('.')?.toIntOrNull())
-                ?: client.serverMajor
-            if (major < 2) {
-                _status.value = Status.Unsupported(Reason.OLD_SERVER)
-                return@launch
-            }
-            val opened = withContext(Dispatchers.IO) {
-                runCatching { SyncDb.open(context, s.account.key, s.account.userId, client.secret) }.getOrNull()
-            } ?: return@launch
-            if (session !== s) {
-                withContext(Dispatchers.IO) { opened.close() }
-                return@launch
-            }
-            proto = if (major >= 3) 2 else 1
-            db = opened
-            if (opened.complete) {
-                _status.value = Status.Ready(withContext(Dispatchers.IO) { opened.itemCount() }, opened.meta(SyncDb.SYNCED_AT)?.toLongOrNull() ?: 0L)
-                notifyChanged()
-            }
-            requestSync()
+        }.also { track(s.account.key, it) }
+    }
+
+    private suspend fun start(s: ActiveSession) {
+        val client = s.client
+        if (client.authType == AuthType.API_KEY) {
+            _status.value = Status.Unsupported(Reason.API_KEY)
+            return
         }
+        val major = runCatching { client.serverVersion().major }.getOrNull()
+            ?: (s.account.serverVersion?.removePrefix("v")?.substringBefore('.')?.toIntOrNull())
+            ?: client.serverMajor
+        if (major < 2) {
+            _status.value = Status.Unsupported(Reason.OLD_SERVER)
+            return
+        }
+        // Not cancellable, and handed over (or closed again) inside the same block: a copy that was opened is
+        // never left open, even when the account changes while it opens.
+        val ready: Status.Ready? = withContext(Dispatchers.IO + NonCancellable) {
+            val d = runCatching { SyncDb.open(context, s.account.key, s.account.userId, client.secret) }.getOrNull()
+                ?: return@withContext null
+            val r = runCatching {
+                if (d.complete) Status.Ready(d.itemCount(), d.meta(SyncDb.SYNCED_AT)?.toLongOrNull() ?: 0L) else null
+            }
+            val current = r.isSuccess && synchronized(this@SyncEngine) {
+                if (session === s) {
+                    proto = if (major >= 3) 2 else 1
+                    db = d
+                    r.getOrNull()?.let { _status.value = it }
+                    true
+                } else {
+                    false
+                }
+            }
+            if (!current) {
+                runCatching { d.close() }
+                null
+            } else {
+                r.getOrNull()
+            }
+        }
+        if (db == null || session !== s) return
+        if (ready != null) notifyChanged()
+        requestSync()
     }
 
     /** Starts a sync, or runs one more once the current one ends. */
+    @Synchronized
     fun requestSync() {
         if (db == null) return
         if (job?.isActive == true) {
@@ -141,24 +187,44 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
     }
 
     /** "Reset sync": forget the local copy and what the server thinks this phone has, then start over. */
+    @Synchronized
     fun reset() {
         val d = db ?: return
-        job?.cancel()
+        val running = job
         job = scope.launch {
-            withContext(Dispatchers.IO) {
-                d.clearAll()
-                d.setMeta(SyncDb.STARTED, null)
+            // The sync that was running stops (and stops writing) before the copy is emptied.
+            running?.cancelAndJoin()
+            try {
+                withContext(Dispatchers.IO) {
+                    d.clearAll()
+                    d.setMeta(SyncDb.STARTED, null)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                // Closed meanwhile (account switch, sign-out): nothing left to reset.
+                return@launch
             }
             AppLog.i("Sync", "Sync reset; downloading the timeline again")
             notifyChanged()
-            runOnce()
+            do {
+                again = false
+                runOnce()
+            } while (again && db === d)
         }
     }
 
-    /** Signing out: the account's copy is deleted. */
+    /** Signing out: the account's copy is deleted (once it's closed). */
     fun forget(accountKey: String) {
-        if (session?.account?.key == accountKey) setSession(null)
-        scope.launch(Dispatchers.IO) { runCatching { SyncDb.delete(context, accountKey) } }
+        val pending = synchronized(this) {
+            if (session?.account?.key == accountKey) setSession(null)
+            // A copy still being opened or closed for this account finishes first, so it can't outlive the delete.
+            busy.remove(accountKey).orEmpty()
+        }
+        scope.launch(Dispatchers.IO) {
+            pending.forEach { runCatching { it.join() } }
+            runCatching { SyncDb.delete(context, accountKey) }
+        }
     }
 
     private fun notifyChanged() {
@@ -182,9 +248,10 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
         val s = session ?: return
         val p = proto
         val wasComplete = d.complete
-        val items = withContext(Dispatchers.IO) { d.itemCount() }
-        _status.value = Status.Syncing(first = !wasComplete, received = 0)
+        var items = 0L
         try {
+            items = withContext(Dispatchers.IO) { d.itemCount() }
+            post(d, Status.Syncing(first = !wasComplete, received = 0))
             var reset = false
             withContext(Dispatchers.IO) {
                 // A new copy, or the server moved to other stream types: start over on both sides.
@@ -213,7 +280,7 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
             val total = withContext(Dispatchers.IO) { d.itemCount() }
             val now = System.currentTimeMillis()
             withContext(Dispatchers.IO) { d.setMeta(SyncDb.SYNCED_AT, now.toString()) }
-            _status.value = Status.Ready(total, now)
+            post(d, Status.Ready(total, now))
             if (!wasComplete) AppLog.i("Sync", "Timeline synced: $total items")
             // Always redraw (it's read from the phone): settings such as "show photos from this phone" wait for this too.
             notifyChanged()
@@ -222,19 +289,29 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
         } catch (e: ApiException) {
             if (e.code in setOf(400, 403, 404, 405, 501)) {
                 AppLog.w("Sync", "The server refused the sync stream (${e.code}); loading the timeline month by month")
-                if (db === d) {
-                    db = null
-                    withContext(Dispatchers.IO) { runCatching { d.close() } }
+                val refused = synchronized(this) {
+                    if (db === d) {
+                        db = null
+                        _status.value = Status.Unsupported(Reason.REFUSED)
+                        true
+                    } else {
+                        false
+                    }
                 }
-                _status.value = Status.Unsupported(Reason.REFUSED)
-                notifyChanged()
+                if (refused) {
+                    withContext(Dispatchers.IO) { runCatching { d.close() } }
+                    notifyChanged()
+                }
             } else {
                 AppLog.w("Sync", "Sync failed: ${e.message}")
-                _status.value = Status.Failed(e.message ?: "", items)
+                post(d, Status.Failed(e.message ?: "", items))
             }
         } catch (e: Throwable) {
+            // Stopped on purpose (account switch, sign-out, app locked): the closed stream isn't a failure.
+            currentCoroutineContext().ensureActive()
+            if (db !== d) return
             AppLog.w("Sync", "Sync failed: ${e.message ?: e::class.simpleName}")
-            _status.value = Status.Failed(e.message ?: e::class.simpleName.orEmpty(), items)
+            post(d, Status.Failed(e.message ?: e::class.simpleName.orEmpty(), items))
         }
     }
 
@@ -259,7 +336,18 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
             .build()
         var serverReset = false
         var received = 0L
-        val resp = client.execute(req)
+        val call = client.http.newCall(req)
+        val resp = client.execute(call)
+        // Reading the stream blocks; when the sync is stopped (account switch, sign-out), cancelling the call
+        // ends the read straight away instead of holding on to the connection until it times out.
+        val finished = AtomicBoolean(false)
+        val closer = launch {
+            try {
+                awaitCancellation()
+            } finally {
+                if (!finished.get()) call.cancel()
+            }
+        }
         try {
             if (reset) {
                 d.setMeta(SyncDb.STARTED, System.currentTimeMillis().toString())
@@ -279,7 +367,7 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
                         client.raw("POST", "/sync/ack", obj("acks" to acks.values.toList()))
                         acks.clear()
                     }
-                    _status.value = Status.Syncing(first = !d.complete, received = received)
+                    post(d, Status.Syncing(first = !d.complete, received = received))
                 }
             }
 
@@ -319,6 +407,8 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
                 d.setMeta(SyncDb.COMPLETE, System.currentTimeMillis().toString())
             }
         } finally {
+            finished.set(true)
+            closer.cancel()
             resp.close()
         }
         StreamResult(serverReset)

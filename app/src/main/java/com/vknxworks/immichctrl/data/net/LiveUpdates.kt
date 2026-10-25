@@ -34,6 +34,7 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
     /** Called with each server-side event name, for anything else that wants to react (admin alerts). */
     var onEvent: ((String) -> Unit)? = null
 
+    @Synchronized
     fun setClient(c: ImmichClient?) {
         if (c === client) return
         client = c
@@ -41,22 +42,26 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
     }
 
     /** Connects again, e.g. after the user switched between the home and public address. */
+    @Synchronized
     fun reconnect() {
         attempt = 0
         restart()
     }
 
+    @Synchronized
     fun setForeground(fg: Boolean) {
         foreground = fg
         if (fg) restart() else stop()
     }
 
+    @Synchronized
     private fun stop() {
         reconnectJob?.cancel()
         socket?.close(1000, null)
         socket = null
     }
 
+    @Synchronized
     private fun restart() {
         stop()
         val c = client ?: return
@@ -66,6 +71,7 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
         socket = http.newWebSocket(req, Listener())
     }
 
+    @Synchronized
     private fun scheduleReconnect() {
         if (!foreground || client == null) return
         reconnectJob?.cancel()
@@ -81,6 +87,7 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
      * Several events usually arrive together (a batch upload); refresh once. With a synced timeline
      * copy this asks for an incremental sync, and the timelines redraw once it has stored the change.
      */
+    @Synchronized
     private fun refreshSoon() {
         refreshJob?.cancel()
         refreshJob = scope.launch(Dispatchers.Main) {
@@ -91,7 +98,7 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
 
     private inner class Listener : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
-            attempt = 0
+            synchronized(this@LiveUpdates) { attempt = 0 }
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -105,17 +112,21 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            if (socket === webSocket) {
-                if (attempt == 0) AppLog.w("Live", "Live updates disconnected: ${t.message ?: t::class.simpleName}")
-                socket = null
-                scheduleReconnect()
+            synchronized(this@LiveUpdates) {
+                if (socket === webSocket) {
+                    if (attempt == 0) AppLog.w("Live", "Live updates disconnected: ${t.message ?: t::class.simpleName}")
+                    socket = null
+                    scheduleReconnect()
+                }
             }
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            if (socket === webSocket) {
-                socket = null
-                scheduleReconnect()
+            synchronized(this@LiveUpdates) {
+                if (socket === webSocket) {
+                    socket = null
+                    scheduleReconnect()
+                }
             }
         }
     }

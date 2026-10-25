@@ -294,7 +294,7 @@ fun AccountsScreen() {
     removing?.let { key ->
         ConfirmDialog(stringResource(R.string.sign_out_of_this_account), stringResource(R.string.you_can_add_it_again_later), stringResource(R.string.sign_out), onDismiss = { removing = null }) {
             removing = null
-            scope.launch { c.sessions.signOut(key) }
+            c.appScope.launch { c.sessions.signOut(key) }
         }
     }
 }

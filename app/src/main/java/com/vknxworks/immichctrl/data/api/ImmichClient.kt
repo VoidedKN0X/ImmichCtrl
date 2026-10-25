@@ -90,8 +90,11 @@ class ImmichClient(
         return b
     }
 
-    suspend fun execute(req: Request): Response {
-        val resp = http.newCall(req).await()
+    suspend fun execute(req: Request): Response = execute(http.newCall(req))
+
+    /** Like [execute], for a call the caller keeps so it can cancel it (a long stream it reads itself). */
+    suspend fun execute(call: Call): Response {
+        val resp = call.await()
         if (!resp.isSuccessful) {
             val body = resp.body?.string().orEmpty()
             resp.close()

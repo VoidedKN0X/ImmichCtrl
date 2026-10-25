@@ -17,6 +17,9 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 import java.security.MessageDigest
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * The account's timeline as Immich's sync stream describes it: assets (own, partners' and those in
@@ -38,6 +41,34 @@ class SyncDb private constructor(
     /** A full sync has finished at least once, so the timeline can be shown from here. */
     @Volatile var complete: Boolean = false
         private set
+
+    /**
+     * Closed for good (account switched, signed out, sync refused). SQLiteOpenHelper would quietly
+     * reopen (and recreate) the file on the next read or write, so every use goes through [guarded], which
+     * refuses instead, and [close] waits for a read or batch that is still running.
+     */
+    @Volatile private var closed = false
+    private val guard = ReentrantReadWriteLock()
+
+    /** Opened once in [open]; reads and writes use it directly, never reopening a closed copy. */
+    @Volatile private var handle: SQLiteDatabase? = null
+
+    private inline fun <T> guarded(block: (SQLiteDatabase) -> T): T = guard.read {
+        check(!closed) { "Timeline copy closed" }
+        block(checkNotNull(handle) { "Timeline copy closed" })
+    }
+
+    // Synchronized like the methods that write, so they and close() always take the locks in the same order.
+    @Synchronized
+    override fun close() {
+        guard.write {
+            if (closed) return
+            closed = true
+            complete = false
+            handle = null
+            super.close()
+        }
+    }
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
@@ -72,11 +103,12 @@ class SyncDb private constructor(
     // Meta
     // ---------------------------------------------------------------------------------------------
 
-    fun meta(key: String): String? =
-        readableDatabase.rawQuery("SELECT v FROM meta WHERE k = ?", arrayOf(key)).use { c -> if (c.moveToFirst()) c.getString(0) else null }
+    fun meta(key: String): String? = guarded { db ->
+        db.rawQuery("SELECT v FROM meta WHERE k = ?", arrayOf(key)).use { c -> if (c.moveToFirst()) c.getString(0) else null }
+    }
 
-    fun setMeta(key: String, value: String?) {
-        val db = writableDatabase
+    @Synchronized
+    fun setMeta(key: String, value: String?): Unit = guarded { db ->
         if (value == null) db.delete("meta", "k = ?", arrayOf(key))
         else db.insertWithOnConflict("meta", null, ContentValues().apply { put("k", key); put("v", value) }, SQLiteDatabase.CONFLICT_REPLACE)
         if (key == COMPLETE) complete = value != null
@@ -84,8 +116,7 @@ class SyncDb private constructor(
 
     /** Empties everything (keeping which login it belongs to), so the next sync starts from scratch. */
     @Synchronized
-    fun clearAll() {
-        val db = writableDatabase
+    fun clearAll(): Unit = guarded { db ->
         db.beginTransaction()
         try {
             listOf("assets", "exif", "stacks", "partners", "album_assets").forEach { db.delete(it, null, null) }
@@ -99,8 +130,7 @@ class SyncDb private constructor(
 
     /** After a full sync: drops copies of other people's photos this account can't see any more. */
     @Synchronized
-    fun prune() {
-        val db = writableDatabase
+    fun prune(): Unit = guarded { db ->
         db.beginTransactionNonExclusive()
         try {
             db.execSQL(
@@ -115,8 +145,9 @@ class SyncDb private constructor(
         }
     }
 
-    fun itemCount(): Long =
-        readableDatabase.rawQuery("SELECT COUNT(*) FROM assets WHERE deleted = 0", null).use { c -> if (c.moveToFirst()) c.getLong(0) else 0L }
+    fun itemCount(): Long = guarded { db ->
+        db.rawQuery("SELECT COUNT(*) FROM assets WHERE deleted = 0", null).use { c -> if (c.moveToFirst()) c.getLong(0) else 0L }
+    }
 
     // ---------------------------------------------------------------------------------------------
     // Writing what the stream sends, in batches (one transaction each)
@@ -129,17 +160,18 @@ class SyncDb private constructor(
     @Synchronized
     fun applyBatch(items: List<Pair<String, JsonObject>>): Boolean {
         if (items.isEmpty()) return false
-        val db = writableDatabase
-        val w = Writer(db)
-        db.beginTransactionNonExclusive()
-        try {
-            var changed = false
-            for ((type, data) in items) if (w.apply(type, data)) changed = true
-            db.setTransactionSuccessful()
-            return changed
-        } finally {
-            db.endTransaction()
-            w.close()
+        return guarded { db ->
+            val w = Writer(db)
+            db.beginTransactionNonExclusive()
+            try {
+                var changed = false
+                for ((type, data) in items) if (w.apply(type, data)) changed = true
+                db.setTransactionSuccessful()
+                changed
+            } finally {
+                db.endTransaction()
+                w.close()
+            }
         }
     }
 
@@ -315,17 +347,17 @@ class SyncDb private constructor(
     private fun dir(q: TimelineQuery) = if (q.order == "asc") "ASC" else "DESC"
 
     /** Months with their photo counts, like GET /timeline/buckets. */
-    fun buckets(q: TimelineQuery): List<TimeBucketDto> {
+    fun buckets(q: TimelineQuery): List<TimeBucketDto> = guarded { db ->
         val (w, args) = where(q)
         val out = ArrayList<TimeBucketDto>()
-        readableDatabase.rawQuery("SELECT a.month, COUNT(*) FROM assets a WHERE $w GROUP BY a.month ORDER BY a.month ${dir(q)}", args).use { c ->
+        db.rawQuery("SELECT a.month, COUNT(*) FROM assets a WHERE $w GROUP BY a.month ORDER BY a.month ${dir(q)}", args).use { c ->
             while (c.moveToNext()) out += TimeBucketDto(c.getString(0), c.getInt(1))
         }
-        return out
+        out
     }
 
     /** One month's photos, like GET /timeline/bucket. */
-    fun bucket(q: TimelineQuery, month: String): List<Asset> {
+    fun bucket(q: TimelineQuery, month: String): List<Asset> = guarded { db ->
         val (w, args) = where(q)
         val stackCount = if (q.withStacked == true) {
             "CASE WHEN a.stack_id IS NULL THEN 0 ELSE (SELECT COUNT(*) FROM assets b WHERE b.stack_id = a.stack_id AND b.deleted = 0 AND b.visibility = 'timeline') END"
@@ -338,7 +370,7 @@ class SyncDb private constructor(
             "FROM assets a LEFT JOIN exif e ON e.asset_id = a.id WHERE $w AND a.month = ? " +
             "ORDER BY a.local_day $d, a.taken_ms $d, a.file_name $d"
         val out = ArrayList<Asset>()
-        readableDatabase.rawQuery(sql, args + month).use { c ->
+        db.rawQuery(sql, args + month).use { c ->
             while (c.moveToNext()) {
                 val owner = c.getString(14)
                 val taken = c.getLong(11)
@@ -364,13 +396,12 @@ class SyncDb private constructor(
                 )
             }
         }
-        return out
+        out
     }
 
     companion object {
         private const val VERSION = 1
         const val COMPLETE = "complete"
-        const val EPOCH = "epoch"
         const val AUTH = "auth"
         const val SYNCED_AT = "synced_at"
         /** The server has been told to forget what it sent this login before the first stream. */
@@ -389,12 +420,18 @@ class SyncDb private constructor(
          */
         fun open(context: Context, accountKey: String, userId: String, secret: String): SyncDb {
             val db = SyncDb(context.applicationContext, fileName(accountKey), accountKey, userId)
-            val auth = sha("immichctrl-sync|$secret").take(24)
-            if (db.meta(AUTH) != auth) {
-                db.clearAll()
-                db.setMeta(AUTH, auth)
+            try {
+                db.handle = db.writableDatabase
+                val auth = sha("immichctrl-sync|$secret").take(24)
+                if (db.meta(AUTH) != auth) {
+                    db.clearAll()
+                    db.setMeta(AUTH, auth)
+                }
+                db.complete = db.meta(COMPLETE) != null
+            } catch (e: Throwable) {
+                runCatching { db.close() }
+                throw e
             }
-            db.complete = db.meta(COMPLETE) != null
             return db
         }
 

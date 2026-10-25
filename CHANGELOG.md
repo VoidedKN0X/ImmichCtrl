@@ -4,6 +4,28 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.6.1
+
+### Fixed
+
+- **No more crash when leaving the app during a timeline sync.** Switching accounts, signing out, or the app locking while the timeline was still syncing could make ImmichCtrl crash, or quietly create an empty copy of the timeline again right after it was closed. A sync that is stopped now ends cleanly and straight away, and the copy on the phone is only touched while it's open.
+- **Signing out always removes the timeline copy.** If you signed out while the copy was still being opened or synced, its file could be left on the phone. It is now deleted once the sync has stopped, every time.
+- **Signing out or "Forgot PIN?" finishes even when the screen closes.** Clearing an account's offline albums, cached photos and timeline copy kept going only while the screen you signed out from stayed open; it now always runs to the end.
+- **Reset sync waits for a running sync** before emptying the copy, so the two can't write over each other, and a sync asked for meanwhile (pull to refresh, a live update) still runs afterwards.
+- **Settings › Timeline sync no longer shows a stale status** (for example "Syncing…" or an error) from an account you just switched away from, and a sync stopped on purpose is no longer shown as "Last sync failed".
+- **Months don't stay empty after an account switch.** A month that was loading from the phone's copy while it closed now loads again from the server instead of staying blank until you pull to refresh.
+- **Fingerprint prompt on the lock screen** is no longer opened while the app is closing (Back on the first screen or swiping it away with "Lock again" set to immediately), which could crash the app on some phones.
+- **Live updates** no longer risk a crash when the connection drops at the same moment as the app goes to the background.
+- **A failure in a background task** (sync, live updates, clean-up after signing out) is now written to the in-app log instead of closing the app.
+
+### Security
+
+- Removed WorkManager's debugging receiver from the app, so nothing outside ImmichCtrl can ask it about or poke at its background jobs.
+
+### Changed
+
+- Internal cleanup: removed an unused setting key from the timeline copy.
+
 ## 0.6.0
 
 ### New

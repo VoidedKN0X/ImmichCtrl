@@ -32,6 +32,7 @@ import com.vknxworks.immichctrl.data.settings.SettingsRepository
 import com.vknxworks.immichctrl.data.sync.SyncEngine
 import com.vknxworks.immichctrl.data.timeline.Sources
 import com.vknxworks.immichctrl.ui.widget.WidgetWorker
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -52,7 +53,15 @@ import java.util.concurrent.TimeUnit
 
 /** Manual dependency container; one per process. */
 class AppContainer(val context: Context) {
-    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * Work that outlives screens (sync, live updates, sign-out clean-up). A failure in one job is logged
+     * instead of taking the whole app down, which would otherwise happen on the way out or in the background.
+     */
+    val appScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e ->
+            AppLog.e("App", "Background task failed", e)
+        },
+    )
 
     /** Address in use (public or home), extra headers and client certificate for the signed-in account. */
     val router = NetworkRouter(context)
