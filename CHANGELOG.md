@@ -11,7 +11,7 @@ Safety fixes from a security review, plus clearer shared-link options and a begi
 ### Security
 
 - **Offline albums only save files inside the album's own folder.** A photo id from the server is now checked before it's used as a file name, so an unexpected id can never write outside the offline album's folder on your phone.
-- **Other apps can no longer ask ImmichCtrl to open arbitrary screens.** ImmichCtrl's main screen can be started by any app; it now only accepts the requests its own widgets, Quick Settings tile and notifications send (a memory, a photo, Backup or the admin page), and ignores anything else. Opening a photo this way still shows only what your signed-in account can see, and nothing opens while the app lock is up.
+- **Other apps can no longer ask ImmichCtrl to open arbitrary screens.** ImmichCtrl's main screen can be started by any app; it now only accepts the requests its own widgets and notifications send (a memory, a photo, Backup or the admin page), and ignores anything else. Opening a photo this way still shows only what your signed-in account can see, and nothing opens while the app lock is up.
 
 ### Changed
 
