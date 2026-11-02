@@ -23,7 +23,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.ui.draw.clip
@@ -150,13 +149,13 @@ fun YouScreen() {
                             .background(CtrlColors.Surface).border(1.dp, CtrlColors.ControlBorder, RoundedCornerShape(8.dp)).padding(4.dp),
                         tint = CtrlColors.Text,
                     )
-                    DropdownMenu(avatarMenu, onDismissRequest = { avatarMenu = false }) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.choose_a_new_picture)) }, onClick = {
+                    com.vknxworks.immichctrl.ui.components.CtrlDropdownMenu(avatarMenu, onDismissRequest = { avatarMenu = false }) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.choose_a_new_picture)) }, colors = com.vknxworks.immichctrl.ui.components.ctrlMenuItemColors(), onClick = {
                             avatarMenu = false
                             com.vknxworks.immichctrl.data.security.expectAppReturn(context)
                             pickAvatar.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         })
-                        if (!m?.profileImagePath.isNullOrBlank()) DropdownMenuItem(text = { Text(stringResource(R.string.remove_picture)) }, onClick = {
+                        if (!m?.profileImagePath.isNullOrBlank()) DropdownMenuItem(text = { Text(stringResource(R.string.remove_picture)) }, colors = com.vknxworks.immichctrl.ui.components.ctrlMenuItemColors(), onClick = {
                             avatarMenu = false
                             c.runTask(Strings.str(R.string.profile_picture_removed)) { c.api.deleteProfileImage(); me.reload(silent = true) }
                         })

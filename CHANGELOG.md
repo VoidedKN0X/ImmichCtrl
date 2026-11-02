@@ -4,6 +4,12 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.6.2
+
+### Fixed
+
+- **Popup menus no longer show a grey box.** The menu that opens when you tap your profile picture on the **You** page (**Choose a new picture** / **Remove picture**) was drawn with Android's default shadow, which showed up as a grey, square-ish edge around it, most visibly in light mode. It's now a flat Ctrl / Signal panel: the card colour (white in light mode, graphite in dark mode), 16dp rounded corners, a thin border and no shadow. Its text uses the normal text colour, with grey for icons and disabled items. This is the only popup menu in ImmichCtrl; any menu added later gets the same look. Nothing changes in what the menu does.
+
 ## 0.6.1
 
 ### Fixed

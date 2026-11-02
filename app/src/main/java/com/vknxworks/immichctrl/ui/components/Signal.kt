@@ -450,3 +450,61 @@ fun CtrlAlertDialog(
         tonalElevation = 0.dp,
     )
 }
+
+/**
+ * Popup menu in the series style: flat card surface, 16dp corners, 1dp border, no shadow or tonal tint (Material's
+ * shadow draws as a grey box inside the popup window). Same parameters as material3's DropdownMenu.
+ */
+@Composable
+fun CtrlDropdownMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    offset: androidx.compose.ui.unit.DpOffset = androidx.compose.ui.unit.DpOffset(0.dp, 0.dp),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    androidx.compose.material3.DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        offset = offset,
+        shape = RoundedCornerShape(16.dp),
+        containerColor = CtrlColors.Surface,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, CtrlColors.CardBorder),
+        content = content,
+    )
+}
+
+/** [CtrlDropdownMenu] for exposed (text field) menus. */
+@Composable
+fun androidx.compose.material3.ExposedDropdownMenuBoxScope.CtrlExposedDropdownMenu(
+    expanded: Boolean,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    ExposedDropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        containerColor = CtrlColors.Surface,
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, CtrlColors.CardBorder),
+        content = content,
+    )
+}
+
+/** Menu item colours from the current palette: text, muted icons, disabled grey. */
+@Composable
+fun ctrlMenuItemColors(): androidx.compose.material3.MenuItemColors = androidx.compose.material3.MenuDefaults.itemColors(
+    textColor = CtrlColors.Text,
+    leadingIconColor = CtrlColors.Muted,
+    trailingIconColor = CtrlColors.Muted,
+    disabledTextColor = CtrlColors.Stopped,
+    disabledLeadingIconColor = CtrlColors.Stopped,
+    disabledTrailingIconColor = CtrlColors.Stopped,
+)
