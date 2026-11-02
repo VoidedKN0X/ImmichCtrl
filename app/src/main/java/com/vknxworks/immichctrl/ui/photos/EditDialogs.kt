@@ -195,6 +195,7 @@ fun SharedLinkDialog(
         title = { Text(title) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.shared_link_is_public), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(o.description, { o = o.copy(description = it) }, label = { Text(stringResource(R.string.description_optional)) }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = CtrlShapes.Field, colors = ctrlFieldColors())
                 Text(stringResource(R.string.stops_working), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {

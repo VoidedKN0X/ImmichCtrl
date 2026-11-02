@@ -190,6 +190,8 @@ class OfflineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             val kept = ArrayList<OfflineAsset>()
             assets.forEachIndexed { i, a ->
                 if (isStopped) return Result.retry()
+                // The id comes from the server and becomes a file name: never let it point outside the album's folder.
+                if (a.id.isEmpty() || !a.id.all { it.isLetterOrDigit() || it == '-' }) return@forEachIndexed
                 val file = if (a.isImage) "${a.id}.jpg" else "${a.id}.mp4"
                 val target = File(dir, file)
                 if (!target.exists() || target.length() == 0L) {

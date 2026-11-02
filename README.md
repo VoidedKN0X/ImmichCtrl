@@ -69,10 +69,6 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - Sign in with email and password, OAuth or an API key; tablet and foldable layout
 - Built-in log viewer, and a warning when the server's Immich version isn't supported
 
-## Screenshots
-
-Coming soon.
-
 ## Requirements
 
 - Android 13 or newer, on a 64-bit ARM phone (nearly every phone from the last several years)
@@ -81,7 +77,7 @@ Coming soon.
 
 ## Install
 
-1. Download the latest `.apk` file from the [Releases page](https://github.com/VoidedKN0X/ImmichCtrl/releases/latest).
+1. Open the [Releases page](https://github.com/VoidedKN0X/ImmichCtrl/releases/latest) on your phone, scroll down to **Assets** and tap the file that ends in `.apk` (for example `ImmichCtrl-v0.6.3.apk`). The "Source code" zip and tar.gz files are not the app.
 2. Open it on your phone. Android may ask you to allow installing apps from your browser or file manager.
 3. Updates install over the old version. Your settings and login are kept.
 
@@ -93,6 +89,30 @@ Coming soon.
 <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/VoidedKN0X/ImmichCtrl"><img src=".github/assets/badge_obtainium.png" alt="Get it on Obtainium" height="80"></a> <a href="https://voidedkn0x.github.io/CtrlF-Droid/"><img src=".github/assets/badge_ctrlf-droid.png" alt="Get it from our F-Droid repo" height="80"></a>
 
 If the Obtainium button doesn't open the app, add `https://github.com/VoidedKN0X/ImmichCtrl` in Obtainium by hand.
+
+## Is it safe to install?
+
+- **Open source.** All of ImmichCtrl's code is in this repo, under the GPL-3.0 licence. Anyone can read it.
+- **Built by GitHub, not on a personal computer.** Every release on the Releases page is built by GitHub Actions from the code in this repo, using [the build workflow](.github/workflows/build.yml).
+- **Always signed with the same key.** Android refuses to install an update signed with a different key, and the CtrlF-Droid repo only accepts APKs signed with this one. Advanced users can compare the SHA-256 certificate fingerprint with [AppVerifier](https://github.com/soupslurpr/AppVerifier):
+
+  ```
+  B0:14:DB:86:AC:B9:84:3B:30:70:27:F9:23:3B:A4:45:89:E2:6D:7C:0A:55:2B:D1:93:A0:96:75:56:AE:C9:23
+  ```
+
+**Permissions**
+
+| Permission | What ImmichCtrl uses it for |
+| --- | --- |
+| Internet | Talking to your Immich server (and its map provider, when maps are on) |
+| Network state | Waiting for a connection, and Wi-Fi-only backup |
+| Notifications | Backup and offline album progress, and admin alerts |
+| Photos and videos (images, videos, selected photos) | Backing up your phone and showing its photos in the timeline. Only asked for when you use these |
+| Photo location | Keeping the place a photo was taken when it's backed up |
+| Foreground service (data sync) | Keeping a long backup or offline album download running with a progress notification |
+| Wake lock | Letting a backup finish while the screen is off |
+
+See [Privacy](#privacy) for what the app sends and to whom.
 
 ## Getting started
 
@@ -148,6 +168,10 @@ Apart from your own Immich server, ImmichCtrl only contacts:
 
 Nothing else: no ads, no analytics.
 
+## How ImmichCtrl is made
+
+ImmichCtrl is a one-person project by VoidedKN0X (VKNXWorks). Much of the code is written with the help of AI (Claude, by Anthropic). I decide what the app does, review the changes and use the app myself. Every change is listed in the [changelog](CHANGELOG.md), and you can read every line of code here.
+
 ## Build from source
 
 You need [Android Studio](https://developer.android.com/studio), or JDK 17 and the Android SDK.
@@ -168,7 +192,9 @@ Or open the folder in Android Studio and press **Run** with your phone connected
 
 ## Support the project
 
-ImmichCtrl is free and open source. If it's useful to you, tap **Support ImmichCtrl** under **About** on the You page (tap your profile picture) to sponsor development on [GitHub Sponsors](https://github.com/sponsors/VoidedKN0X). Found a problem or have an idea? Tap **Report a bug** in the same section, or [open an issue](https://github.com/VoidedKN0X/ImmichCtrl/issues). Starring the repo helps too.
+ImmichCtrl is free and open source. If it's useful to you, tap **Support ImmichCtrl** under **About** on the You page (tap your profile picture) to sponsor development on [GitHub Sponsors](https://github.com/sponsors/VoidedKN0X). Found a problem or have an idea? Tap **Report a bug** in the same section, or open an issue. Bug reports and ideas go through the [issue forms](https://github.com/VoidedKN0X/ImmichCtrl/issues/new/choose). Starring the repo helps too.
+
+Found a security problem? Please don't open a public issue; see [SECURITY.md](SECURITY.md).
 
 ## The Ctrl series
 
@@ -190,11 +216,16 @@ Native Android apps for self-hosted services and everyday tools, all with the sa
 | [PaperCtrl](https://github.com/VoidedKN0X/PaperCtrl) | Scan and browse documents on Paperless-ngx |
 | [PrintCtrl](https://github.com/VoidedKN0X/PrintCtrl) | Bambu Lab printers through Bambuddy, and Spoolman spools |
 | [ProxCtrl](https://github.com/VoidedKN0X/ProxCtrl) | Manage your Proxmox VE server |
+| [RideCtrl](https://github.com/VoidedKN0X/RideCtrl) | Offline maintenance, fuel and mod log for your vehicles |
 | [SeerrCtrl](https://github.com/VoidedKN0X/SeerrCtrl) | Request movies and shows on Seerr / Jellyseerr |
+| [SynapseCtrl](https://github.com/VoidedKN0X/SynapseCtrl) | Administer your Matrix Synapse server |
 | [TrueCtrl](https://github.com/VoidedKN0X/TrueCtrl) | Monitor and manage your TrueNAS server |
+| [WrtCtrl](https://github.com/VoidedKN0X/WrtCtrl) | Manage your OpenWrt router |
 
 ## License
 
 ImmichCtrl is licensed under the [GNU General Public License v3.0](LICENSE). © VKNXWorks
+
+ImmichCtrl is an independent app and isn't made by or affiliated with the Immich project or FUTO.
 
 The bundled fonts are licensed under the SIL Open Font License 1.1: [Space Grotesk](https://github.com/floriankarsten/space-grotesk) (see `FONT-LICENSE-SpaceGrotesk.txt`) and [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) (see `FONT-LICENSE-JetBrainsMono.txt`).

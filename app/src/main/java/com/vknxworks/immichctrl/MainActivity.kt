@@ -92,7 +92,8 @@ class MainActivity : FragmentActivity() {
     private fun handleIntent(intent: Intent?) {
         intent ?: return
         val c = container
-        intent.getStringExtra(EXTRA_OPEN)?.let { c.openRequests.value = it }
+        // Any app can start this screen: only accept the requests the app's own widgets and notifications send.
+        intent.getStringExtra(EXTRA_OPEN)?.takeIf { OPEN_REQUEST.matches(it) }?.let { c.openRequests.value = it }
         val data = intent.data
         when {
             // Back from the browser after an OAuth sign-in.
@@ -142,5 +143,8 @@ class MainActivity : FragmentActivity() {
     companion object {
         /** Intent extra: what to open ("memory:<id>", "asset:<id>", "admin"). */
         const val EXTRA_OPEN = "open"
+
+        /** "memory:<id>" or "asset:<id>" with a plain server id, "admin" or "backup". */
+        private val OPEN_REQUEST = Regex("^((memory|asset):[A-Za-z0-9-]{1,64}|admin|backup)$")
     }
 }

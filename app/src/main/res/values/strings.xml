@@ -561,6 +561,7 @@
     <string name="share_as">Share as</string>
     <string name="always_use_this">Always use this</string>
     <string name="create_link">Create link</string>
+    <string name="shared_link_is_public">Anyone with the link can open it, without signing in. Add a password or an end date to limit who sees it. \"Show photo details\" also shares where the photos were taken.</string>
     <string name="description_optional">Description (optional)</string>
     <string name="stops_working">Stops working</string>
     <string name="never">Never</string>

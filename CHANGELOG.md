@@ -4,6 +4,25 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.6.3
+
+Safety fixes from a security review, plus clearer shared-link options and a beginner-friendly project page.
+
+### Security
+
+- **Offline albums only save files inside the album's own folder.** A photo id from the server is now checked before it's used as a file name, so an unexpected id can never write outside the offline album's folder on your phone.
+- **Other apps can no longer ask ImmichCtrl to open arbitrary screens.** ImmichCtrl's main screen can be started by any app; it now only accepts the requests its own widgets, Quick Settings tile and notifications send (a memory, a photo, Backup or the admin page), and ignores anything else. Opening a photo this way still shows only what your signed-in account can see, and nothing opens while the app lock is up.
+
+### Changed
+
+- **The shared-link dialog says who can see the link.** When you create or edit a shared link, the dialog now says that anyone with the link can open it without signing in, that a password or an end date limits who sees it, and that "Show photo details" also shares where the photos were taken.
+
+### Project
+
+- New **SECURITY.md**: how to report a security problem privately, which versions get fixes, and the release signing key's fingerprint.
+- New **issue forms** for bug reports and feature requests on GitHub, with a reminder to remove server addresses, passwords and API keys first. Blank issues are off, and security problems are pointed to the private report form.
+- README: clearer install steps for first-time GitHub users (which file to tap under **Assets**), a new **Is it safe to install?** section with the signing fingerprint and every permission explained, a **How ImmichCtrl is made** section, a note that ImmichCtrl isn't affiliated with the Immich project or FUTO, the full Ctrl series list, and the empty Screenshots section removed.
+
 ## 0.6.2
 
 ### Fixed
