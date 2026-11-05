@@ -69,6 +69,8 @@ fun VideoPlayer(
         ExoPlayer.Builder(context)
             // Server videos go through the app's HTTP client (credentials); phone and offline files are read directly.
             .setMediaSourceFactory(DefaultMediaSourceFactory(DefaultDataSource.Factory(context, OkHttpDataSource.Factory(c.http))))
+            // Don't hand playback details to Android's media diagnostics service.
+            .setUsePlatformDiagnostics(false)
             .build()
             .apply {
                 setMediaItem(MediaItem.fromUri(if (isUri) videoAssetId else c.api.videoUrl(videoAssetId)))

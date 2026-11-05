@@ -131,7 +131,7 @@ Your account, backup, **Settings** and sign out are all on that same page behind
 ## Tips and troubleshooting
 
 - **OAuth** uses the same redirect as Immich's official app, so servers already set up for it work. If both apps are installed, Android may ask which one should finish the sign-in.
-- **Plain HTTP** works, but the app warns you first because your password would be sent unencrypted.
+- **Plain HTTP** works, but the app warns you first because your password would be sent unencrypted. Plain HTTP is only ever used for the server addresses you chose: if your server redirects somewhere else over plain HTTP, ImmichCtrl refuses. A redirect that would re-send your password or an upload to another server is refused too.
 - **Server behind Cloudflare Access or another proxy?** Tap **Advanced: custom headers** on the sign-in screen and add the headers there. You can change them later in **Settings → Networking**.
 - **Home network address:** add it in **Settings → Networking**, then pick **Use home address** under **Address in use**. The app stays on the address you picked, even away from home, so pick **Use public address** before you leave (also on your profile page, or from the button on a "Couldn't load this" error). After updating from 0.2.x, the app starts on the public address.
 - **Client certificates** are in **Settings → Networking** too. Install the certificate in Android's settings first (Security → Encryption & credentials), then pick it in the app.
@@ -164,13 +164,13 @@ Updating from a version before 0.3.9 with the old app lock (your phone's screen 
 
 ## Privacy
 
-**Telemetry-free.** ImmichCtrl has no analytics, crash reporting, usage stats or tracking of any kind. It only talks to the servers you add, plus the map provider below when maps are on.
+**Telemetry-free.** ImmichCtrl has no analytics, crash reporting, usage stats or tracking of any kind. It only talks to the servers you add, plus the map provider below when maps are on. The video player hands no playback diagnostics to Android's media diagnostics service.
 
 ### Other servers the app talks to
 
 Apart from your own Immich server, ImmichCtrl only contacts:
 
-- **Your server's map provider**, for the mini map in a photo's details and the Map screen: Immich's tile server (`tiles.immich.cloud`) unless your admin chose another map style. It sees your IP address and the area shown. Maps only load when the map is turned on in your server's settings, and you can turn them off in **Settings > Privacy and security > Show maps**.
+- **Your server's map provider**, for the mini map in a photo's details and the Map screen: Immich's tile server (`tiles.immich.cloud`) unless your admin chose another map style. It sees your IP address and the area shown. Maps only load when the map is turned on in your server's settings, and you can turn them off in **Settings > Privacy and security > Show maps**. Map styles, tiles and fonts are only ever loaded over https.
 
 Nothing else: no ads, no analytics.
 

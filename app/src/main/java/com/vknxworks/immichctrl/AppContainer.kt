@@ -222,7 +222,7 @@ class AppContainer(val context: Context) {
                 // Map tiles cached by the photo's mini map and the Map screen show where photos were taken.
                 withContext(Dispatchers.Main) {
                     runCatching {
-                        org.maplibre.android.MapLibre.getInstance(context)
+                        com.vknxworks.immichctrl.data.net.MapNet.init(context)
                         org.maplibre.android.offline.OfflineManager.getInstance(context).clearAmbientCache(
                             object : org.maplibre.android.offline.OfflineManager.FileSourceCallback {
                                 override fun onSuccess() = Unit

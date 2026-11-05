@@ -4,6 +4,21 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.7.2
+
+Redirects can no longer send your password or uploads to another server or move you to plain HTTP elsewhere, maps only load over https, and video playback stays private.
+
+### Security
+
+- **Plain HTTP only to the servers you chose, even after a redirect.** Before, once a plain-HTTP connection to your server was allowed, your server (or something pretending to be it on the network) could redirect a request to plain HTTP on a completely different address and ImmichCtrl would follow it. Now every plain-HTTP step of a redirect has to be one of your own server addresses (your public or home address, after you accepted the HTTP warning); anything else is blocked with "Blocked an unencrypted (HTTP) connection". Redirects within your own server, HTTPS redirects and the switch between your home and public address work as before.
+- **Your password and uploads never follow a redirect to another server.** Some redirects make the app send the same request again, including what's in it: your password when signing in, a PIN, or a photo being uploaded. ImmichCtrl already removed your login and proxy headers on a redirect to another address, but the contents still went along. Such a redirect is now refused with "Blocked a redirect that would have sent your data to …". Redirects to the same server keep working, including a server that moves you from http:// to https:// on the same name.
+- **Maps only load over https.** The map library downloads its styles, tiles, fonts and icons with its own connection, which didn't go through ImmichCtrl's checks. It now gets a connection that only allows https, also for redirects, so a map style can never load parts of the map over plain HTTP. Maps from Immich's own tile server (`tiles.immich.cloud`) and other https map styles work as before.
+- **Other apps can no longer change how ImmichCtrl is optimised.** A small component from Android's build tools let any app tell ImmichCtrl to write or skip its start-up speed profile. ImmichCtrl doesn't need it, so it is gone; the app starts just as fast.
+
+### Privacy
+
+- **No playback diagnostics are handed to Android.** The video player used to report playback details (such as the video format, buffering and errors) to Android's own media diagnostics service, which can pass them on to Google when the phone shares usage and diagnostics data. This is now turned off, so no playback diagnostics are handed to Android. Videos play exactly as before.
+
 ## 0.7.1
 
 Four permissions ImmichCtrl never used are gone, and release builds no longer keep library debug logging.

@@ -17,7 +17,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.immichctrl.container
-import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
@@ -56,7 +55,7 @@ fun MiniMap(lat: Double, lon: Double, modifier: Modifier = Modifier) {
     val accent = com.vknxworks.immichctrl.ui.theme.CtrlColors.Accent.toArgb()
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val mapView = remember {
-        MapLibre.getInstance(context)
+        com.vknxworks.immichctrl.data.net.MapNet.init(context)
         MapView(context).apply { onCreate(null) }
     }
     DisposableEffect(lifecycle, mapView) {

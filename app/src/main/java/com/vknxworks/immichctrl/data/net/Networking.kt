@@ -10,6 +10,9 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.Request
+import com.vknxworks.immichctrl.R
+import com.vknxworks.immichctrl.Strings
+import java.io.IOException
 import java.net.Socket
 import java.security.KeyStore
 import java.security.Principal
@@ -68,6 +71,10 @@ class NetworkRouter(private val context: Context) {
     private fun sameOrigin(a: HttpUrl, b: HttpUrl?) =
         b != null && a.host.equals(b.host, true) && a.port == b.port && a.scheme == b.scheme
 
+    /** [to] is the same host as [from], reached over https after [from] was plain http (e.g. a proxy's 308 upgrade). */
+    private fun upgradedSameHost(to: HttpUrl, from: HttpUrl) =
+        to.isHttps && !from.isHttps && to.host.equals(from.host, true)
+
     /** Application interceptor: route to the home address when the user picked it, and add custom headers. */
     val interceptor = Interceptor { chain ->
         var req: Request = chain.request()
@@ -97,12 +104,18 @@ class NetworkRouter(private val context: Context) {
      * Network interceptor: credentials only ever go to the address a call was started for. Runs on
      * every hop, so a redirect to another host (or port, or scheme) loses the access token, API key,
      * cookies and the account's custom proxy headers instead of handing them to that host.
-     * (OkHttp itself only drops "Authorization" on a cross-host redirect.)
+     * (OkHttp itself only drops "Authorization" on a cross-host redirect.) A redirect that would re-send a
+     * request body to another server is refused outright.
      */
     val credentialScope = Interceptor { chain ->
         val req = chain.request()
         val start = req.tag(CleartextPolicy.RoutedTo::class.java)?.url ?: chain.call().request().url
         if (sameOrigin(req.url, start)) return@Interceptor chain.proceed(req)
+        // A 307/308 redirect re-sends the request body (a password, a PIN, an upload). Only let it go to
+        // the same server: the same address, or the same host moving up from http to https.
+        if (req.body != null && !upgradedSameHost(req.url, start)) {
+            throw IOException(Strings.str(R.string.blocked_a_redirect_that_would_resend, req.url.host))
+        }
         val strip = HashSet<String>()
         strip += CREDENTIAL_HEADERS
         strip += config.headers.keys.map { it.lowercase() }

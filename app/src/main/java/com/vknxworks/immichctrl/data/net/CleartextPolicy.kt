@@ -14,7 +14,7 @@ import com.vknxworks.immichctrl.R
  * (an http:// address they typed, or confirmed after HTTPS failed). Everything else must be HTTPS.
  * Installed as a network interceptor, so every redirect hop is checked: an HTTP hop is allowed only
  * when the call itself was started for an allowed HTTP address (so an HTTPS request can never be
- * redirected down to HTTP).
+ * redirected down to HTTP) and the hop's own address is an allowed one too.
  */
 object CleartextPolicy {
     private val allowed: MutableSet<String> = ConcurrentHashMap.newKeySet()
@@ -36,7 +36,9 @@ object CleartextPolicy {
         val url = chain.request().url
         if (!url.isHttps) {
             val original = chain.request().tag(RoutedTo::class.java)?.url ?: chain.call().request().url
-            if (original.isHttps || !isAllowed(original)) {
+            // Every plain-HTTP hop must itself be a server the user chose: an allowed server can't
+            // redirect the call to plain HTTP somewhere else.
+            if (original.isHttps || !isAllowed(original) || !isAllowed(url)) {
                 throw IOException(Strings.str(R.string.blocked_an_unencrypted_http, url.host))
             }
         }

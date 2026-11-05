@@ -141,5 +141,11 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
+
+        <!-- AndroidX's profile installer receiver lets other apps ask ImmichCtrl to write or skip its
+             ART profile; it isn't needed, so leave it out. -->
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:node="remove" />
     </application>
 </manifest>

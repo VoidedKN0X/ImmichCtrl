@@ -73,7 +73,6 @@ import com.vknxworks.immichctrl.ui.photos.SelectionContext
 import com.vknxworks.immichctrl.ui.photos.SourceGrid
 import com.vknxworks.immichctrl.ui.photos.rememberPaged
 import com.vknxworks.immichctrl.ui.theme.Gutter
-import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
@@ -235,7 +234,7 @@ private fun MapLibreView(
     val visible by androidx.compose.runtime.rememberUpdatedState(onVisible)
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val mapView = remember {
-        MapLibre.getInstance(context)
+        com.vknxworks.immichctrl.data.net.MapNet.init(context)
         MapView(context).apply { onCreate(null) }
     }
     var map by remember { mutableStateOf<MapLibreMap?>(null) }

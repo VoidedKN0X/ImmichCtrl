@@ -138,6 +138,7 @@
     <string name="backing_up_photos">Backing up photos</string>
     <string name="checking_of_with_the_server">Checking %1$s of %2$s with the server…</string>
     <string name="unnamed">Unnamed</string>
+    <string name="blocked_a_redirect_that_would_resend">Blocked a redirect that would have sent your data to %1$s</string>
     <string name="blocked_an_unencrypted_http">Blocked an unencrypted (HTTP) connection to %1$s</string>
     <string name="saving_for_offline">Saving \"%1$s\" for offline</string>
     <string name="saving_an_album_for_offline">Saving an album for offline</string>
