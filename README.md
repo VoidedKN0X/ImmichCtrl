@@ -100,6 +100,12 @@ If the Obtainium button doesn't open the app, add `https://github.com/VoidedKN0X
   B0:14:DB:86:AC:B9:84:3B:30:70:27:F9:23:3B:A4:45:89:E2:6D:7C:0A:55:2B:D1:93:A0:96:75:56:AE:C9:23
   ```
 
+**Check a download**
+
+- The APK's SHA-256 checksum is at the bottom of each release's notes. Compare it with `sha256sum ImmichCtrl-vX.Y.Z.apk` (or `Get-FileHash` on Windows).
+- Each release also has a signed build provenance attestation. With the [GitHub CLI](https://cli.github.com/), `gh attestation verify ImmichCtrl-vX.Y.Z.apk -R VoidedKN0X/ImmichCtrl` proves the APK was built by this repo's build workflow from the tagged commit, not uploaded by hand.
+- The signing-certificate fingerprint above still applies: Android and AppVerifier check it on the phone.
+
 **Permissions**
 
 | Permission | What ImmichCtrl uses it for |
@@ -113,6 +119,7 @@ If the Obtainium button doesn't open the app, add `https://github.com/VoidedKN0X
 | Wake lock | Letting a backup finish while the screen is off |
 | Run at startup | Setting automatic backup up again after the phone restarts (added by Android's WorkManager) |
 | Biometrics | Optional fingerprint unlock for the app lock |
+| Hide other apps' floating windows | Hide other apps' floating windows over the PIN screen, the lock screen and confirmations, so nothing can be drawn over them to trick a tap |
 
 Android also lists a "dynamic receiver" permission (`DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`) that AndroidX adds to every app so only ImmichCtrl itself can send it internal broadcasts; it gives the app no access to anything. ImmichCtrl has no location, camera, microphone, contacts or Wi-Fi permissions: maps show where your photos were taken, never where you are.
 
@@ -157,6 +164,7 @@ Turn it on under **Settings > Privacy and security > App lock (tap your profile 
 - **Forgot your PIN?** It can't be recovered, because it encrypts your login. The lock screen offers to sign out of every account and remove ImmichCtrl's offline albums, cached photos and backup history from this phone; your photos on the Immich server and on this phone stay.
 - **With the app lock on**, the recent-apps screen always shows a blank card, and the photo widgets show "ImmichCtrl is locked" instead of your photos.
 - **Backups keep working while locked**: while automatic backup (or admin alerts on an admin account) is on, that account's login stays usable in the background, encrypted with the Android Keystore as without the app lock. Every other login stays sealed with your PIN.
+- **Nothing can be drawn over the lock screen or PIN pad.** While the lock screen, a PIN screen or a confirmation (delete, sign out, use HTTP, upload photos another app shared) is showing, other apps' floating windows such as chat heads are hidden, so they can't cover a button to trick you into tapping it. On Android 14 and newer, apps that aren't real accessibility tools also can't read the lock and PIN screens; screen readers such as TalkBack still work. Floating windows show again as soon as those screens close, and the photo viewer and video player are never affected.
 
 **Hide in screenshots** and **Hide in recent apps** are in the same section, work without the app lock too, and are both off by default. The first keeps ImmichCtrl out of screenshots and screen recordings; the second shows a blank card in the recent-apps view instead of the app. Sign-in, Networking (custom headers often hold proxy secrets), the locked folder, the lock screen and the PIN screens are always kept out of screenshots, whatever the switches say.
 
@@ -195,6 +203,8 @@ You need [Android Studio](https://developer.android.com/studio), or JDK 17 and t
 3. The APK is in `app/build/outputs/apk/debug/`. Copy it to your phone and install it.
 
 Or open the folder in Android Studio and press **Run** with your phone connected.
+
+Every library and Gradle plugin download is checked against the SHA-256 checksums in `gradle/verification-metadata.xml`; the build stops if anything doesn't match. When a dependency or plugin changes, run the **Dependency verification metadata** workflow (Actions tab), check the diff of the file it prints, and commit the new file in the same push. On Windows or macOS, Android's `aapt2` tool is a different download that isn't listed, so add `--dependency-verification=lenient` to local builds there.
 
 ## Support the project
 

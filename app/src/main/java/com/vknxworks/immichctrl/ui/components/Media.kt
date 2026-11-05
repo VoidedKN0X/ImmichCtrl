@@ -276,7 +276,17 @@ fun TextInputDialog(
 }
 
 @Composable
-fun ConfirmDialog(title: String, body: String, confirm: String, destructive: Boolean = true, onDismiss: () -> Unit, onConfirm: () -> Unit) {
+fun ConfirmDialog(
+    title: String,
+    body: String,
+    confirm: String,
+    destructive: Boolean = true,
+    // Destructive and security confirmations: other apps' floating windows are hidden while it shows.
+    guarded: Boolean = destructive,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    if (guarded) com.vknxworks.immichctrl.data.security.GuardedScreen()
     CtrlAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },

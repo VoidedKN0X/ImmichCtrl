@@ -4,7 +4,9 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.SystemBarStyle
@@ -25,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.vknxworks.immichctrl.data.backup.DeviceActions
+import com.vknxworks.immichctrl.data.security.ScreenGuard
 import com.vknxworks.immichctrl.data.security.ScreenPrivacy
 import com.vknxworks.immichctrl.data.security.isForeignContentUri
 import com.vknxworks.immichctrl.ui.nav.AppRoot
@@ -56,6 +59,19 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(secure) {
                 if (secure) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
                 else window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            }
+            // Lock, PIN and confirmation screens only: no other app's floating window over them, and on lock and
+            // PIN screens no reading by apps that aren't accessibility tools (Android 14+). Everywhere else,
+            // including the photo viewer and video player, overlays keep working.
+            val hideOverlays = ScreenGuard.noOverlays > 0
+            LaunchedEffect(hideOverlays) { runCatching { window.setHideOverlayWindows(hideOverlays) } }
+            val sensitive = ScreenGuard.sensitive > 0
+            LaunchedEffect(sensitive) {
+                if (Build.VERSION.SDK_INT >= 34) runCatching {
+                    window.decorView.setAccessibilityDataSensitive(
+                        if (sensitive) View.ACCESSIBILITY_DATA_SENSITIVE_YES else View.ACCESSIBILITY_DATA_SENSITIVE_AUTO,
+                    )
+                }
             }
             // Ctrl / Signal follows the phone's dark theme: edge to edge over the app's background, with light bar
             // icons in dark mode and dark icons in light mode.

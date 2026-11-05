@@ -38,6 +38,34 @@ fun SecureScreen() {
     }
 }
 
+/**
+ * Lock, PIN and confirmation screens. While one is showing, other apps' floating windows (chat heads,
+ * overlays) are hidden so they can't cover it or fake a button, and on lock and PIN screens apps that
+ * aren't real accessibility tools can't read the window (Android 14+). Counted, so nesting works;
+ * MainActivity applies it to the window.
+ */
+object ScreenGuard {
+    var noOverlays by mutableIntStateOf(0)
+        private set
+    var sensitive by mutableIntStateOf(0)
+        private set
+
+    fun acquire(sensitive: Boolean) { noOverlays++; if (sensitive) this.sensitive++ }
+    fun release(sensitive: Boolean) {
+        noOverlays = (noOverlays - 1).coerceAtLeast(0)
+        if (sensitive) this.sensitive = (this.sensitive - 1).coerceAtLeast(0)
+    }
+}
+
+/** Hides other apps' floating windows (and, with [sensitive], the screen's content from non-accessibility-tool apps) while shown. */
+@Composable
+fun GuardedScreen(sensitive: Boolean = false) {
+    DisposableEffect(sensitive) {
+        ScreenGuard.acquire(sensitive)
+        onDispose { ScreenGuard.release(sensitive) }
+    }
+}
+
 /** Copies text marked as sensitive, so Android hides it from the clipboard preview and keyboards' history. */
 fun copySensitive(context: Context, text: String, label: String = Strings.str(R.string.app_name)) {
     val clip = ClipData.newPlainText(label, text).apply {

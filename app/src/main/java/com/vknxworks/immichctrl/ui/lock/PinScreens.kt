@@ -130,6 +130,8 @@ private fun LockCover(content: @Composable () -> Unit) {
     val activity = LocalContext.current.findActivity()
     // Nothing behind the cover may end up in a screenshot or screen recording.
     SecureScreen()
+    // No other app's floating window over the lock or PIN pad, and no reading it by apps that aren't accessibility tools.
+    com.vknxworks.immichctrl.data.security.GuardedScreen(sensitive = true)
     BackHandler { activity?.moveTaskToBack(true) }
     Box(
         Modifier

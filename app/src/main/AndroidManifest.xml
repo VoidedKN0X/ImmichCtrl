@@ -5,6 +5,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Hides other apps' floating windows while the lock screen, a PIN screen or a confirmation is showing
+         (install-time, no prompt). -->
+    <uses-permission android:name="android.permission.HIDE_OVERLAY_WINDOWS" />
     <!-- Backup: read the phone's photos and videos, with their location intact. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
@@ -22,9 +25,13 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove" />
 
+    <!-- Android 16 and newer: explicit intents from other apps (the launcher, browsers, share and "Open with",
+         the Quick Settings tile) must match one of the intent filters below; intents without an action are
+         refused. ImmichCtrl's own intents (widgets, notifications) aren't affected. -->
     <application
         android:name=".ImmichCtrlApp"
         android:allowBackup="false"
+        android:intentMatchingFlags="enforceIntentFilter"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
@@ -40,7 +47,10 @@
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|navigation|density|uiMode"
             android:exported="true"
             android:launchMode="singleTask"
+            android:requireContentUriPermissionFromCaller="read"
             android:windowSoftInputMode="adjustResize">
+            <!-- requireContentUriPermissionFromCaller (Android 15+): a photo shared or opened from another app
+                 must be one that app can read itself, so no app can make ImmichCtrl read something for it. -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

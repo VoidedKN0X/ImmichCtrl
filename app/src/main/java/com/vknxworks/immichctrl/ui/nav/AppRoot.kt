@@ -160,6 +160,8 @@ fun AppRoot() {
                     stringResource(R.string.shared_from_another_app_will_be, com.vknxworks.immichctrl.ui.components.countLabel(uploads.size, R.plurals.count_items), acc.name.ifBlank { acc.email }, acc.serverName),
                     stringResource(R.string.upload),
                     destructive = false,
+                    // Another app asked for this upload: nothing may be drawn over the dialog to trick the tap.
+                    guarded = true,
                     onDismiss = { c.pendingUploads.value = null },
                 ) {
                     c.pendingUploads.value = null
