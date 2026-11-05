@@ -41,7 +41,7 @@ object LocalMedia {
 
     /** Only some photos were shared with the app (Android 14 "select photos"). */
     fun isPartialAccess(context: Context): Boolean =
-        !hasPermission(context) && android.os.Build.VERSION.SDK_INT >= 34 &&
+        !hasPermission(context) &&
             ContextCompat.checkSelfPermission(context, "android.permission.READ_MEDIA_VISUAL_USER_SELECTED") == PackageManager.PERMISSION_GRANTED
 
     private const val MEDIA_SELECTION =

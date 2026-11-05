@@ -17,7 +17,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Fingerprint for the app lock goes through USE_BIOMETRIC. The biometric library also adds the old
-         USE_FINGERPRINT, which only Android 8 and older use (ImmichCtrl needs Android 13). -->
+         USE_FINGERPRINT, which only Android 8 and older use (ImmichCtrl needs Android 15). -->
     <uses-permission android:name="android.permission.USE_FINGERPRINT" tools:node="remove" />
     <!-- Added by the MapLibre map library for its "my location" layer and network checks. ImmichCtrl's maps
          only show where photos were taken: it never asks where you are or looks at your Wi-Fi. -->

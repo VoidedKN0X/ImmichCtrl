@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
@@ -67,7 +66,7 @@ class MainActivity : FragmentActivity() {
             LaunchedEffect(hideOverlays) { runCatching { window.setHideOverlayWindows(hideOverlays) } }
             val sensitive = ScreenGuard.sensitive > 0
             LaunchedEffect(sensitive) {
-                if (Build.VERSION.SDK_INT >= 34) runCatching {
+                runCatching {
                     window.decorView.setAccessibilityDataSensitive(
                         if (sensitive) View.ACCESSIBILITY_DATA_SENSITIVE_YES else View.ACCESSIBILITY_DATA_SENSITIVE_AUTO,
                     )

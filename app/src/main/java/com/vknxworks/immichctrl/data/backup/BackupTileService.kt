@@ -30,12 +30,7 @@ class BackupTileService : TileService() {
         if (c.sessions.active.value == null) {
             // Not signed in yet: open the app instead.
             val intent = Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            if (android.os.Build.VERSION.SDK_INT >= 34) {
-                startActivityAndCollapse(PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE))
-            } else {
-                @Suppress("DEPRECATION")
-                startActivityAndCollapse(intent)
-            }
+            startActivityAndCollapse(PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE))
             return
         }
         // From the lock screen, the phone has to be unlocked first.

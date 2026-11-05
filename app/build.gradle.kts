@@ -19,11 +19,11 @@ android {
 
     defaultConfig {
         applicationId = "com.vknxworks.immichctrl"
-        minSdk = 33
+        minSdk = 35
         targetSdk = 36
         // Bump both to publish a new release (see CHANGELOG.md).
-        versionCode = 41
-        versionName = "0.7.3"
+        versionCode = 42
+        versionName = "0.7.4"
         // 64-bit ARM phones only (arm64-v8a), like every Ctrl app.
         ndk { abiFilters += listOf("arm64-v8a") }
 

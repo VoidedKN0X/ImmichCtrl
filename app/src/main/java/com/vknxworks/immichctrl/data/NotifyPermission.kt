@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
 import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -38,10 +37,9 @@ object NotifyPermission {
     fun allowed(context: Context): Boolean =
         !permissionMissing(context) && NotificationManagerCompat.from(context).areNotificationsEnabled()
 
-    /** The Android 13+ runtime permission hasn't been granted. */
+    /** The notification runtime permission hasn't been granted. */
     fun permissionMissing(context: Context): Boolean =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
 
     /** Android's dialog was shown once, so ImmichCtrl never shows it again on its own. */
     fun asked(context: Context): Boolean =

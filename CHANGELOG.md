@@ -4,6 +4,14 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.7.4
+
+ImmichCtrl now needs Android 15 or newer.
+
+### Changed
+
+- **Needs Android 15 or newer.** Android 13 no longer gets security updates and Android 14's end early 2027, so ImmichCtrl now supports Android 15, 16 and 17 only. On older phones the version you have keeps working, but it won't get updates.
+
 ## 0.7.3
 
 Floating windows from other apps can no longer cover the lock screen, PIN screens or confirmations, and photos shared from other apps must really belong to them.

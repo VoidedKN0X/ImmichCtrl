@@ -2,7 +2,7 @@
 
 **Your Immich photo library and backup, in a native Android app.**
 
-[![Latest release](https://img.shields.io/github/v/release/VoidedKN0X/ImmichCtrl?label=download)](https://github.com/VoidedKN0X/ImmichCtrl/releases/latest) ![Android 13+](https://img.shields.io/badge/Android-13%2B-3DDC84?logo=android&logoColor=white) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE) ![Telemetry-free](https://img.shields.io/badge/telemetry-none-brightgreen) [![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/VoidedKN0X)
+[![Latest release](https://img.shields.io/github/v/release/VoidedKN0X/ImmichCtrl?label=download)](https://github.com/VoidedKN0X/ImmichCtrl/releases/latest) ![Android 15+](https://img.shields.io/badge/Android-15%2B-3DDC84?logo=android&logoColor=white) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE) ![Telemetry-free](https://img.shields.io/badge/telemetry-none-brightgreen) [![Sponsor](https://img.shields.io/badge/sponsor-GitHub-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/VoidedKN0X)
 
 ImmichCtrl is an Android app for self-hosted [Immich](https://immich.app/) photo servers. Browse your timeline, back up your phone, edit and organise your photos, and keep albums for offline viewing. Works with Immich 2.x and 3.x.
 
@@ -71,7 +71,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 
 ## Requirements
 
-- Android 13 or newer, on a 64-bit ARM phone (nearly every phone from the last several years)
+- Android 15 or newer, on a 64-bit ARM phone (nearly every phone from the last several years)
 - An Immich server, version 2.x or 3.x, or none: **Use without a server** makes ImmichCtrl the gallery for the photos on the phone
 - Access to your photos and videos, only if you back up or show this phone's photos in the timeline
 
@@ -164,7 +164,7 @@ Turn it on under **Settings > Privacy and security > App lock (tap your profile 
 - **Forgot your PIN?** It can't be recovered, because it encrypts your login. The lock screen offers to sign out of every account and remove ImmichCtrl's offline albums, cached photos and backup history from this phone; your photos on the Immich server and on this phone stay.
 - **With the app lock on**, the recent-apps screen always shows a blank card, and the photo widgets show "ImmichCtrl is locked" instead of your photos.
 - **Backups keep working while locked**: while automatic backup (or admin alerts on an admin account) is on, that account's login stays usable in the background, encrypted with the Android Keystore as without the app lock. Every other login stays sealed with your PIN.
-- **Nothing can be drawn over the lock screen or PIN pad.** While the lock screen, a PIN screen or a confirmation (delete, sign out, use HTTP, upload photos another app shared) is showing, other apps' floating windows such as chat heads are hidden, so they can't cover a button to trick you into tapping it. On Android 14 and newer, apps that aren't real accessibility tools also can't read the lock and PIN screens; screen readers such as TalkBack still work. Floating windows show again as soon as those screens close, and the photo viewer and video player are never affected.
+- **Nothing can be drawn over the lock screen or PIN pad.** While the lock screen, a PIN screen or a confirmation (delete, sign out, use HTTP, upload photos another app shared) is showing, other apps' floating windows such as chat heads are hidden, so they can't cover a button to trick you into tapping it. Apps that aren't real accessibility tools also can't read the lock and PIN screens; screen readers such as TalkBack still work. Floating windows show again as soon as those screens close, and the photo viewer and video player are never affected.
 
 **Hide in screenshots** and **Hide in recent apps** are in the same section, work without the app lock too, and are both off by default. The first keeps ImmichCtrl out of screenshots and screen recordings; the second shows a blank card in the recent-apps view instead of the app. Sign-in, Networking (custom headers often hold proxy secrets), the locked folder, the lock screen and the PIN screens are always kept out of screenshots, whatever the switches say.
 
