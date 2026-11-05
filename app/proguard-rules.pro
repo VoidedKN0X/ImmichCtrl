@@ -13,3 +13,11 @@
 -dontwarn org.openjsse.**
 -dontwarn org.maplibre.**
 -keep class org.maplibre.android.** { *; }
+
+# No debug, verbose or info logging in release builds (AppLog already only writes to the system log in
+# debug builds; this also silences libraries).
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}

@@ -4,6 +4,22 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.7.1
+
+Four permissions ImmichCtrl never used are gone, and release builds no longer keep library debug logging.
+
+### Privacy
+
+- **No more location or Wi-Fi permissions.** The map library ImmichCtrl uses added the location permissions (for a "my location" dot) and the Wi-Fi state permission. ImmichCtrl's maps only show where your photos were taken and never asked where you are, so all three are now removed. Android no longer lists location or Wi-Fi under ImmichCtrl's permissions. Photo locations from your backups are unaffected (they use the separate photo-location permission).
+- **The old fingerprint permission is gone.** `USE_FINGERPRINT` is only used by Android 8 and older; fingerprint unlock for the app lock already uses the current biometrics permission, so it works as before.
+- **No debug logging in release builds.** Debug, verbose and info messages from the libraries ImmichCtrl uses are now stripped from the app, so nothing about your server or photos can end up in the phone's system log. ImmichCtrl's own log (Settings → Logs) stays in the app as before.
+
+### Project
+
+- The build now checks that the Gradle wrapper is an official Gradle release, and fails if any Google Play services, Firebase, ML Kit, Play Core or Tink library ever ends up in the app.
+- `.gitignore` also covers signing-key property files, `.p12` keys, `local.properties` in any folder and `google-services.json`, so they can't be committed by accident.
+- README: every permission in the app is now listed with what it's for, and the Ctrl series list now has all 28 apps.
+
 ## 0.7.0
 
 ImmichCtrl can now be used as the phone's gallery without an Immich server.
