@@ -4,6 +4,22 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.7.0
+
+ImmichCtrl can now be used as the phone's gallery without an Immich server.
+
+### New
+
+- **Use without a server.** The sign-in screen has a new **Use without a server** button. ImmichCtrl then shows the photos and videos stored on the phone: a **Photos** tab with everything, newest first and grouped by date, and an **Albums** tab with the phone's folders (Camera, Screenshots, WhatsApp and so on). Photos open in the full viewer with zoom, video playback, details, sharing and deleting.
+- **Photos from other apps** (a file manager or a chat) also open in ImmichCtrl when there's no server.
+- **Sign in later:** the cloud button at the top of Photos and Albums signs in to an Immich server; ImmichCtrl then switches to the full app with your server's timeline, and your phone photos keep showing as before. Signing out of every server brings back the phone-only gallery.
+- The profile picture opens Settings while there's no server, with the app lock, viewer, slideshow and grid options.
+
+### Changed
+
+- **Upload is only offered when you're signed in** to a server, in the viewer and in phone albums.
+- **Settings hides server-only options** (timeline sync, networking and logs) while there's no server.
+
 ## Project updates (2026-11-03)
 
 ### Project

@@ -385,7 +385,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                                 IslandAction(Icons.Outlined.Info, stringResource(R.string.details)) { info = true }
                             }
                             a.isLocalOnly -> {
-                                IslandAction(Icons.Outlined.CloudUpload, stringResource(R.string.upload)) { c.upload(listOf(a)) }
+                                if (c.sessions.active.value != null) IslandAction(Icons.Outlined.CloudUpload, stringResource(R.string.upload)) { c.upload(listOf(a)) }
                                 IslandAction(Icons.Outlined.Share, stringResource(R.string.share)) { shareFlow.start(c, listOf(a)) }
                                 IslandAction(Icons.Outlined.Info, stringResource(R.string.details)) { info = true }
                                 IslandAction(Icons.Outlined.Delete, stringResource(R.string.lock_delete)) { confirmDelete = false }

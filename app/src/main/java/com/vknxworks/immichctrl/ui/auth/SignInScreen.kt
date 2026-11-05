@@ -26,6 +26,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.automirrored.filled.Login
@@ -263,6 +265,29 @@ fun SignInScreen(onDone: () -> Unit, onCancel: (() -> Unit)?) {
                 }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium) }
                 if (busy) Spinner() else PillButton(stringResource(R.string.lock_next), onClick = { findServer(address) }, enabled = address.isNotBlank(), modifier = Modifier.fillMaxWidth())
+                if (onCancel == null && !busy) {
+                    // No server: the photos and videos on this phone, as a gallery. A server can be added later.
+                    val photoAccess = androidx.activity.compose.rememberLauncherForActivityResult(
+                        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+                    ) { c.appScope.launch { c.settings.update { it.copy(phoneOnly = true) } } }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            com.vknxworks.immichctrl.data.security.expectAppReturn(context)
+                            photoAccess.launch(arrayOf(android.Manifest.permission.READ_MEDIA_IMAGES, android.Manifest.permission.READ_MEDIA_VIDEO, android.Manifest.permission.ACCESS_MEDIA_LOCATION))
+                        },
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                    ) {
+                        Icon(Icons.Outlined.PhoneAndroid, null)
+                        Spacer(Modifier.width(10.dp))
+                        Text(stringResource(R.string.use_without_a_server))
+                    }
+                    Text(
+                        stringResource(R.string.use_without_a_server_sub),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             } else {
                 Row(
                     Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium).background(MaterialTheme.colorScheme.surfaceContainer).padding(14.dp),

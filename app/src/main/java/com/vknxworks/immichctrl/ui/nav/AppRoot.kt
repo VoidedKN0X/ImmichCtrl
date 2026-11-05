@@ -30,6 +30,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.flow.first
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -125,6 +126,7 @@ fun AppRoot() {
             // The lock comes before everything else: with the login sealed there may be no session yet.
             showLock -> Unit
             legacy -> Unit
+            active == null && settings.phoneOnly -> PhoneScaffold()
             active == null -> SignInScreen(onDone = {}, onCancel = null)
             // While locked the app's screens aren't composed at all, not just covered: dialogs, menus and
             // sheets are windows of their own that would stay above (and usable over) the lock screen, and
@@ -292,6 +294,8 @@ private fun PhoneLayout(
     showTabs: Boolean,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
+    tabs: List<TopDest> = topDestinations,
+    host: @Composable (NavHostController) -> Unit = { AppNavHost(it) },
 ) {
     val hazeState = rememberHazeState()
     val density = LocalDensity.current
@@ -303,7 +307,7 @@ private fun PhoneLayout(
     ) {
         Box(Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxSize().hazeSource(hazeState)) {
-                AppNavHost(navController)
+                host(navController)
             }
             AnimatedVisibility(
                 visible = showTabs,
@@ -316,11 +320,85 @@ private fun PhoneLayout(
                     .padding(start = 20.dp, end = 20.dp, bottom = com.vknxworks.immichctrl.ui.components.CtrlBottomBarMargin),
             ) {
                 com.vknxworks.immichctrl.ui.components.CtrlBottomBar(
-                    items = topDestinations.map { it.item },
+                    items = tabs.map { it.item },
                     selectedIndex = selectedIndex,
                     onSelect = onSelect,
                 )
             }
+        }
+    }
+}
+
+private val phoneDestinations = listOf(
+    TopDest(PhonePhotosRoute, TabItem(Strings.str(R.string.photos), Icons.Outlined.Photo, Icons.Outlined.Photo)),
+    TopDest(PhoneAlbumsRoute, TabItem(Strings.str(R.string.albums), Icons.Outlined.PhotoLibrary, Icons.Outlined.PhotoLibrary)),
+)
+
+/**
+ * "Use without a server": the phone's own photos and videos, with no Immich account. Signing in to a server from
+ * here switches to the full app (AppRoot shows it as soon as there is an account).
+ */
+@Composable
+private fun PhoneScaffold() {
+    val c = LocalContext.current.container
+    val navController = rememberNavController()
+    val navigator = remember(navController) { Navigator(navController) }
+    val backStack by navController.currentBackStackEntryAsState()
+    val dest = backStack?.destination
+    val selectedIndex = phoneDestinations.indexOfFirst { top -> dest?.hierarchy?.any { it.hasRoute(top.route::class) } == true }
+    val hideTabs = remember { mutableStateOf(false) }
+
+    // Photos and videos other apps open in ImmichCtrl.
+    val external by c.externalUris.collectAsStateWithLifecycle()
+    LaunchedEffect(external) {
+        if (!external.isNullOrEmpty() && dest?.hasRoute(ExternalViewRoute::class) != true) {
+            navController.currentBackStackEntryFlow.first()
+            navigator.navigate(ExternalViewRoute)
+        }
+    }
+    // Server-only requests (memories, server photos, admin, backup) have nothing to open here.
+    val openRequest by c.openRequests.collectAsStateWithLifecycle()
+    LaunchedEffect(openRequest) { if (openRequest != null) c.openRequests.value = null }
+
+    fun selectTab(i: Int) {
+        navController.navigate(phoneDestinations[i].route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    CompositionLocalProvider(LocalNavigator provides navigator, LocalHideTabs provides hideTabs) {
+        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            PhoneLayout(
+                navController = navController,
+                showTabs = selectedIndex >= 0 && !hideTabs.value,
+                selectedIndex = selectedIndex,
+                onSelect = ::selectTab,
+                tabs = phoneDestinations,
+                host = { PhoneNavHost(it) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun PhoneNavHost(navController: NavHostController) {
+    NavHost(navController, startDestination = PhonePhotosRoute) {
+        composable<PhonePhotosRoute> { com.vknxworks.immichctrl.ui.local.PhonePhotosScreen() }
+        composable<PhoneAlbumsRoute> { com.vknxworks.immichctrl.ui.local.PhoneAlbumsScreen() }
+        composable<LocalAlbumRoute> {
+            val r = it.toRoute<LocalAlbumRoute>()
+            LocalAlbumScreen(r.bucketId, r.name)
+        }
+        composable<ViewerRoute> {
+            val r = it.toRoute<ViewerRoute>()
+            DarkScreen { ViewerScreen(r.source, r.index, r.assetId) }
+        }
+        composable<ExternalViewRoute> { DarkScreen { ExternalViewScreen() } }
+        composable<SettingsRoute> { SettingsScreen() }
+        composable<AddAccountRoute> {
+            SignInScreen(onDone = {}, onCancel = { navController.popBackStack() })
         }
     }
 }

@@ -244,10 +244,13 @@ fun SettingsScreen() {
                 GroupSwitch(stringResource(R.string.shuffle), null, s.slideShuffle, Icons.Outlined.Shuffle) { v -> update { it.copy(slideShuffle = v) } }
                 GroupSwitch(stringResource(R.string.start_again_at_the_end), null, s.slideLoop, Icons.Outlined.Repeat) { v -> update { it.copy(slideLoop = v) } }
             }
-            TimelineSyncGroup()
-            Group(stringResource(R.string.connection_and_help)) {
-                GroupRow(stringResource(R.string.networking), stringResource(R.string.public_or_home_address_custom), icon = Icons.Outlined.Wifi, showChevron = true, onClick = { nav.navigate(NetworkingRoute) })
-                GroupRow(stringResource(R.string.logs), stringResource(R.string.what_the_app_has_been_doing_to_help), icon = Icons.Outlined.BugReport, showChevron = true, onClick = { nav.navigate(LogsRoute) })
+            // Without a server (photos on this phone only) there is no sync or connection to set up.
+            if (session != null) {
+                TimelineSyncGroup()
+                Group(stringResource(R.string.connection_and_help)) {
+                    GroupRow(stringResource(R.string.networking), stringResource(R.string.public_or_home_address_custom), icon = Icons.Outlined.Wifi, showChevron = true, onClick = { nav.navigate(NetworkingRoute) })
+                    GroupRow(stringResource(R.string.logs), stringResource(R.string.what_the_app_has_been_doing_to_help), icon = Icons.Outlined.BugReport, showChevron = true, onClick = { nav.navigate(LogsRoute) })
+                }
             }
             Group(stringResource(R.string.storage_on_this_phone), footer = stringResource(R.string.thumbnails_and_previews_are_kept_so)) {
                 GroupChoice(

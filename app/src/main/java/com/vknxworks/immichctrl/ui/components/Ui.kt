@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -126,7 +127,18 @@ fun ProfileButton() {
     val nav = LocalNavigator.current
     val session by c.sessions.active.collectAsStateWithLifecycle()
     val settings by c.settings.settings.collectAsStateWithLifecycle()
-    val acc = session?.account ?: return
+    val acc = session?.account
+    if (acc == null) {
+        // Photos on this phone without a server: the picture opens Settings (there is no account page).
+        if (settings.phoneOnly) {
+            CtrlAvatarButton(stringResource(R.string.settings), onClick = { nav.navigate(com.vknxworks.immichctrl.ui.nav.SettingsRoute) }) {
+                Box(Modifier.fillMaxSize().background(CtrlColors.Surface), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Outlined.PhoneAndroid, null, Modifier.size(22.dp), tint = CtrlColors.Text)
+                }
+            }
+        }
+        return
+    }
     CtrlAvatarButton(stringResource(R.string.you), onClick = { if (!settings.readOnly) nav.navigate(YouRoute) }) {
         ProfileAvatar(acc.userId, acc.name)
     }

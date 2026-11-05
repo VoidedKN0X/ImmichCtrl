@@ -151,7 +151,7 @@ fun LocalAlbumScreen(bucketId: String, name: String) {
         SelectionContext.LOCAL,
         topBar = {
             ScreenTopBar(name) {
-                if (notBackedUp.isNotEmpty() && !c.settings.settings.value.readOnly) {
+                if (notBackedUp.isNotEmpty() && !c.settings.settings.value.readOnly && c.sessions.active.value != null) {
                     IconButton(onClick = { c.upload(notBackedUp) }) { Icon(Icons.Outlined.CloudUpload, stringResource(R.string.upload_all_not_backed_up, notBackedUp.size)) }
                 }
             }

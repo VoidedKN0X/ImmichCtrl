@@ -39,6 +39,10 @@ import kotlinx.serialization.Serializable
 
 // Photos on this phone
 @Serializable data object LocalAlbumsRoute
+
+// Without a server (photos on this phone only)
+@Serializable data object PhonePhotosRoute
+@Serializable data object PhoneAlbumsRoute
 @Serializable data class LocalAlbumRoute(val bucketId: String, val name: String)
 @Serializable data object FreeUpSpaceRoute
 /** A photo or video another app opened with ImmichCtrl. */

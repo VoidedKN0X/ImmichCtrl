@@ -72,7 +72,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 ## Requirements
 
 - Android 13 or newer, on a 64-bit ARM phone (nearly every phone from the last several years)
-- An Immich server, version 2.x or 3.x
+- An Immich server, version 2.x or 3.x, or none: **Use without a server** makes ImmichCtrl the gallery for the photos on the phone
 - Access to your photos and videos, only if you back up or show this phone's photos in the timeline
 
 ## Install
@@ -115,6 +115,8 @@ If the Obtainium button doesn't open the app, add `https://github.com/VoidedKN0X
 See [Privacy](#privacy) for what the app sends and to whom.
 
 ## Getting started
+
+No server? Tap **Use without a server** on the sign-in screen: ImmichCtrl shows the photos and videos on the phone, and you can sign in to a server later from the cloud button at the top.
 
 1. Enter your Immich server address, e.g. `https://photos.example.com`.
 2. Sign in with email and password, OAuth, or an API key.

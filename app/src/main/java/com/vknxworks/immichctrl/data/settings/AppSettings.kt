@@ -65,6 +65,8 @@ data class AppSettings(
 
     // Read-only (kid) mode: only the timeline, nothing can be changed.
     val readOnly: Boolean = false,
+    /** "Use without a server": the photos and videos on this phone, with no Immich account. */
+    val phoneOnly: Boolean = false,
 
     // App lock
     val appLock: Boolean = false,
@@ -121,6 +123,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val slideShuffle = booleanPreferencesKey("slide_shuffle")
         val slideLoop = booleanPreferencesKey("slide_loop")
         val readOnly = booleanPreferencesKey("read_only")
+        val phoneOnly = booleanPreferencesKey("phone_only")
         val appLock = booleanPreferencesKey("app_lock")
         val appLockTimeout = intPreferencesKey("app_lock_timeout")
         val lockedBio = booleanPreferencesKey("locked_folder_biometric")
@@ -178,6 +181,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         slideShuffle = this[K.slideShuffle] ?: false,
         slideLoop = this[K.slideLoop] ?: true,
         readOnly = this[K.readOnly] ?: false,
+        phoneOnly = this[K.phoneOnly] ?: false,
         appLock = this[K.appLock] ?: false,
         // 30 seconds isn't offered any more: it becomes "as soon as you leave" rather than longer.
         appLockTimeout = (this[K.appLockTimeout] ?: 0).let { if (it == 30) 0 else it },
@@ -225,6 +229,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.slideShuffle] = s.slideShuffle
             p[K.slideLoop] = s.slideLoop
             p[K.readOnly] = s.readOnly
+            p[K.phoneOnly] = s.phoneOnly
             p[K.appLock] = s.appLock
             p[K.appLockTimeout] = s.appLockTimeout
             p.remove(K.hideContent)

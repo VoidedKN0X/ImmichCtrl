@@ -896,4 +896,10 @@
     <string name="sync_reset_title">Reset sync?</string>
     <string name="sync_reset_body">The copy of your timeline on this phone is deleted and downloaded again from the server. Your photos aren\'t touched. Until it\'s done, Photos loads month by month.</string>
     <string name="sync_just_now">just now</string>
+    <!-- Without a server -->
+    <string name="use_without_a_server">Use without a server</string>
+    <string name="use_without_a_server_sub">ImmichCtrl becomes the gallery for the photos and videos on this phone. You can sign in to an Immich server later.</string>
+    <string name="sign_in_to_immich">Sign in to an Immich server</string>
+    <string name="phone_only_access_body">ImmichCtrl needs access to the photos and videos on this phone to show them. Nothing is uploaded until you sign in to a server and turn on backup.</string>
+    <string name="no_photos_on_this_phone">No photos or videos on this phone yet</string>
 </resources>
