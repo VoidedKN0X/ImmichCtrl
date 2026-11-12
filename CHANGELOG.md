@@ -4,6 +4,13 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## 0.7.5
+
+### Changed
+
+- **The admin page stops asking the server when ImmichCtrl isn't on screen.** The job queues were refreshed every 4 seconds for as long as the page was open, also with the app in the background. That now pauses when you leave the app and catches up at once when you come back, which saves battery and data.
+- **Slightly smaller download.** The bundled JetBrains Mono font (numbers, readouts and labels) no longer carries the Cyrillic, Vietnamese and maths-alphabet letters ImmichCtrl never shows itself, which takes about 0.1 MB off the download and 0.2 MB off the installed app. Everything looks the same; if a name or a log line shown in that font uses one of those scripts, those letters are now drawn with your phone's own font.
+
 ## 0.7.4
 
 ImmichCtrl now needs Android 15 or newer.

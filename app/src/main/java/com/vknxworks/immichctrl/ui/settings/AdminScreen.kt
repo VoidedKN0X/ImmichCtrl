@@ -1,6 +1,7 @@
 package com.vknxworks.immichctrl.ui.settings
 
 import com.vknxworks.immichctrl.ui.components.CtrlProgress
+import com.vknxworks.immichctrl.ui.components.WhileOnScreen
 import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,8 +87,9 @@ fun AdminScreen() {
     val queues = rememberLoader("admin-queues") { c.api.queues() }
     var open by remember { mutableStateOf<QueueDto?>(null) }
 
-    // Job counts change quickly; keep them fresh while the screen is open.
-    LaunchedEffect(Unit) {
+    // Job counts change quickly; keep them fresh while the screen is open and the app is on screen.
+    WhileOnScreen { back ->
+        if (back) queues.reload(silent = true)
         while (true) {
             delay(4_000)
             queues.reload(silent = true)
