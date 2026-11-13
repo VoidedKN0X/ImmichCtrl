@@ -4,6 +4,20 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.7.6 (2026-11-13)
+
+### Security
+
+- **Saved logins are protected by the phone's secure chip where it has one.** On a fresh install (or after clearing the app's data), the key that encrypts your access tokens, API keys and proxy headers is now created in the phone's StrongBox secure element when the phone has one, and in the normal Android Keystore otherwise. If you already use ImmichCtrl nothing changes for you: your existing key keeps working and you stay signed in.
+
+### Performance
+
+- **Faster start.** The first photo grid no longer waits for the image cache size setting to be read from storage on the main thread; it's read in the background when the first thumbnail is fetched. The cache keeps the size you chose in Settings.
+
+### Project
+
+- The Gradle wrapper download is now checked against its published SHA-256 checksum before a build runs.
+
 ## 0.7.5
 
 ### Changed
