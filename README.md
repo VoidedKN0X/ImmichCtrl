@@ -38,7 +38,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Locked folder** with PIN or fingerprint; moving a photo there also removes the copy on the phone
 - **People** (including people shared with you), **places** and a **map** with date and favourite filters (maps follow your server's map setting, and you can turn them off)
 - **Partner sharing**: people who share with you appear at the top of Library; tap one to see only their photos, kept separate from yours
-- Shared links you can edit later
+- **Shared links** for albums or picked photos, with an expiry date (1 day to 1 year, or never), an optional password, and switches for downloads, uploads (albums) and photo details; copy, share, change or delete them later under Library > Shared links
 
 **Search**
 - **Smart search** ("dog on a beach") plus file name, description and text-in-photo search
@@ -62,7 +62,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Custom headers** (Cloudflare Access, auth proxies) and **client certificates** (mutual TLS)
 
 **Everything else**
-- **Home screen widgets**: today's memories, or a random photo
+- **Home screen widgets**: "On this day" with one memory photo a day (fresh just after midnight, kept small on the phone so it isn't downloaded again), or a random photo. Both show nothing of your photos while the app lock is on
 - **Admin alerts** (admin accounts only): failed jobs, low disk space, new Immich releases
 - Admins can see storage use, manage users and run jobs
 - Several servers and accounts; change your profile picture and password

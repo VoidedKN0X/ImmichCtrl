@@ -233,17 +233,30 @@ suspend fun ImmichClient.createSharedLink(
     password: String? = null,
 ): SharedLinkDto = send(
     "POST", "/shared-links",
-    obj(
-        "type" to if (albumId != null) "ALBUM" else "INDIVIDUAL",
-        "albumId" to albumId,
-        "assetIds" to assetIds?.toList(),
-        "description" to description,
-        "expiresAt" to expiresAt,
-        "allowDownload" to allowDownload,
-        "allowUpload" to allowUpload,
-        "showMetadata" to showMetadata,
-        "password" to password?.ifBlank { null },
-    ),
+    sharedLinkCreateBody(albumId, assetIds, description, expiresAt, allowDownload, allowUpload, showMetadata, password),
+)
+
+/** Body of POST /api/shared-links: an album link, or a link to individual photos. Unset fields are left out. */
+fun sharedLinkCreateBody(
+    albumId: String?,
+    assetIds: Collection<String>?,
+    description: String?,
+    expiresAt: String?,
+    allowDownload: Boolean,
+    allowUpload: Boolean,
+    showMetadata: Boolean,
+    password: String?,
+): JsonObject = obj(
+    "type" to if (albumId != null) "ALBUM" else "INDIVIDUAL",
+    "albumId" to albumId,
+    "assetIds" to assetIds?.toList(),
+    "description" to description,
+    "expiresAt" to expiresAt,
+    "allowDownload" to allowDownload,
+    // Only album links can take uploads.
+    "allowUpload" to (allowUpload && albumId != null),
+    "showMetadata" to showMetadata,
+    "password" to password?.ifBlank { null },
 )
 
 suspend fun ImmichClient.deleteSharedLink(id: String) = sendUnit("DELETE", "/shared-links/$id")

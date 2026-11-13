@@ -4,6 +4,21 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## v0.8.0 (2026-11-13)
+
+Shared links keep their expiry date when you change them, and the "On this day" widget shows one memory a day.
+
+### New
+
+- **More expiry choices for shared links:** 90 days and 1 year, next to never, 1 day, 7 days and 30 days.
+- **"On this day" widget: one photo a day.** The Memories widget now picks one memory photo per day and keeps it all day, and switches to the new day's memories a few minutes after midnight (it used to pick a different photo every 6 hours and could show yesterday's memories until the morning).
+- **The widget's photo is kept small on the phone** (at most 512 pixels, in ImmichCtrl's private cache), so the refreshes during the day don't download it again. It's removed when the app lock is turned on, when you sign out and when you remove the widget.
+
+### Fixed
+
+- **Changing a shared link no longer changes its expiry date.** Editing a link's description, password or switches used to round its expiry to the nearest of 1, 7 or 30 days (a link valid for 6 months became valid for 30 days). Now the link keeps its own date (shown as **Keep**) unless you pick another one.
+- **Oversized widget pictures are refused.** A picture larger than 20 MB from the server is no longer read into memory for the widget.
+
 ## v0.7.6 (2026-11-13)
 
 ### Security

@@ -214,6 +214,7 @@ class AppContainer(val context: Context) {
                     }
                 }
                 runCatching { java.io.File(context.cacheDir, "shared").deleteRecursively() }
+                com.vknxworks.immichctrl.ui.widget.WidgetCache.clear(context)
                 runCatching {
                     val loader = coil3.SingletonImageLoader.get(context)
                     loader.memoryCache?.clear()

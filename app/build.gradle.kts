@@ -22,8 +22,8 @@ android {
         minSdk = 35
         targetSdk = 36
         // Bump both to publish a new release (see CHANGELOG.md).
-        versionCode = 44
-        versionName = "0.7.6"
+        versionCode = 45
+        versionName = "0.8.0"
         // 64-bit ARM phones only (arm64-v8a), like every Ctrl app.
         ndk { abiFilters += listOf("arm64-v8a") }
 
@@ -136,4 +136,7 @@ dependencies {
     implementation(libs.haze)
     implementation(libs.maplibre)
     implementation(libs.androidx.biometric)
+
+    // Unit tests only (not in the app)
+    testImplementation(libs.junit)
 }

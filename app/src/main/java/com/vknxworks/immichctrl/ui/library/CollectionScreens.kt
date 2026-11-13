@@ -384,34 +384,18 @@ fun SharedLinksScreen() {
 @Composable
 private fun EditLinkDialog(l: SharedLinkDto, onDone: () -> Unit) {
     val c = LocalContext.current.container
-    val days = daysUntil(l.expiresAt)?.let { d -> listOf(1, 7, 30).minByOrNull { kotlin.math.abs(it - d) } }
     SharedLinkDialog(
         stringResource(R.string.link_options),
-        initial = LinkOptions(
-            description = l.description.orEmpty(),
-            expiresInDays = if (l.expiresAt == null) null else days,
-            password = l.password.orEmpty(),
-            allowDownload = l.allowDownload,
-            allowUpload = l.allowUpload,
-            showMetadata = l.showMetadata,
-        ),
+        // The link's own expiry date is kept unless another one is chosen (it used to be rounded to 1, 7 or 30 days).
+        initial = LinkOptions.forEditing(l.description, l.expiresAt, l.password, l.allowDownload, l.allowUpload, l.showMetadata),
         allowUploadOption = l.album != null,
+        currentExpiry = l.expiresAt,
         confirm = stringResource(R.string.save),
         onDismiss = onDone,
     ) { o ->
         onDone()
         c.runTask(Strings.str(R.string.link_updated)) {
-            val legacy = if (c.api.serverMajor < 3) arrayOf<Pair<String, Any?>>("changeExpiryTime" to true) else emptyArray()
-            c.api.updateSharedLink(
-                l.id,
-                *legacy,
-                "description" to o.description,
-                "expiresAt" to (o.expiresAt() ?: com.vknxworks.immichctrl.data.api.Null),
-                "password" to o.password,
-                "allowDownload" to o.allowDownload,
-                "allowUpload" to o.allowUpload,
-                "showMetadata" to o.showMetadata,
-            )
+            c.api.updateSharedLink(l.id, *o.editFields(c.api.serverMajor).toTypedArray())
         }
     }
 }

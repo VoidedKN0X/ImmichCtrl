@@ -3,6 +3,7 @@ package com.vknxworks.immichctrl.ui.photos
 import com.vknxworks.immichctrl.ui.components.CtrlAlertDialog
 import com.vknxworks.immichctrl.ui.components.CtrlSwitch
 import com.vknxworks.immichctrl.ui.components.ctrlFieldColors
+import com.vknxworks.immichctrl.ui.components.shortDate
 import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -166,24 +167,13 @@ fun ShareSizeDialog(onDismiss: () -> Unit, onPick: (large: Boolean, remember: Bo
     )
 }
 
-/** Options for a new (or existing) shared link. */
-data class LinkOptions(
-    val description: String = "",
-    /** Days until it stops working; null for never. */
-    val expiresInDays: Int? = null,
-    val password: String = "",
-    val allowDownload: Boolean = true,
-    val allowUpload: Boolean = false,
-    val showMetadata: Boolean = true,
-) {
-    fun expiresAt(): String? = expiresInDays?.let { Instant.now().plusSeconds(it * 86_400L).toString() }
-}
-
 @Composable
 fun SharedLinkDialog(
     title: String,
     initial: LinkOptions = LinkOptions(),
     allowUploadOption: Boolean,
+    /** When editing a link that stops working at some point: that date, offered as "keep". */
+    currentExpiry: String? = null,
     confirm: String = stringResource(R.string.create_link),
     onDismiss: () -> Unit,
     onConfirm: (LinkOptions) -> Unit,
@@ -199,8 +189,12 @@ fun SharedLinkDialog(
                 OutlinedTextField(o.description, { o = o.copy(description = it) }, label = { Text(stringResource(R.string.description_optional)) }, singleLine = true, modifier = Modifier.fillMaxWidth(), shape = CtrlShapes.Field, colors = ctrlFieldColors())
                 Text(stringResource(R.string.stops_working), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                    listOf(null to Strings.str(R.string.never), 1 to Strings.str(R.string.n_1_day), 7 to Strings.str(R.string.n_7_days), 30 to Strings.str(R.string.n_30_days)).forEach { (d, label) ->
-                        FilterChip(o.expiresInDays == d, onClick = { o = o.copy(expiresInDays = d) }, label = { Text(label) })
+                    if (currentExpiry != null) {
+                        val keepLabel = shortDate(currentExpiry)?.let { stringResource(R.string.link_keep_expiry, it) } ?: stringResource(R.string.link_keep_expiry_plain)
+                        FilterChip(o.keepExpiry, onClick = { o = o.copy(keepExpiry = true) }, label = { Text(keepLabel) })
+                    }
+                    listOf(null to Strings.str(R.string.never), 1 to Strings.str(R.string.n_1_day), 7 to Strings.str(R.string.n_7_days), 30 to Strings.str(R.string.n_30_days), 90 to Strings.str(R.string.n_90_days), 365 to Strings.str(R.string.n_1_year)).forEach { (d, label) ->
+                        FilterChip(!o.keepExpiry && o.expiresInDays == d, onClick = { o = o.copy(expiresInDays = d, keepExpiry = false) }, label = { Text(label) })
                     }
                 }
                 OutlinedTextField(
