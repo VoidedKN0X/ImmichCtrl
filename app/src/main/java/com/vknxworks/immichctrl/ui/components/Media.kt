@@ -27,6 +27,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -48,9 +50,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
 import coil3.compose.AsyncImage
+import coil3.BitmapImage
 import com.vknxworks.immichctrl.AppContainer
 import com.vknxworks.immichctrl.container
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -82,9 +86,67 @@ fun AssetThumb(
     val url = remember(assetId, size, localUri) { localUri ?: c.api.thumbnailUrl(assetId, size, thumbhash?.take(12)) }
     val blur = rememberBlur(thumbhash)
     val model = privateImageModel(url, isPrivate)
+    val gate = remember(url) { BlurGate() }
+    val scope = rememberCoroutineScope()
     Box(modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
-        if (blur != null) Image(blur, null, Modifier.fillMaxSize(), contentScale = contentScale)
-        AsyncImage(model = model, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = contentScale)
+        if (blur != null) {
+            // Not drawn any more once the thumbnail covers it completely (see BlurGate).
+            Image(blur, null, Modifier.fillMaxSize().drawWithContent { if (!gate.covered) drawContent() }, contentScale = contentScale)
+        }
+        AsyncImage(
+            model = model,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize().drawWithContent {
+                drawContent()
+                // The fade-in starts with the thumbnail's first drawing, which is this one or an earlier one.
+                if (gate.opaque && !gate.timing) {
+                    gate.timing = true
+                    val load = gate.load
+                    scope.launch {
+                        delay(BLUR_HOLD_MS)
+                        if (gate.load == load) gate.covered = true
+                    }
+                }
+            },
+            contentScale = contentScale,
+            onLoading = { gate.restart() },
+            onSuccess = { state ->
+                gate.restart()
+                // Only a cropped image without transparency hides every pixel of the blur under it.
+                gate.opaque = contentScale == ContentScale.Crop &&
+                    (state.result.image as? BitmapImage)?.bitmap?.hasAlpha() == false
+            },
+            onError = { gate.restart() },
+        )
+    }
+}
+
+/** How long the blur stays drawn under a loaded thumbnail: longer than the image loader's fade-in. */
+private const val BLUR_HOLD_MS = 2L * THUMB_CROSSFADE_MS
+
+/** The image loader's fade-in for freshly loaded images, in milliseconds. */
+const val THUMB_CROSSFADE_MS = 150
+
+/**
+ * Decides when a thumbnail's blur no longer needs drawing: after an image that has no transparency and
+ * fills the cell has been on screen for longer than its fade-in. Until then, and for every other image
+ * (transparent, animated, failed, still loading), the blur is drawn under it exactly as before.
+ */
+private class BlurGate {
+    /** The image now showing fills the cell and has no transparent pixels. */
+    var opaque = false
+    /** The wait for the fade-in to end has started. */
+    var timing = false
+    /** Counts loads, so a wait that belongs to an earlier load changes nothing. */
+    var load = 0
+    /** Read while drawing: the blur is skipped from the next drawing on. */
+    var covered by mutableStateOf(false)
+
+    fun restart() {
+        load++
+        opaque = false
+        timing = false
+        covered = false
     }
 }
 

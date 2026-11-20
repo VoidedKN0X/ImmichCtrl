@@ -10,6 +10,7 @@ import coil3.video.VideoFrameDecoder
 import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
+import com.vknxworks.immichctrl.ui.components.THUMB_CROSSFADE_MS
 import kotlinx.coroutines.runBlocking
 import okio.Path.Companion.toOkioPath
 import java.io.File
@@ -43,7 +44,7 @@ class ImmichCtrlApp : Application(), SingletonImageLoader.Factory {
                     .maxSizeBytes(cacheMb * 1024L * 1024L)
                     .build()
             }
-            .crossfade(150)
+            .crossfade(THUMB_CROSSFADE_MS)
             .build()
     }
 }
