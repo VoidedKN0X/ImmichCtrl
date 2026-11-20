@@ -22,6 +22,8 @@ import com.vknxworks.immichctrl.data.api.TimelineQuery
 import com.vknxworks.immichctrl.data.api.album
 import com.vknxworks.immichctrl.data.api.timeBucket
 import com.vknxworks.immichctrl.data.api.timeBuckets
+import com.vknxworks.immichctrl.data.crypto.DataKeyStore
+import com.vknxworks.immichctrl.data.crypto.SealedFile
 import com.vknxworks.immichctrl.data.log.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,16 +67,50 @@ data class OfflineAlbum(
 /**
  * Albums kept on the phone for viewing without a connection. Photos are stored at preview size
  * (sharp on a phone screen, a fraction of the original's size); videos as Immich's playback version.
+ *
+ * Each album's list (`album.json`: the album's name and which photos it holds) is encrypted at rest with the
+ * app's data key ([SealedFile]); a list from before that is an ordinary file and is read as it is. The photo
+ * and video files themselves are ordinary files: the image loader and the video player open them by path.
  */
-class OfflineStore(private val context: Context) {
+class OfflineStore(private val context: Context, private val keys: DataKeyStore) {
     private val _albums = MutableStateFlow<List<OfflineAlbum>>(emptyList())
     val albums: StateFlow<List<OfflineAlbum>> = _albums.asStateFlow()
-    private var account: String? = null
+    @Volatile private var account: String? = null
 
-    /** Each account keeps its own offline albums. */
+    /** Held while an album's list is replaced, so sealing an old list never overwrites a newer one. */
+    private val manifestLock = Any()
+
+    /**
+     * Each account keeps its own offline albums. Called on a background thread: this is the one place that
+     * asks the secure hardware for the data key, before any list is read, so nothing else here waits for it
+     * (reading and writing lists only use the key once it's in memory).
+     */
     fun setAccount(key: String?) {
+        if (key != null && keys.peek() == null) {
+            runCatching {
+                keys.reset()
+                keys.get(create = true)
+            }
+        }
         account = key
         reload()
+        if (key != null) runCatching { sealLists() }
+    }
+
+    /**
+     * Encrypts the lists that are still ordinary files (saved by an earlier version, or while there was no key).
+     * Each one is only replaced by an encrypted copy that was written out, read back and compared first; if
+     * that fails the ordinary file stays in use and is tried again the next time.
+     */
+    private fun sealLists() {
+        val key = keys.peek() ?: return
+        val r = root() ?: return
+        r.listFiles()?.forEach { d ->
+            val f = File(d, MANIFEST)
+            synchronized(manifestLock) {
+                if (f.isFile && !SealedFile.isSealed(f)) SealedFile.sealInPlace(key, f, File(d, "$MANIFEST.seal"))
+            }
+        }
     }
 
     private fun root(): File? = account?.let { rootFor(it) }
@@ -100,8 +136,24 @@ class OfflineStore(private val context: Context) {
         _albums.value = r?.listFiles()?.mapNotNull { d -> read(File(d, MANIFEST)) }?.sortedBy { it.name.lowercase() }.orEmpty()
     }
 
-    private fun read(f: File): OfflineAlbum? =
-        runCatching { ApiJson.decodeFromString(OfflineAlbum.serializer(), f.readText()) }.getOrNull()
+    /**
+     * One album's list, encrypted or ordinary. Null when it can't be read: damaged, or encrypted while the data
+     * key isn't available. The album is then left out of the list; its files stay where they are.
+     */
+    private fun read(f: File): OfflineAlbum? {
+        return try {
+            val bytes = f.readBytes()
+            val plain = if (SealedFile.isSealed(bytes)) {
+                val key = keys.peek() ?: return null
+                SealedFile.open(key, bytes)
+            } else {
+                bytes
+            }
+            ApiJson.decodeFromString(OfflineAlbum.serializer(), String(plain, Charsets.UTF_8))
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     fun get(albumId: String): OfflineAlbum? = _albums.value.firstOrNull { it.albumId == albumId }
 
@@ -114,9 +166,15 @@ class OfflineStore(private val context: Context) {
     internal fun write(album: OfflineAlbum) {
         val d = dir(album.albumId) ?: return
         d.mkdirs()
-        val tmp = File(d, "$MANIFEST.tmp")
-        tmp.writeText(ApiJson.encodeToString(OfflineAlbum.serializer(), album))
-        tmp.renameTo(File(d, MANIFEST))
+        val plain = ApiJson.encodeToString(OfflineAlbum.serializer(), album).toByteArray(Charsets.UTF_8)
+        // Encrypted when the data key is in memory (checked by decrypting it again); an ordinary file otherwise,
+        // which is encrypted the next time the account's albums are loaded.
+        val bytes = keys.peek()?.let { SealedFile.sealChecked(it, plain) } ?: plain
+        synchronized(manifestLock) {
+            val tmp = File(d, "$MANIFEST.tmp")
+            tmp.writeBytes(bytes)
+            tmp.renameTo(File(d, MANIFEST))
+        }
         reload()
     }
 

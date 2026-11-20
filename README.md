@@ -31,7 +31,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 
 **Library**
 - **Albums** with sort, search and list or grid view; shared albums with comments, likes and editors
-- **Offline albums**: keep an album on the phone and view it without a connection
+- **Offline albums**: keep an album on the phone and view it without a connection. Each offline album's list (its name and which photos are in it) is encrypted on the phone; the offline photos and videos themselves are ordinary files in the app's private storage
 - **Duplicate review**: see the copies Immich found side by side and choose which to keep
 - **On this device**: your phone's albums, with what's backed up and what isn't
 - Favourites, archive, trash, recently added (by upload date on Immich 3), videos, tags and folders

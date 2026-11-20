@@ -24,6 +24,8 @@ import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.net.CleartextPolicy
 import com.vknxworks.immichctrl.data.net.LiveUpdates
 import com.vknxworks.immichctrl.data.net.NetworkRouter
+import com.vknxworks.immichctrl.data.crypto.DataKeyStore
+import com.vknxworks.immichctrl.data.crypto.KeystoreWrapper
 import com.vknxworks.immichctrl.data.offline.OfflineStore
 import com.vknxworks.immichctrl.data.offline.OfflineWorker
 import com.vknxworks.immichctrl.data.security.AppLock
@@ -122,7 +124,12 @@ class AppContainer(val context: Context) {
     val backup = BackupManager(context, settings, sessions, backupDb, appScope)
     val local = LocalLibrary(context, backupDb, sessions, settings)
     val device = DeviceActions(context)
-    val offline = OfflineStore(context)
+    /**
+     * The key that encrypts the offline albums' lists at rest. Separate from the keys for logins and the app
+     * lock; it's first asked for on a background thread, when the account's offline albums are loaded.
+     */
+    val dataKey = DataKeyStore(context.filesDir, KeystoreWrapper("immichctrl_data_at_rest"))
+    val offline = OfflineStore(context, dataKey)
     val appLock = AppLock(context, settings, vault)
 
     /** Turns the app lock on: the PIN seals the logins from now on (except the one backups need). */

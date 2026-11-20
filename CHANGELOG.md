@@ -4,6 +4,24 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: none of this has been run on a phone.
+
+### Security
+
+- **The lists of your offline albums are now encrypted on the phone.** For every album you keep offline, ImmichCtrl saves a small file (`album.json`) with the album's name and, for each photo and video in it, its id on the server, when it was taken, whether it's a favourite and its file name on the phone. Those files are now encrypted with AES-256-GCM. The key is 32 random bytes kept in `data.key` in the app's private folder, itself encrypted by a key in the Android Keystore that can't be exported (in the StrongBox security chip when the phone has one). It needs no fingerprint or PIN and has nothing to do with the app lock, so offline downloads and backups keep running with the screen locked. This protects those files when they're copied off the phone; it doesn't protect against something that can already run as ImmichCtrl.
+- **Moving over is automatic and can't lose an album.** The first time your offline albums are loaded after the update (in the background, when the app starts or you switch accounts), each existing list is encrypted: the encrypted copy is written next to it, saved to disk, read back, decrypted and compared with the original, and only then put in its place in one step. If anything fails, the old file stays in use and it's tried again the next time. The app reads both kinds from now on.
+- **What is deliberately not encrypted, and why:**
+  - *The offline photos and videos themselves* (`offline/…/*.jpg` and `*.mp4`): the image loader and the video player open them straight from their files, videos can be far too large to decrypt in memory, and they're copies of what is on your server. They are ordinary files in the app's private folder, as before.
+  - *The timeline copy and the backup history* (the sync database and `backup.db`): these are SQLite databases that are searched and sorted constantly; encrypting them needs a database encryption library, which the app doesn't include.
+  - *The thumbnail and preview cache and the map tile cache*: read constantly while scrolling, and downloaded again whenever needed.
+  - *Photos waiting to be uploaded or shared* (`cache/incoming`, `cache/shared`): short-lived copies that the uploader reads as a stream or that other apps open, removed afterwards as before.
+  - *Settings*, including the saved accounts (server address, name and e-mail; the login itself was already encrypted) and which phone albums are backed up.
+  - The in-app log only lives in memory and was never written to the phone's storage.
+- **If the key can't be used** (for example the Keystore lost it): an encrypted album list can't be opened, so that album is missing from Library → Offline until the key works again; its files are not deleted. New lists are saved as ordinary files, as before this update. Nothing is asked of you, and making the album available offline again downloads a fresh list.
+- **Don't go back to an older version without expecting to redo offline albums.** ImmichCtrl 0.9.0 and earlier can't read the encrypted lists: they would show no offline albums (the photos stay on the phone until you remove the album or sign out). Your photos on the server are not affected, and there's nothing to export first: offline albums are copies.
+
 ## v0.9.0 (2026-11-20)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.
