@@ -4,6 +4,16 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Not released yet: these changes are built by CI but have no version number. They ship with the next version.
+
+### Removed
+
+- **The home screen widgets are gone.** The "On this day" (Memories) and Random photo widgets have been removed, together with their background refreshes (every few hours and just after midnight). If you had one on your home screen, your launcher will show it as unavailable after the update and you can remove it. When the app next starts it cancels the refresh jobs the widgets had scheduled and deletes the small copy of the day's photo that was kept for the widget.
+- **The "Back up photos" quick settings tile is gone.** Backups are started from the Backup screen as before, and automatic backup is unchanged. If the tile was in your Quick Settings panel, Android removes it after the update.
+- The app lock description in Settings no longer mentions widgets. The **Memories** switch in Settings (On this day at the top of Photos) is unchanged.
+
 ## Project updates (2026-11-19)
 
 ### Project

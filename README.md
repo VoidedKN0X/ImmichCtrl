@@ -49,7 +49,6 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Album sync**: phone albums become matching Immich albums
 - **Free up space**: remove photos from the phone once they're safely on the server (they go to the phone's trash first)
 - Picks up where it left off after an interruption, and warns you if battery saving could stop it
-- **Quick Settings tile** to start a backup and see its progress
 - Share photos from any app to upload them, or open them with ImmichCtrl to view them
 
 **Privacy and control**
@@ -62,7 +61,6 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Custom headers** (Cloudflare Access, auth proxies) and **client certificates** (mutual TLS)
 
 **Everything else**
-- **Home screen widgets**: "On this day" with one memory photo a day (fresh just after midnight, kept small on the phone so it isn't downloaded again), or a random photo. Both show nothing of your photos while the app lock is on
 - **Admin alerts** (admin accounts only): failed jobs, low disk space, new Immich releases
 - Admins can see storage use, manage users and run jobs
 - Several servers and accounts; change your profile picture and password
@@ -143,8 +141,6 @@ Your account, backup, **Settings** and sign out are all on that same page behind
 - **Home network address:** add it in **Settings → Networking**, then pick **Use home address** under **Address in use**. The app stays on the address you picked, even away from home, so pick **Use public address** before you leave (also on your profile page, or from the button on a "Couldn't load this" error). After updating from 0.2.x, the app starts on the public address.
 - **Client certificates** are in **Settings → Networking** too. Install the certificate in Android's settings first (Security → Encryption & credentials), then pick it in the app.
 - **Casting isn't supported.**
-- **Quick Settings tile:** pull down the notification shade, tap the pencil and drag **Back up photos** into your tiles.
-- **Widgets:** long-press your home screen, choose **Widgets** and look for ImmichCtrl.
 - **Backup stops in the background?** Open **Backup** and follow the battery warning to let ImmichCtrl run without restrictions.
 - **Read-only mode** is in **Settings → Privacy and security**, or long-press your profile picture on the Photos tab. To leave it, long-press the picture again and unlock with your phone's fingerprint, face or screen lock (if the phone has one).
 - **Duplicate review** needs Immich's duplicate detection, which needs smart search (machine learning) on the server.
@@ -162,7 +158,7 @@ Turn it on under **Settings > Privacy and security > App lock (tap your profile 
 - **Lock again:** as soon as you leave the app (the default), after 1, 5 or 15 minutes or 1 hour away, or only when the app restarts. Sharing, photo pickers, editing in another app, the map app and Android's confirmations don't count as leaving, unless you stay away for more than 5 minutes.
 - **Change app PIN** asks for your current PIN first, and turning the app lock off asks for the PIN too.
 - **Forgot your PIN?** It can't be recovered, because it encrypts your login. The lock screen offers to sign out of every account and remove ImmichCtrl's offline albums, cached photos and backup history from this phone; your photos on the Immich server and on this phone stay.
-- **With the app lock on**, the recent-apps screen always shows a blank card, and the photo widgets show "ImmichCtrl is locked" instead of your photos.
+- **With the app lock on**, the recent-apps screen always shows a blank card.
 - **Backups keep working while locked**: while automatic backup (or admin alerts on an admin account) is on, that account's login stays usable in the background, encrypted with the Android Keystore as without the app lock. Every other login stays sealed with your PIN.
 - **Nothing can be drawn over the lock screen or PIN pad.** While the lock screen, a PIN screen or a confirmation (delete, sign out, use HTTP, upload photos another app shared) is showing, other apps' floating windows such as chat heads are hidden, so they can't cover a button to trick you into tapping it. Apps that aren't real accessibility tools also can't read the lock and PIN screens; screen readers such as TalkBack still work. Floating windows show again as soon as those screens close, and the photo viewer and video player are never affected.
 

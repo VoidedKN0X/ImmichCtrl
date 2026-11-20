@@ -107,7 +107,7 @@ class MainActivity : FragmentActivity() {
     private fun handleIntent(intent: Intent?) {
         intent ?: return
         val c = container
-        // Any app can start this screen: only accept the requests the app's own widgets and notifications send.
+        // Any app can start this screen: only accept the requests the app's own notifications send.
         intent.getStringExtra(EXTRA_OPEN)?.takeIf { OPEN_REQUEST.matches(it) }?.let { c.openRequests.value = it }
         val data = intent.data
         when {

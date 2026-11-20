@@ -213,7 +213,7 @@ private fun MainScaffold() {
         if (notifyWanted > 0 || st.backupEnabled || (admin && st.adminAlerts)) notify.askOnce()
     }
 
-    // Widgets, notifications and other apps ask for something to be opened.
+    // Notifications and other apps ask for something to be opened.
     val openRequest by c.openRequests.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest) {
         val req = openRequest ?: return@LaunchedEffect

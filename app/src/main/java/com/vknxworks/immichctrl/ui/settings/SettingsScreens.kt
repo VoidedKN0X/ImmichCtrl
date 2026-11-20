@@ -207,7 +207,7 @@ fun SettingsScreen() {
                     Icons.Outlined.GridView,
                 ) { v -> update { it.copy(columns = v) } }
                 GroupChoice(stringResource(R.string.group_by), GroupBy.entries.map { it to it.label }, s.groupBy, Icons.Outlined.CalendarViewDay) { v -> update { it.copy(groupBy = v) } }
-                GroupSwitch(stringResource(R.string.widget_memories), stringResource(R.string.on_this_day_at_the_top_of_photos), s.showMemories, Icons.Outlined.AutoAwesome) { v -> update { it.copy(showMemories = v) } }
+                GroupSwitch(stringResource(R.string.memories_title), stringResource(R.string.on_this_day_at_the_top_of_photos), s.showMemories, Icons.Outlined.AutoAwesome) { v -> update { it.copy(showMemories = v) } }
                 GroupSwitch(stringResource(R.string.partners_photos_in_photos), stringResource(R.string.for_partners_you_ve_chosen_to_show), s.withPartners, Icons.Outlined.People) { v ->
                     update { it.copy(withPartners = v) }
                     Sources.refreshAll()

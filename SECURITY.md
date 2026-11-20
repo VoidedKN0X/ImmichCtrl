@@ -18,7 +18,7 @@ Only the latest release gets security fixes. Please update before reporting, and
 ## What counts
 
 - Your password, access token, API key, custom proxy headers or photos leaking to anyone other than your own Immich server
-- Ways around the app lock or the locked folder, or private photos showing up in widgets, notifications, screenshots or the recent-apps screen when they shouldn't
+- Ways around the app lock or the locked folder, or private photos showing up in notifications, screenshots or the recent-apps screen when they shouldn't
 - Another app on the phone being able to make ImmichCtrl upload, delete or share photos you didn't choose
 - Shared links being created with different options than the ones you picked
 - Anything that lets someone run code or read files they shouldn't

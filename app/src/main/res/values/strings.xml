@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ImmichCtrl</string>
-    <string name="widget_memories">Memories</string>
-    <string name="widget_memories_description">On this day, from your Immich library</string>
-    <string name="widget_random">Random photo</string>
-    <string name="widget_random_description">A different photo from your Immich library every few hours</string>
-    <string name="tile_backup">Back up photos</string>
+    <string name="memories_title">Memories</string>
     <string name="group_about">About</string>
     <string name="support_title">Support ImmichCtrl</string>
     <string name="support_subtitle">ImmichCtrl is free and open source. Sponsor development on GitHub</string>
@@ -82,7 +78,7 @@
     <string name="lock_forgot_confirm">Sign out and reset</string>
     <string name="lock_choose_intro">At least %1$d digits, different from your phone\'s PIN. If you forget it, the only way back in is to sign out and sign in again.</string>
     <string name="lock_migrate_intro">ImmichCtrl\'s app lock now has its own PIN, separate from your phone\'s. Your login is encrypted with it while the app is locked.</string>
-    <string name="lock_app_subtitle">Ask for an app PIN (and optionally your fingerprint) when opening ImmichCtrl. While locked, your login stays encrypted with the PIN, and the photo widgets hide your photos.</string>
+    <string name="lock_app_subtitle">Ask for an app PIN (and optionally your fingerprint) when opening ImmichCtrl. While locked, your login stays encrypted with the PIN.</string>
     <string name="privacy_footer">ImmichCtrl has no analytics or tracking. It only talks to your own Immich server (and its map tiles when maps are on). While automatic backup (or admin alerts on an admin account) is on, that account\'s login stays usable in the background for backups and alerts. Every other login stays encrypted with the PIN while the app is locked.</string>
 
     <!-- Moved from code -->
@@ -122,11 +118,9 @@
     <string name="the_server_sent_an_invalid_sign_in">The server sent an invalid sign-in address</string>
     <string name="oauth_sign_in_failed">OAuth sign-in failed</string>
     <string name="stopped">Stopped</string>
-    <string name="set_up_for_another_account">Set up for another account</string>
     <string name="starting">Starting…</string>
     <string name="of">%1$s of %2$s</string>
     <string name="checking">Checking…</string>
-    <string name="tap_to_back_up">Tap to back up</string>
     <string name="photo_access_is_off">Photo access is off</string>
     <string name="backed_up">%1$s backed up</string>
     <string name="already_on_the_server">%1$s already on the server</string>
@@ -844,8 +838,6 @@
     <string name="it_isn_t_backed_up_so_it_s_gone_for">It isn\'t backed up, so it\'s gone for good once the phone empties its trash.</string>
     <string name="move_to_the_trash_2">Move to the trash?</string>
     <string name="you_can_restore_it_from_the_trash_in">You can restore it from the trash in Library for %1$s days.</string>
-    <string name="sign_in_to_immichctrl">Sign in to ImmichCtrl</string>
-    <string name="no_memories_today">No memories today</string>
     <string name="tls_failed_try_http">Secure connection failed: %1$s. If your server only supports plain HTTP, type http:// in front of the address.</string>
     <string name="offer_http_body">ImmichCtrl couldn\'t connect to this server over HTTPS. It can try plain HTTP instead, but then your password and photos are sent unencrypted and anyone on the network can see them. Only do this on a network you trust.</string>
     <string name="free_up_space_intro">Removes photos and videos from this phone that are backed up to Immich and not in its trash. They stay on the server. Removed items go to the phone\'s trash first, so empty it there to get the space back. Photos other apps use (like WhatsApp chats) may look blurry or missing there afterwards; keep those albums below.</string>

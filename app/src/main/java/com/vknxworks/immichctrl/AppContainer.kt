@@ -31,7 +31,6 @@ import com.vknxworks.immichctrl.data.lock.LockVault
 import com.vknxworks.immichctrl.data.settings.SettingsRepository
 import com.vknxworks.immichctrl.data.sync.SyncEngine
 import com.vknxworks.immichctrl.data.timeline.Sources
-import com.vknxworks.immichctrl.ui.widget.WidgetWorker
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -159,7 +158,7 @@ class AppContainer(val context: Context) {
     private val _serverConfig = MutableStateFlow(ServerConfigDto())
     val serverConfig: StateFlow<ServerConfigDto> = _serverConfig.asStateFlow()
 
-    /** Something to open, from a notification, widget or another app ("memory:<id>", "asset:<id>", "admin"). */
+    /** Something to open, from a notification or another app ("memory:<id>", "asset:<id>", "admin"). */
     val openRequests = MutableStateFlow<String?>(null)
 
     /** Photos another app shared to us, waiting for the user to confirm the upload. */
@@ -178,8 +177,18 @@ class AppContainer(val context: Context) {
         }
         appLock.onLocked = { appScope.launch { sessions.onLocked() } }
         appLock.onUnlocking = { sessions.onUnlocked() }
-        appScope.launch {
-            settings.settings.map { it.appLock }.distinctUntilChanged().collect { WidgetWorker.refreshAll(context) }
+        // The home screen widgets are gone: stop the refresh jobs an earlier version scheduled and delete
+        // the small copy of the "On this day" photo it kept for them.
+        appScope.launch(Dispatchers.IO) {
+            runCatching {
+                val work = androidx.work.WorkManager.getInstance(context)
+                for (kind in listOf("memories", "random")) {
+                    work.cancelUniqueWork("widget-$kind")
+                    work.cancelUniqueWork("widget-periodic-$kind")
+                }
+                work.cancelAllWorkByTag("widget-midnight")
+            }
+            runCatching { java.io.File(context.cacheDir, "widget").deleteRecursively() }
         }
         appScope.launch {
             settings.settings.map { Triple(it.backupEnabled, it.backupAccount, it.adminAlerts) }
@@ -214,7 +223,6 @@ class AppContainer(val context: Context) {
                     }
                 }
                 runCatching { java.io.File(context.cacheDir, "shared").deleteRecursively() }
-                com.vknxworks.immichctrl.ui.widget.WidgetCache.clear(context)
                 runCatching {
                     val loader = coil3.SingletonImageLoader.get(context)
                     loader.memoryCache?.clear()
@@ -258,7 +266,6 @@ class AppContainer(val context: Context) {
                 if (s == null) return@collect
                 runCatching { s.client.serverFeatures() }.onSuccess { _features.value = it }
                 runCatching { s.client.serverConfig() }.onSuccess { _serverConfig.value = it }
-                WidgetWorker.refreshAll(context)
             }
         }
         // A new login for the same account (signed in again) gets its own sync session on the server too.

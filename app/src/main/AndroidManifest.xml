@@ -25,9 +25,9 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove" />
 
-    <!-- Android 16 and newer: explicit intents from other apps (the launcher, browsers, share and "Open with",
-         the Quick Settings tile) must match one of the intent filters below; intents without an action are
-         refused. ImmichCtrl's own intents (widgets, notifications) aren't affected. -->
+    <!-- Android 16 and newer: explicit intents from other apps (the launcher, browsers, share and "Open with")
+         must match one of the intent filters below; intents without an action are
+         refused. ImmichCtrl's own intents (notifications) aren't affected. -->
     <application
         android:name=".ImmichCtrlApp"
         android:allowBackup="false"
@@ -92,42 +92,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
-        <!-- Quick Settings tile: back up now. -->
-        <service
-            android:name=".data.backup.BackupTileService"
-            android:exported="true"
-            android:icon="@drawable/ic_notification"
-            android:label="@string/tile_backup"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
-            <intent-filter>
-                <action android:name="android.service.quicksettings.action.QS_TILE" />
-            </intent-filter>
-        </service>
-
-        <!-- Home screen widgets. -->
-        <receiver
-            android:name=".ui.widget.MemoriesWidget"
-            android:exported="false"
-            android:label="@string/widget_memories">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_memories" />
-        </receiver>
-        <receiver
-            android:name=".ui.widget.RandomWidget"
-            android:exported="false"
-            android:label="@string/widget_random">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_random" />
-        </receiver>
 
         <!-- No downloadable emoji font: androidx.emoji2 would look one up from a font provider on start.
              Emoji use the phone's own font. -->

@@ -3,24 +3,18 @@ package com.vknxworks.immichctrl
 import com.vknxworks.immichctrl.data.api.Null
 import com.vknxworks.immichctrl.data.api.sharedLinkCreateBody
 import com.vknxworks.immichctrl.ui.photos.LinkOptions
-import com.vknxworks.immichctrl.ui.widget.WidgetRules
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.time.Duration
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.ZonedDateTime
 
-class SharedLinkAndWidgetTest {
+class SharedLinkTest {
     private val now = Instant.parse("2026-11-13T10:00:00Z")
 
     @Test fun albumLinkBody() {
@@ -70,44 +64,5 @@ class SharedLinkAndWidgetTest {
         val legacy = LinkOptions(expiresInDays = 30).editFields(2, now).toMap()
         assertEquals(true, legacy["changeExpiryTime"])
         assertEquals("2026-12-13T10:00:00Z", legacy["expiresAt"])
-    }
-
-    @Test fun nextMidnightRefresh() {
-        val zone = ZoneId.of("Europe/Brussels")
-        val evening = ZonedDateTime.of(2026, 11, 13, 22, 30, 0, 0, zone)
-        assertEquals(Duration.ofMinutes(95), WidgetRules.delayToNextDay(evening))
-        val justAfter = ZonedDateTime.of(2026, 11, 14, 0, 1, 0, 0, zone)
-        assertEquals(Duration.ofHours(24).plusMinutes(4), WidgetRules.delayToNextDay(justAfter))
-        // The night the clocks go back has 25 hours.
-        val dst = ZonedDateTime.of(2026, 10, 24, 23, 0, 0, 0, zone)
-        assertEquals(Duration.ofHours(1).plusMinutes(5), WidgetRules.delayToNextDay(dst))
-        val dstDay = ZonedDateTime.of(2026, 10, 25, 0, 0, 0, 0, zone)
-        assertEquals(Duration.ofHours(25).plusMinutes(5), WidgetRules.delayToNextDay(dstDay))
-    }
-
-    @Test fun samePhotoAllDayAndItChangesWithTheDate() {
-        val memories = listOf(listOf("a1", "a2", "a3"), emptyList(), listOf("b1", "b2"), listOf("c1"))
-        val day = LocalDate.of(2026, 11, 13)
-        val pick = WidgetRules.pickOfDay(memories, day)!!
-        assertEquals(pick, WidgetRules.pickOfDay(memories, day))
-        assertTrue(memories[pick.first].isNotEmpty())
-        assertTrue(pick.second in memories[pick.first].indices)
-        // Over a few weeks it doesn't always show the same photo.
-        val picks = (0L until 30L).map { WidgetRules.pickOfDay(memories, day.plusDays(it)) }.toSet()
-        assertTrue(picks.size > 1)
-        assertNull(WidgetRules.pickOfDay(listOf(emptyList(), emptyList()), day))
-        assertNull(WidgetRules.pickOfDay(emptyList(), day))
-    }
-
-    @Test fun cacheKeyRoundTripAndSampleSize() {
-        val k = WidgetRules.CacheKey("https://photos.example|user", "asset-1")
-        assertEquals(k, WidgetRules.parseKey(WidgetRules.formatKey(k)))
-        assertNull(WidgetRules.parseKey(null))
-        assertNull(WidgetRules.parseKey("only-one-line"))
-        assertNotEquals(k, WidgetRules.CacheKey("other", "asset-1"))
-        assertEquals(1, WidgetRules.sampleSize(500, 400, 512))
-        assertEquals(2, WidgetRules.sampleSize(1440, 1080, 512))
-        val s = WidgetRules.sampleSize(4000, 3000, 512)
-        assertTrue(4000 / s <= 1024 && 4000 / s >= 256)
     }
 }
