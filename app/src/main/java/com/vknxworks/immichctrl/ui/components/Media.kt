@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
 import coil3.compose.AsyncImage
-import coil3.compose.SubcomposeAsyncImage
 import com.vknxworks.immichctrl.AppContainer
 import com.vknxworks.immichctrl.container
 import kotlinx.coroutines.Dispatchers
@@ -120,16 +120,29 @@ fun RemoteImage(
     if (url == null) {
         Box(modifier) { fallback() }
     } else {
-        SubcomposeAsyncImage(
-            model = url,
-            contentDescription = null,
-            modifier = modifier,
-            contentScale = contentScale,
-            error = { fallback() },
-            loading = { Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer)) },
-        )
+        // What the image is doing, as the loader reports it: the plain colour shows only while it loads and
+        // the icon only when it failed, as before, but without composing the cell a second time for it.
+        var phase by remember(url) { mutableIntStateOf(IMAGE_IDLE) }
+        Box(modifier, propagateMinConstraints = true) {
+            if (phase == IMAGE_LOADING) Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer))
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = contentScale,
+                onLoading = { phase = IMAGE_LOADING },
+                onSuccess = { phase = IMAGE_SHOWN },
+                onError = { phase = IMAGE_FAILED },
+            )
+            if (phase == IMAGE_FAILED) fallback()
+        }
     }
 }
+
+private const val IMAGE_IDLE = 0
+private const val IMAGE_LOADING = 1
+private const val IMAGE_SHOWN = 2
+private const val IMAGE_FAILED = 3
 
 @Composable
 fun PersonFace(personId: String, updatedAt: String?, modifier: Modifier = Modifier) {
