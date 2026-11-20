@@ -85,7 +85,6 @@ import androidx.compose.ui.unit.dp
 import com.vknxworks.immichctrl.data.api.Asset
 import com.vknxworks.immichctrl.data.settings.GroupBy
 import com.vknxworks.immichctrl.data.timeline.AssetSource
-import com.vknxworks.immichctrl.data.timeline.Bucket
 import com.vknxworks.immichctrl.data.timeline.PagedSource
 import com.vknxworks.immichctrl.data.timeline.SourceState
 import com.vknxworks.immichctrl.ui.components.AssetThumb
@@ -101,7 +100,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 import kotlin.math.roundToInt
 import androidx.compose.ui.res.stringResource
 import com.vknxworks.immichctrl.R
@@ -132,50 +130,7 @@ class Selection {
 // Layout
 // ---------------------------------------------------------------------------------------------
 
-private sealed interface GridItem {
-    val key: String
-    val bucket: Int
-}
-
-private data class MonthHeader(override val key: String, override val bucket: Int, val label: String) : GridItem
-private data class DayHeader(override val key: String, override val bucket: Int, val date: LocalDate, val assets: List<Asset>) : GridItem
-private data class AssetRow(override val key: String, override val bucket: Int, val start: Int, val assets: List<Asset>) : GridItem
-private data class PlaceholderRow(override val key: String, override val bucket: Int, val cells: Int) : GridItem
-
-private fun buildGrid(buckets: List<Bucket>, cols: Int, groupBy: GroupBy): List<GridItem> {
-    val out = ArrayList<GridItem>()
-    var global = 0
-    buckets.forEachIndexed { bi, b ->
-        if (b.label != null) out += MonthHeader("m:${b.key}", bi, b.label)
-        val a = b.assets
-        if (a == null) {
-            val rows = (b.count + cols - 1) / cols
-            for (r in 0 until rows) {
-                val cells = if (r == rows - 1 && b.count % cols != 0) b.count % cols else cols
-                out += PlaceholderRow("p:${b.key}:$r", bi, cells)
-            }
-        } else if (groupBy == GroupBy.DAY && b.label != null) {
-            var i = 0
-            while (i < a.size) {
-                val day = a[i].localDate
-                var j = i
-                while (j < a.size && a[j].localDate == day) j++
-                val dayAssets = a.subList(i, j)
-                out += DayHeader("d:${b.key}:$day:$i", bi, day, dayAssets)
-                dayAssets.chunked(cols).forEachIndexed { r, row ->
-                    out += AssetRow("r:${row.first().id}", bi, global + i + r * cols, row)
-                }
-                i = j
-            }
-        } else {
-            a.chunked(cols).forEachIndexed { r, row ->
-                out += AssetRow("r:${row.first().id}", bi, global + r * cols, row)
-            }
-        }
-        global += b.size
-    }
-    return out
-}
+// The rows themselves, and how they are worked out from the buckets, are in GridModel.kt.
 
 // ---------------------------------------------------------------------------------------------
 // The grid
@@ -205,7 +160,9 @@ fun AssetGrid(
     header: (LazyListScope.() -> Unit)? = null,
 ) {
     val cols = columns.coerceIn(2, 7)
-    val gridItems = remember(source.buckets, cols, groupBy) { buildGrid(source.buckets, cols, groupBy) }
+    // Only the months that changed are worked out again (see GridBuilder); the list is the same as a full rebuild.
+    val gridBuilder = remember(source) { GridBuilder() }
+    val gridItems = remember(gridBuilder, source.buckets, cols, groupBy) { gridBuilder.build(source.buckets, cols, groupBy) }
     val byKey = remember(gridItems) { gridItems.associateBy { it.key } }
     val headerCount = if (header != null) 1 else 0
     val clearance = LocalBottomClearance.current

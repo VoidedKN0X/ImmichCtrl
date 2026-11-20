@@ -4,6 +4,14 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Built and checked by CI only: nothing here has been run on a phone yet.
+
+### Changed
+
+- **Loading a month no longer reworks the whole photo grid.** Every time one month's photos arrived while you scrolled, the app worked out every row of the entire timeline again (month headings, day headings and rows of photos, for all your years of photos) before it could draw the next frame. It now keeps each month's rows and only works out the months that actually changed; the rest are reused as they are. The resulting list is exactly the same as before, so nothing looks or scrolls differently, and selecting, dragging a selection and the fast scroller work on the same rows. It matters most in large libraries, where it removes a stutter each time a month finishes loading during a fast scroll.
+
 ## v0.10.0 (2026-11-20)
 
 **This release encrypts some of what the app stores on the phone. An older version cannot read it afterwards, so export or back up anything you need before you update (details below).** Built and checked by CI only: nothing in this release had been run on a phone when it was published.
