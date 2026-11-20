@@ -25,6 +25,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -50,6 +52,7 @@ import com.vknxworks.immichctrl.AppContainer
 import com.vknxworks.immichctrl.container
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -77,12 +80,28 @@ fun AssetThumb(
 ) {
     val c = LocalContext.current.container
     val url = remember(assetId, size, localUri) { localUri ?: c.api.thumbnailUrl(assetId, size, thumbhash?.take(12)) }
-    val blur = remember(thumbhash) { ThumbHash.bitmap(thumbhash)?.asImageBitmap() }
+    val blur = rememberBlur(thumbhash)
     val model = privateImageModel(url, isPrivate)
     Box(modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
         if (blur != null) Image(blur, null, Modifier.fillMaxSize(), contentScale = contentScale)
         AsyncImage(model = model, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = contentScale)
     }
+}
+
+/**
+ * The ThumbHash blur for a thumbnail. One that was decoded before is there at once; a new one is decoded
+ * off the main thread and appears as soon as that's done (normally the next frame), with the cell's plain
+ * background showing until then.
+ */
+@Composable
+private fun rememberBlur(thumbhash: String?): ImageBitmap? {
+    val state = remember(thumbhash) { mutableStateOf(ThumbHash.cached(thumbhash)?.asImageBitmap()) }
+    LaunchedEffect(thumbhash) {
+        if (state.value == null && !thumbhash.isNullOrBlank()) {
+            state.value = withContext(Dispatchers.Default) { ThumbHash.bitmap(thumbhash) }?.asImageBitmap()
+        }
+    }
+    return state.value
 }
 
 /** Any server image (album cover, person face, avatar) with a quiet placeholder. */

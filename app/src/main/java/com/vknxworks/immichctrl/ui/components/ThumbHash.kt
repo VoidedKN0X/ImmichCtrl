@@ -16,6 +16,10 @@ import kotlin.math.roundToInt
 object ThumbHash {
     private val cache = LruCache<String, Bitmap>(600)
 
+    /** The preview if it has been decoded before: a cache lookup only, cheap enough for the main thread. */
+    fun cached(base64: String?): Bitmap? = if (base64.isNullOrBlank()) null else cache.get(base64)
+
+    /** Decodes (or finds) the preview. The decoding is the slow part: call this off the main thread. */
     fun bitmap(base64: String?): Bitmap? {
         if (base64.isNullOrBlank()) return null
         cache.get(base64)?.let { return it }
