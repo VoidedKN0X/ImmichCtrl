@@ -121,11 +121,11 @@ fun AssetThumb(
     }
 }
 
-/** How long the blur stays drawn under a loaded thumbnail: longer than the image loader's fade-in. */
-private const val BLUR_HOLD_MS = 2L * THUMB_CROSSFADE_MS
-
 /** The image loader's fade-in for freshly loaded images, in milliseconds. */
 const val THUMB_CROSSFADE_MS = 150
+
+/** How long the blur stays drawn under a loaded thumbnail: longer than the image loader's fade-in. */
+private const val BLUR_HOLD_MS = 2L * THUMB_CROSSFADE_MS
 
 /**
  * Decides when a thumbnail's blur no longer needs drawing: after an image that has no transparency and
