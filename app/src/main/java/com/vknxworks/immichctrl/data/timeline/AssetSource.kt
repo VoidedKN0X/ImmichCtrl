@@ -58,7 +58,25 @@ abstract class AssetSource(val key: String, protected val scope: CoroutineScope)
     var refreshing by mutableStateOf(false)
         protected set
 
-    val total: Int get() = buckets.sumOf { it.size }
+    /**
+     * Running totals of the bucket sizes for one [buckets] list: `starts[i]` is the number of assets before
+     * bucket i and the last entry is the total. Worked out once per list instead of on every call.
+     */
+    private class Starts(val of: List<Bucket>, val starts: IntArray)
+
+    @Volatile private var startsCache: Starts? = null
+
+    private fun starts(): IntArray {
+        val b = buckets
+        val cached = startsCache
+        if (cached != null && cached.of === b) return cached.starts
+        val out = IntArray(b.size + 1)
+        for (i in b.indices) out[i + 1] = out[i] + b[i].size
+        startsCache = Starts(b, out)
+        return out
+    }
+
+    val total: Int get() = starts().let { it[it.size - 1] }
 
     /** Pages of a search, for sources that have more to fetch. */
     open val canLoadMore: Boolean get() = false
@@ -106,7 +124,7 @@ abstract class AssetSource(val key: String, protected val scope: CoroutineScope)
     }
 
     /** Global index of the first asset in bucket [bucketIndex]. */
-    fun startOf(bucketIndex: Int): Int = buckets.take(bucketIndex).sumOf { it.size }
+    fun startOf(bucketIndex: Int): Int = starts().let { it[bucketIndex.coerceIn(0, it.size - 1)] }
 
     fun removeIds(ids: Set<String>) {
         if (ids.isEmpty()) return

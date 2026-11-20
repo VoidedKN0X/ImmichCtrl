@@ -14,6 +14,10 @@ Not released yet: these changes are built by CI but have no version number. They
 - **The "Back up photos" quick settings tile is gone.** Backups are started from the Backup screen as before, and automatic backup is unchanged. If the tile was in your Quick Settings panel, Android removes it after the update.
 - The app lock description in Settings no longer mentions widgets. The **Memories** switch in Settings (On this day at the top of Photos) is unchanged.
 
+### Changed
+
+- **A little less work while scrolling the photo grid.** Two small things the grid did over and over are now cheaper, with nothing looking different: counting how many photos a timeline holds (asked for constantly by the grid and the full-screen viewer) is worked out once each time the timeline changes instead of adding up every month on every question, and the grid no longer looks up a text name for every row while laying out the list.
+
 ## Project updates (2026-11-19)
 
 ### Project

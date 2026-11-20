@@ -380,7 +380,7 @@ fun AssetGrid(
                         },
                 ) {
                     if (header != null) header()
-                    items(gridItems, key = { it.key }, contentType = { it::class.simpleName }) { item ->
+                    items(gridItems, key = { it.key }, contentType = { it.javaClass }) { item ->
                         when (item) {
                             is MonthHeader -> MonthHeaderRow(item.label)
                             is DayHeader -> DayHeaderRow(item, selection)
