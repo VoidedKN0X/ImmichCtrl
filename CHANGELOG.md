@@ -4,7 +4,9 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
-## Unreleased
+## v0.13.0 (2026-11-21)
+
+Built and checked by CI only: nothing in this release had been run on a phone when it was published.
 
 ### New
 
