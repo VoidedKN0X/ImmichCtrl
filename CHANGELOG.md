@@ -8,6 +8,10 @@ To publish a new version: bump `versionCode` and `versionName` in `app/build.gra
 
 Built and checked by CI only: nothing here has been run on a phone yet.
 
+### Fixed
+
+- **Fixed before release: the app would have crashed at start with the new build tools.** ImmichCtrl uses WorkManager for its background work, and WorkManager stores its jobs in a small Room database that is created by name when the app starts. The shrinker (R8) in Android Gradle Plugin 9 is stricter than the old one and removed the constructor that needs, which makes the app stop right at launch (a known problem with Room 2.6.1 under Android Gradle Plugin 9). A keep rule for that constructor, the same one newer Room versions ship themselves, is now in `app/proguard-rules.pro`. No released version was affected: the new build tools have not been in any release. Built by CI only; not yet run on a phone.
+
 ### Changed
 
 - **Loading a month no longer reworks the whole photo grid.** Every time one month's photos arrived while you scrolled, the app worked out every row of the entire timeline again (month headings, day headings and rows of photos, for all your years of photos) before it could draw the next frame. It now keeps each month's rows and only works out the months that actually changed; the rest are reused as they are. The resulting list is exactly the same as before, so nothing looks or scrolls differently, and selecting, dragging a selection and the fast scroller work on the same rows. It matters most in large libraries, where it removes a stutter each time a month finishes loading during a fast scroll.
