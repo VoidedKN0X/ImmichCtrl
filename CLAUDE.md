@@ -39,7 +39,7 @@ Every library and plugin download is checked against `gradle/verification-metada
 
 ## Language
 
-- The app follows the phone's language: English (`res/values/strings.xml`) and Dutch (`res/values-nl/strings.xml`, Belgian Dutch, informal "je"). No in-app language picker.
+- The app follows the phone's language: English (`res/values/strings.xml`), Dutch (`res/values-nl/strings.xml`, Belgian Dutch, informal "je"), French (`res/values-fr/strings.xml`, polite "vous") and German (`res/values-de/strings.xml`, informal "du"). A new string needs all four. No in-app language picker; `res/xml/locales_config.xml` lists the four for Android's per-app language setting.
 - Every user-visible text comes from resources, and every new string goes in both files with the same placeholders. Technical names, units and the app name stay untranslated.
 - Don't resolve a string once at start (top-level `val`, enum constructor, companion object): keep the resource id and look it up when shown (`Strings.str`, `stringResource`), and use `LocalFormat` for date patterns, so the text follows a language change without a restart.
 
