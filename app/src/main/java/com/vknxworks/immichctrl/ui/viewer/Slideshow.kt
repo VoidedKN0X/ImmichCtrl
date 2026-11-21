@@ -195,7 +195,7 @@ fun SlideshowScreen(sourceKey: String, startIndex: Int) {
                     }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(3, 5, 10, 20).forEach { s ->
-                            FilterChip(settings.slideSeconds == s, onClick = { scope.launch { c.settings.update { it.copy(slideSeconds = s) } } }, label = { Text("${s}s") })
+                            FilterChip(settings.slideSeconds == s, onClick = { scope.launch { c.settings.update { it.copy(slideSeconds = s) } } }, label = { Text(stringResource(R.string.seconds_short, s)) })
                         }
                         FilterChip(settings.slideShuffle, onClick = { scope.launch { c.settings.update { it.copy(slideShuffle = !it.slideShuffle) } } }, label = { Text(stringResource(R.string.shuffle)) }, leadingIcon = { Icon(Icons.Outlined.Shuffle, null) })
                         FilterChip(settings.slideLoop, onClick = { scope.launch { c.settings.update { it.copy(slideLoop = !it.slideLoop) } } }, label = { Text(stringResource(R.string.loop)) }, leadingIcon = { Icon(Icons.Outlined.Repeat, null) })

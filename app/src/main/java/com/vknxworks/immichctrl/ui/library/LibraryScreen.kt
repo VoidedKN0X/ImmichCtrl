@@ -114,7 +114,12 @@ import androidx.compose.ui.res.stringResource
 import com.vknxworks.immichctrl.Strings
 import com.vknxworks.immichctrl.R
 
-private enum class AlbumFilter(val label: String) { ALL(Strings.str(R.string.all)), MINE(Strings.str(R.string.mine)), SHARED(Strings.str(R.string.shared_with_me)) }
+private enum class AlbumFilter(@androidx.annotation.StringRes val labelRes: Int) {
+    ALL(R.string.all), MINE(R.string.mine), SHARED(R.string.shared_with_me);
+
+    // Looked up when shown, so it follows the phone's language.
+    val label: String get() = Strings.str(labelRes)
+}
 
 /** The Library tab: collections, then albums. */
 @Composable

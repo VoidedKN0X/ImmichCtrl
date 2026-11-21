@@ -55,26 +55,27 @@ import androidx.compose.ui.res.stringResource
 import com.vknxworks.immichctrl.Strings
 import com.vknxworks.immichctrl.R
 
-private val queueLabels = mapOf(
-    "thumbnailGeneration" to Strings.str(R.string.thumbnails),
-    "metadataExtraction" to Strings.str(R.string.metadata),
-    "videoConversion" to Strings.str(R.string.video_conversion),
-    "faceDetection" to Strings.str(R.string.face_detection),
-    "facialRecognition" to Strings.str(R.string.facial_recognition),
-    "smartSearch" to Strings.str(R.string.smart_search),
-    "duplicateDetection" to Strings.str(R.string.duplicate_detection),
-    "backgroundTask" to Strings.str(R.string.background_tasks),
-    "storageTemplateMigration" to Strings.str(R.string.storage_template),
-    "migration" to Strings.str(R.string.migration),
-    "search" to Strings.str(R.string.search),
-    "sidecar" to Strings.str(R.string.sidecar_files),
-    "library" to Strings.str(R.string.external_libraries),
-    "notifications" to Strings.str(R.string.notifications),
-    "backupDatabase" to Strings.str(R.string.database_backup),
-    "ocr" to Strings.str(R.string.text_recognition_ocr),
-    "workflow" to Strings.str(R.string.workflows),
-    "integrityCheck" to Strings.str(R.string.integrity_check),
-    "editor" to Strings.str(R.string.editor),
+// Resource ids, looked up when shown, so the names follow the phone's language.
+private val queueLabels: Map<String, Int> = mapOf(
+    "thumbnailGeneration" to R.string.thumbnails,
+    "metadataExtraction" to R.string.metadata,
+    "videoConversion" to R.string.video_conversion,
+    "faceDetection" to R.string.face_detection,
+    "facialRecognition" to R.string.facial_recognition,
+    "smartSearch" to R.string.smart_search,
+    "duplicateDetection" to R.string.duplicate_detection,
+    "backgroundTask" to R.string.background_tasks,
+    "storageTemplateMigration" to R.string.storage_template,
+    "migration" to R.string.migration,
+    "search" to R.string.search,
+    "sidecar" to R.string.sidecar_files,
+    "library" to R.string.external_libraries,
+    "notifications" to R.string.notifications,
+    "backupDatabase" to R.string.database_backup,
+    "ocr" to R.string.text_recognition_ocr,
+    "workflow" to R.string.workflows,
+    "integrityCheck" to R.string.integrity_check,
+    "editor" to R.string.editor,
 )
 
 /** For admins: what's on the server and the background jobs that process it. */
@@ -139,7 +140,7 @@ fun AdminScreen() {
                 list.forEach { q ->
                     val st = q.statistics
                     GroupRow(
-                        queueLabels[q.name] ?: q.name,
+                        queueLabels[q.name]?.let { Strings.str(it) } ?: q.name,
                         listOfNotNull(
                             if (q.isPaused) Strings.str(R.string.paused) else null,
                             if (st.active > 0) Strings.str(R.string.running, st.active) else null,
@@ -162,7 +163,7 @@ fun AdminScreen() {
     }
 
     open?.let { q ->
-        val label = queueLabels[q.name] ?: q.name
+        val label = queueLabels[q.name]?.let { Strings.str(it) } ?: q.name
         ModalBottomSheet(onDismissRequest = { open = null }, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
             Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
                 SheetTitle(label)

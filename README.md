@@ -72,6 +72,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - Sign in with email and password, OAuth or an API key; tablet and foldable layout
 - **Back up and restore settings** to a file you keep: preferences only, never sign-in details or the app lock, and a restore shows what it would change first
 - Built-in log viewer, and a warning when the server's Immich version isn't supported
+- **English and Dutch**, following the phone's language (no language setting in the app)
 
 ## Requirements
 

@@ -87,7 +87,12 @@ import androidx.compose.ui.res.stringResource
 import com.vknxworks.immichctrl.Strings
 import com.vknxworks.immichctrl.R
 
-private enum class Mode(val label: String) { SMART(Strings.str(R.string.smart)), FILENAME(Strings.str(R.string.file_name)), DESCRIPTION(Strings.str(R.string.description)), TEXT(Strings.str(R.string.text_in_photo)) }
+private enum class Mode(@androidx.annotation.StringRes val labelRes: Int) {
+    SMART(R.string.smart), FILENAME(R.string.file_name), DESCRIPTION(R.string.description), TEXT(R.string.text_in_photo);
+
+    // Looked up when shown, so it follows the phone's language.
+    val label: String get() = Strings.str(labelRes)
+}
 
 @Composable
 fun SearchScreen() {

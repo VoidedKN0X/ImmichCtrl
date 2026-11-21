@@ -183,7 +183,8 @@ private fun androidx.navigation.NavDestination.blockedInReadOnly(): Boolean =
 
 private data class TopDest(val route: Any, val item: TabItem)
 
-private val topDestinations = listOf(
+// Built when asked for, so the tab names follow the phone's language.
+private val topDestinations: List<TopDest> get() = listOf(
     TopDest(PhotosRoute, TabItem(Strings.str(R.string.photos), Icons.Outlined.Photo, Icons.Outlined.Photo)),
     TopDest(SearchRoute, TabItem(Strings.str(R.string.search), Icons.Outlined.Search, Icons.Outlined.Search)),
     TopDest(LibraryRoute, TabItem(Strings.str(R.string.library), Icons.Outlined.PhotoLibrary, Icons.Outlined.PhotoLibrary)),
@@ -332,7 +333,7 @@ private fun PhoneLayout(
     }
 }
 
-private val phoneDestinations = listOf(
+private val phoneDestinations: List<TopDest> get() = listOf(
     TopDest(PhonePhotosRoute, TabItem(Strings.str(R.string.photos), Icons.Outlined.Photo, Icons.Outlined.Photo)),
     TopDest(PhoneAlbumsRoute, TabItem(Strings.str(R.string.albums), Icons.Outlined.PhotoLibrary, Icons.Outlined.PhotoLibrary)),
 )

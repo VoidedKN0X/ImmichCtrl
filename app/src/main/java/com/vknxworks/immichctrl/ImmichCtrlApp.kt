@@ -23,6 +23,17 @@ class ImmichCtrlApp : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         Strings.init(this)
         container = AppContainer(this)
+        language = resources.configuration.locales[0]
+    }
+
+    private var language: java.util.Locale? = null
+
+    /** Android renames nothing by itself: when the phone's language changes, name the notification channels again. */
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val now = newConfig.locales[0]
+        if (language != null && language != now && ::container.isInitialized) container.languageChanged()
+        language = now
     }
 
     /** Thumbnails and previews come through the app's HTTP client, which adds the account's credentials. */

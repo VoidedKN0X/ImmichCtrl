@@ -320,6 +320,9 @@ class AppContainer(val context: Context) {
     val me: String
         get() = sessions.active.value?.account?.userId.orEmpty()
 
+    /** The phone's language changed: give the notification channels their names in the new language. */
+    fun languageChanged() = createChannels()
+
     private fun createChannels() {
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(

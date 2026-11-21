@@ -1063,4 +1063,5 @@
     <string name="settings_file_album_sort">Sort albums by</string>
     <string name="settings_file_album_grid">Albums as a grid</string>
     <string name="settings_file_excluded_albums">Albums left out of backup</string>
+    <string name="seconds_short">%1$d s</string>
 </resources>

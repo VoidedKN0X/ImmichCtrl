@@ -145,7 +145,7 @@ import androidx.compose.ui.res.stringResource
 import com.vknxworks.immichctrl.Strings
 import com.vknxworks.immichctrl.R
 
-private val titleDate = DateTimeFormatter.ofPattern("EEE d MMM yyyy")
+private val titleDate = com.vknxworks.immichctrl.ui.components.LocalFormat("EEE d MMM yyyy")
 private val titleTime = DateTimeFormatter.ofPattern("HH:mm")
 
 private enum class Overlay { NONE, TEXT, FACES }
@@ -308,7 +308,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                 Column(Modifier.weight(1f)) {
                     if (current != null) {
                         val dt = current.localDateTime
-                        Text(dt.format(titleDate), style = MaterialTheme.typography.titleMedium, color = Color.White)
+                        Text(dt.format(titleDate.get()), style = MaterialTheme.typography.titleMedium, color = Color.White)
                         Text(
                             listOfNotNull(dt.format(titleTime), current.city, current.country, if (current.isLocalOnly) Strings.str(R.string.only_on_this_phone) else null).joinToString(Strings.str(R.string.list_separator_wide)),
                             style = com.vknxworks.immichctrl.ui.theme.CtrlType.Mono,
@@ -449,7 +449,7 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
             shape = CtrlShapes.Sheet,
         ) {
             Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 8.dp)) {
-                SheetTitle(a.localDateTime.format(titleDate))
+                SheetTitle(a.localDateTime.format(titleDate.get()))
                 fun act(block: () -> Unit) { block(); more = false }
                 ActionItem(Icons.Outlined.LibraryAdd, stringResource(R.string.add_to_album)) { more = false; pickAlbum = true }
                 ActionItem(Icons.Outlined.Download, stringResource(R.string.save_to_phone)) { act { c.download(listOf(a)) } }

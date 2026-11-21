@@ -265,10 +265,10 @@ fun formatBytes(bytes: Long): String {
 /** "1 item", "2,345 photos": a count with its noun, from the plurals in strings.xml. */
 fun countLabel(n: Int, @PluralsRes noun: Int): String = Strings.plural(noun, n, "%,d".format(n))
 
-private val dayFmt = DateTimeFormatter.ofPattern("EEE d MMM")
-private val dayYearFmt = DateTimeFormatter.ofPattern("EEE d MMM yyyy")
-private val longFmt = DateTimeFormatter.ofPattern("EEEE d MMMM yyyy")
-private val shortDateFmt = DateTimeFormatter.ofPattern("d MMM yyyy")
+private val dayFmt = LocalFormat("EEE d MMM")
+private val dayYearFmt = LocalFormat("EEE d MMM yyyy")
+private val longFmt = LocalFormat("EEEE d MMMM yyyy")
+private val shortDateFmt = LocalFormat("d MMM yyyy")
 
 /** "Today", "Yesterday", "Sat 12 Oct", or with the year when it isn't this year. */
 fun dayLabel(date: LocalDate): String {
@@ -276,17 +276,17 @@ fun dayLabel(date: LocalDate): String {
     return when {
         date == today -> Strings.str(R.string.today)
         date == today.minusDays(1) -> Strings.str(R.string.yesterday)
-        date.year == today.year -> date.format(dayFmt)
-        else -> date.format(dayYearFmt)
+        date.year == today.year -> date.format(dayFmt.get())
+        else -> date.format(dayYearFmt.get())
     }
 }
 
-fun longDate(date: LocalDate): String = date.format(longFmt)
+fun longDate(date: LocalDate): String = date.format(longFmt.get())
 
 fun shortDate(iso: String?): String? = iso?.let { s ->
     runCatching { Instant.parse(s).atZone(ZoneId.systemDefault()).toLocalDate() }.getOrNull()
         ?: runCatching { LocalDate.parse(s.take(10)) }.getOrNull()
-}?.format(shortDateFmt)
+}?.format(shortDateFmt.get())
 
 /** "3 years ago" for memories. */
 fun yearsAgo(year: Int?): String {

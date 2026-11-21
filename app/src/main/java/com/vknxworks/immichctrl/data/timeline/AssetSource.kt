@@ -308,14 +308,14 @@ class TimelineSource(
     }
 
     companion object {
-        private val monthFmt = DateTimeFormatter.ofPattern("MMMM yyyy")
+        private val monthFmt = com.vknxworks.immichctrl.ui.components.LocalFormat("MMMM yyyy")
 
         fun monthOf(timeBucket: String): YearMonth? = runCatching { YearMonth.parse(timeBucket.take(7)) }.getOrNull()
-        private val thisYearFmt = DateTimeFormatter.ofPattern("MMMM")
+        private val thisYearFmt = com.vknxworks.immichctrl.ui.components.LocalFormat("MMMM")
 
         fun monthLabel(timeBucket: String): String {
             val date = runCatching { LocalDate.parse(timeBucket.take(10)) }.getOrNull() ?: return timeBucket
-            return if (date.year == LocalDate.now().year) date.format(thisYearFmt) else date.format(monthFmt)
+            return if (date.year == LocalDate.now().year) date.format(thisYearFmt.get()) else date.format(monthFmt.get())
         }
     }
 }
