@@ -645,7 +645,7 @@
     <string name="waiting">%1$s wartend</string>
     <string name="delayed">%1$s verzögert</string>
     <string name="failed">%1$s fehlgeschlagen</string>
-    <string name="idle">Untätig</string>
+    <string name="idle">Leerlauf</string>
     <string name="server">Server</string>
     <string name="immich_2">Immich %1$s</string>
     <string name="licensed">Lizenziert</string>
