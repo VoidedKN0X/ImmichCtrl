@@ -116,6 +116,7 @@ import com.vknxworks.immichctrl.ui.components.glass
 import com.vknxworks.immichctrl.ui.components.runTask
 import com.vknxworks.immichctrl.ui.components.toast
 import com.vknxworks.immichctrl.ui.nav.EditorRoute
+import androidx.compose.material.icons.outlined.ContentCut
 import com.vknxworks.immichctrl.ui.nav.LocalNavigator
 import com.vknxworks.immichctrl.ui.nav.SlideshowRoute
 import com.vknxworks.immichctrl.ui.photos.AlbumPickerSheet
@@ -387,6 +388,9 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                             a.isLocalOnly -> {
                                 if (c.sessions.active.value != null) IslandAction(Icons.Outlined.CloudUpload, stringResource(R.string.upload)) { c.upload(listOf(a)) }
                                 IslandAction(Icons.Outlined.Share, stringResource(R.string.share)) { shareFlow.start(c, listOf(a)) }
+                                if (a.isVideo && a.localUri != null) IslandAction(Icons.Outlined.ContentCut, stringResource(R.string.trim_title)) {
+                                    nav.navigate(com.vknxworks.immichctrl.ui.nav.TrimRoute(localUri = a.localUri, name = a.fileName, takenMs = a.takenAtMs))
+                                }
                                 IslandAction(Icons.Outlined.Info, stringResource(R.string.details)) { info = true }
                                 IslandAction(Icons.Outlined.Delete, stringResource(R.string.lock_delete)) { confirmDelete = false }
                             }
@@ -408,6 +412,9 @@ fun ViewerScreen(sourceKey: String, startIndex: Int, startId: String) {
                                         c.setFavorite(listOf(a), !a.isFavorite)
                                     }
                                     if (a.isImage) IslandAction(Icons.Outlined.Crop, stringResource(R.string.edit)) { nav.navigate(EditorRoute(a.id)) }
+                                    else IslandAction(Icons.Outlined.ContentCut, stringResource(R.string.trim_title)) {
+                                        nav.navigate(com.vknxworks.immichctrl.ui.nav.TrimRoute(assetId = a.id, localUri = a.localUri, name = a.fileName, takenMs = a.takenAtMs))
+                                    }
                                 }
                                 IslandAction(Icons.Outlined.Info, stringResource(R.string.details)) { info = true }
                                 if (mine) IslandAction(Icons.Outlined.Delete, stringResource(R.string.lock_delete)) {

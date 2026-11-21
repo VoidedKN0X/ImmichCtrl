@@ -178,7 +178,8 @@ private fun androidx.navigation.NavDestination.blockedInReadOnly(): Boolean =
         hasRoute(AddAccountRoute::class) || hasRoute(AdminRoute::class) || hasRoute(BackupRoute::class) ||
         hasRoute(NetworkingRoute::class) || hasRoute(LogsRoute::class) || hasRoute(LockedRoute::class) ||
         hasRoute(SharedLinksRoute::class) || hasRoute(FreeUpSpaceRoute::class) || hasRoute(PickAssetsRoute::class) ||
-        hasRoute(EditorRoute::class) || hasRoute(DuplicatesRoute::class)
+        hasRoute(EditorRoute::class) || hasRoute(DuplicatesRoute::class) || hasRoute(TrimRoute::class) ||
+        hasRoute(SessionsRoute::class) || hasRoute(ApiKeysRoute::class) || hasRoute(NotificationsRoute::class)
 
 private data class TopDest(val route: Any, val item: TabItem)
 
@@ -398,6 +399,10 @@ private fun PhoneNavHost(navController: NavHostController) {
             DarkScreen { ViewerScreen(r.source, r.index, r.assetId) }
         }
         composable<ExternalViewRoute> { DarkScreen { ExternalViewScreen() } }
+        composable<TrimRoute> {
+            val r = it.toRoute<TrimRoute>()
+            DarkScreen { com.vknxworks.immichctrl.ui.viewer.TrimScreen(r.assetId, r.localUri, r.name, r.takenMs) }
+        }
         composable<SettingsRoute> { SettingsScreen() }
         composable<AddAccountRoute> {
             SignInScreen(onDone = {}, onCancel = { navController.popBackStack() })
@@ -452,6 +457,10 @@ private fun AppNavHost(navController: NavHostController) {
         composable<FreeUpSpaceRoute> { FreeUpSpaceScreen() }
         composable<ExternalViewRoute> { DarkScreen { ExternalViewScreen() } }
         composable<EditorRoute> { DarkScreen { EditorScreen(it.toRoute<EditorRoute>().assetId) } }
+        composable<TrimRoute> {
+            val r = it.toRoute<TrimRoute>()
+            DarkScreen { com.vknxworks.immichctrl.ui.viewer.TrimScreen(r.assetId, r.localUri, r.name, r.takenMs) }
+        }
         composable<SlideshowRoute> {
             val r = it.toRoute<SlideshowRoute>()
             DarkScreen { SlideshowScreen(r.source, r.index) }

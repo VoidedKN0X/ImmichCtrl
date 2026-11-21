@@ -50,6 +50,8 @@ import kotlinx.serialization.Serializable
 
 // Viewer extras
 @Serializable data class EditorRoute(val assetId: String)
+/** Cut a piece out of a video: [assetId] on the server (empty when it's only on the phone), [localUri] a copy on the phone. */
+@Serializable data class TrimRoute(val assetId: String = "", val localUri: String? = null, val name: String? = null, val takenMs: Long = 0L)
 @Serializable data class SlideshowRoute(val source: String, val index: Int)
 
 // Library extras

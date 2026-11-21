@@ -98,7 +98,7 @@ object Exporter {
     /** Removes share and upload copies left behind (e.g. the app was closed mid-way) after a day. */
     fun cleanUp(context: Context) {
         val cutoff = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
-        listOf("shared", "incoming").forEach { sub ->
+        listOf("shared", "incoming", "trim").forEach { sub ->
             File(context.cacheDir, sub).listFiles()?.forEach { f ->
                 if (f.lastModified() < cutoff) f.deleteRecursively()
             }

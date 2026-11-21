@@ -23,6 +23,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 **Viewer**
 - Zoom, videos, live photos, swipe down to close; the actions sit in a floating glass island
 - **Editing**: crop, rotate and mirror, saved on the server and undoable
+- **Trim videos**: cut out the piece you want without losing quality and save it as a new video in Immich or on the phone; the original stays as it is
 - **Copy text from photos** (OCR) and see who's in a photo; tap a face to change who it is
 - **Stacks**: browse, choose the cover photo, unstack
 - **Change the date, time and location** of one photo or many
