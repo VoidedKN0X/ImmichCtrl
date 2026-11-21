@@ -260,6 +260,7 @@ fun SettingsScreen() {
                     Icons.Outlined.SdStorage,
                 ) { v -> update { it.copy(cacheMb = v) } }
             }
+            SettingsFileGroup()
             Spacer(Modifier.height(24.dp))
         }
     }

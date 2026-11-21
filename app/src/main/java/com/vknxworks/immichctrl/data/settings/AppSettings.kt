@@ -24,13 +24,26 @@ enum class ThemeChoice(@androidx.annotation.StringRes val label: Int) {
     LIGHT(com.vknxworks.immichctrl.R.string.theme_light), BLACK(com.vknxworks.immichctrl.R.string.theme_black),
 }
 
-enum class GroupBy(val label: String) { DAY(Strings.str(R.string.day)), MONTH(Strings.str(R.string.month)) }
+// The labels are looked up when they're shown (not once at start), so they follow the phone's language.
+
+enum class GroupBy(@androidx.annotation.StringRes val labelRes: Int) {
+    DAY(R.string.day), MONTH(R.string.month);
+
+    val label: String get() = Strings.str(labelRes)
+}
 
 /** Size of photos sent to other apps. */
-enum class ShareSize(val label: String) { ASK(Strings.str(R.string.ask_each_time)), ORIGINAL(Strings.str(R.string.original)), LARGE(Strings.str(R.string.large_smaller_file)) }
+enum class ShareSize(@androidx.annotation.StringRes val labelRes: Int) {
+    ASK(R.string.ask_each_time), ORIGINAL(R.string.original), LARGE(R.string.large_smaller_file);
 
-enum class AlbumSort(val label: String) {
-    ACTIVITY(Strings.str(R.string.recent_activity)), NAME(Strings.str(R.string.name)), CREATED(Strings.str(R.string.date_created)), NEWEST(Strings.str(R.string.newest_photo)), OLDEST(Strings.str(R.string.oldest_photo)), COUNT(Strings.str(R.string.most_items))
+    val label: String get() = Strings.str(labelRes)
+}
+
+enum class AlbumSort(@androidx.annotation.StringRes val labelRes: Int) {
+    ACTIVITY(R.string.recent_activity), NAME(R.string.name), CREATED(R.string.date_created),
+    NEWEST(R.string.newest_photo), OLDEST(R.string.oldest_photo), COUNT(R.string.most_items);
+
+    val label: String get() = Strings.str(labelRes)
 }
 
 data class AppSettings(

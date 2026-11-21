@@ -1032,4 +1032,35 @@
     <string name="trim_unsupported">This video\'s format can\'t be trimmed on the phone</string>
     <string name="trim_failed">Couldn\'t trim the video: %1$s</string>
     <string name="trim_no_space">Couldn\'t make room for the trimmed video on the phone</string>
+    <!-- Settings file (back up and restore) -->
+    <string name="settings_file_title">Back up and restore</string>
+    <string name="settings_file_footer">The file holds this app\'s settings only. It never holds your accounts, passwords, tokens, API keys, custom headers or certificates, nor the app lock and its PIN. Restoring never signs you in, never trusts a certificate, never turns automatic backup on and never turns the app lock or a privacy protection off.</string>
+    <string name="settings_file_save">Save settings to a file</string>
+    <string name="settings_file_save_subtitle">Pick where to keep it</string>
+    <string name="settings_file_restore">Restore settings from a file</string>
+    <string name="settings_file_restore_subtitle">Shows what would change before anything does</string>
+    <string name="settings_file_saved">Settings saved to the file</string>
+    <string name="settings_file_save_failed">Couldn\'t save the settings file</string>
+    <string name="settings_file_read_failed">Couldn\'t read the settings file</string>
+    <string name="settings_file_not_valid">That isn\'t an ImmichCtrl settings file</string>
+    <string name="settings_file_too_new">That file is from a newer ImmichCtrl. Update the app first.</string>
+    <string name="settings_file_nothing_to_change">Nothing to change: these settings are already in use</string>
+    <string name="settings_file_restore_title">Restore these settings?</string>
+    <plurals name="settings_file_restore_body">
+        <item quantity="one">The file from %2$s changes %1$d setting:</item>
+        <item quantity="other">The file from %2$s changes %1$d settings:</item>
+    </plurals>
+    <string name="settings_file_from_to">%1$s → %2$s</string>
+    <string name="settings_file_restore_note">Everything else stays as it is, including your accounts, the app lock and whether automatic backup is on.</string>
+    <string name="settings_file_restore_confirm">Restore</string>
+    <string name="settings_file_restored">Settings restored</string>
+    <string name="settings_file_value_on">On</string>
+    <string name="settings_file_value_none">Not set</string>
+    <plurals name="settings_file_value_albums">
+        <item quantity="one">%1$d album</item>
+        <item quantity="other">%1$d albums</item>
+    </plurals>
+    <string name="settings_file_album_sort">Sort albums by</string>
+    <string name="settings_file_album_grid">Albums as a grid</string>
+    <string name="settings_file_excluded_albums">Albums left out of backup</string>
 </resources>
