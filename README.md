@@ -36,7 +36,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **On this device**: your phone's albums, with what's backed up and what isn't
 - Favourites, archive, trash, recently added (by upload date on Immich 3), videos, tags and folders
 - **Locked folder** with PIN or fingerprint; moving a photo there also removes the copy on the phone
-- **People** (including people shared with you), **places** and a **map** with date and favourite filters (maps follow your server's map setting, and you can turn them off)
+- **People** (including people shared with you): name, hide and merge them, one at a time or several at once; **places** and a **map** with date and favourite filters (maps follow your server's map setting, and you can turn them off)
 - **Partner sharing**: people who share with you appear at the top of Library; tap one to see only their photos, kept separate from yours
 - **Shared links** for albums or picked photos, with an expiry date (1 day to 1 year, or never), an optional password, and switches for downloads, uploads (albums) and photo details; copy, share, change or delete them later under Library > Shared links
 

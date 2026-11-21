@@ -2,6 +2,7 @@ package com.vknxworks.immichctrl.data.api
 
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonArray
@@ -208,8 +209,20 @@ suspend fun ImmichClient.personStats(id: String): PersonStatsDto = get("/people/
 suspend fun ImmichClient.updatePerson(id: String, vararg fields: Pair<String, Any?>): PersonDto =
     send("PUT", "/people/$id", obj(*fields))
 
+/** Folds [ids] into [into]: their faces become that person's. */
 suspend fun ImmichClient.mergePeople(into: String, ids: Collection<String>): List<BulkIdResultDto> =
-    send("POST", "/people/$into/merge", obj("ids" to ids.toList()))
+    try {
+        send("POST", "/people/$into/merge", obj("ids" to ids.toList()))
+    } catch (e: ApiException) {
+        // Immich 3.2.1 added POST /people/merge (the first id is the one that stays) and marked the
+        // per-person address above as deprecated; use the new one once the old one is gone.
+        if (e.code != 404) throw e
+        send("POST", "/people/merge", obj("ids" to (listOf(into) + ids)))
+    }
+
+/** Hides or shows several people in one request. */
+suspend fun ImmichClient.setPeopleHidden(ids: Collection<String>, hidden: Boolean): List<BulkIdResultDto> =
+    send("PUT", "/people", obj("people" to ids.map { mapOf("id" to it, "isHidden" to hidden) }))
 
 // ---------- Memories, map, places ----------
 
@@ -444,3 +457,35 @@ suspend fun ImmichClient.markNotifications(ids: Collection<String>, read: Boolea
 
 suspend fun ImmichClient.deleteNotifications(ids: Collection<String>) =
     sendUnit("DELETE", "/notifications", obj("ids" to ids.toList()))
+
+// ---------- Upload one file (outside the backup worker) ----------
+
+/**
+ * Uploads [file] as a new asset, the same request the backup worker sends (POST /assets). [sha1] is the
+ * file's base64 SHA-1; the server answers "duplicate" instead of storing a file it already has.
+ */
+suspend fun ImmichClient.uploadFile(
+    file: java.io.File,
+    name: String,
+    mime: String,
+    createdMs: Long,
+    durationMs: Long,
+    sha1: String,
+): UploadResultDto {
+    val iso = java.time.format.DateTimeFormatter.ISO_INSTANT.format(java.time.Instant.ofEpochMilli(createdMs))
+    val form = okhttp3.MultipartBody.Builder().setType(okhttp3.MultipartBody.FORM)
+    if (serverMajor < 3) {
+        // Immich 2.x still requires these; 3.x dropped them.
+        form.addFormDataPart("deviceAssetId", "immichctrl-$sha1")
+        form.addFormDataPart("deviceId", "immichctrl")
+    }
+    form.addFormDataPart("fileCreatedAt", iso)
+    form.addFormDataPart("fileModifiedAt", iso)
+    form.addFormDataPart("filename", name)
+    form.addFormDataPart("isFavorite", "false")
+    if (durationMs > 0) form.addFormDataPart("duration", formatUploadDuration(durationMs, serverMajor))
+    form.addFormDataPart("assetData", name, file.asRequestBody(mime.toMediaTypeOrNull()))
+    val req = request(url("/assets")).header("x-immich-checksum", sha1).post(form.build()).build()
+    val text = execute(req).use { it.body?.string().orEmpty() }
+    return ApiJson.decodeFromString(UploadResultDto.serializer(), text)
+}

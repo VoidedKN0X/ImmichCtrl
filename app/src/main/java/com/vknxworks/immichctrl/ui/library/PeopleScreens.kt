@@ -3,6 +3,16 @@ package com.vknxworks.immichctrl.ui.library
 import com.vknxworks.immichctrl.ui.theme.CtrlShapes
 import com.vknxworks.immichctrl.data.api.peopleShared
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.pluralStringResource
+import com.vknxworks.immichctrl.data.api.setPeopleHidden
+import com.vknxworks.immichctrl.ui.components.toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -100,13 +110,57 @@ fun PeopleScreen() {
         else runCatching { c.api.peopleShared().associate { p -> p.id to p.sharedBy.orEmpty().map { it.name } } }.getOrDefault(emptyMap())
     }
     val sharers = (sharedBy.state as? Load.Ok)?.value.orEmpty()
+    // Picking several people (long-press, or the tick button) to hide, show or merge them together.
+    var selecting by rememberSaveable { mutableStateOf(false) }
+    val picked = remember { mutableStateListOf<String>() }
+    var mergingPicked by remember { mutableStateOf(false) }
+    fun stopSelecting() {
+        selecting = false
+        picked.clear()
+    }
+    BackHandler(enabled = selecting) { stopSelecting() }
+    val all = (people.state as? Load.Ok)?.value?.people.orEmpty()
+
     Column(Modifier.fillMaxSize()) {
-        ScreenTopBar(stringResource(R.string.people))
+        ScreenTopBar(
+            if (selecting) pluralStringResource(R.plurals.people_selected, picked.size, picked.size) else stringResource(R.string.people),
+            showBack = !selecting,
+        ) {
+            if (selecting) {
+                IconButton(
+                    enabled = picked.isNotEmpty(),
+                    onClick = {
+                        val ids = picked.toList()
+                        val hide = !showHidden
+                        stopSelecting()
+                        c.runTask {
+                            val failed = c.api.setPeopleHidden(ids, hide).count { !it.success }
+                            people.reload(silent = true)
+                            Sources.refreshAll()
+                            c.toast(
+                                if (failed > 0) Strings.plural(R.plurals.people_couldnt_change, failed, failed)
+                                else Strings.plural(if (hide) R.plurals.people_hidden_done else R.plurals.people_shown_done, ids.size, ids.size),
+                            )
+                        }
+                    },
+                ) {
+                    Icon(
+                        if (showHidden) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
+                        stringResource(if (showHidden) R.string.people_show_selected else R.string.people_hide_selected),
+                    )
+                }
+                IconButton(enabled = picked.size >= 2, onClick = { mergingPicked = true }) {
+                    Icon(Icons.AutoMirrored.Outlined.CallMerge, stringResource(R.string.people_merge_selected))
+                }
+                IconButton(onClick = { stopSelecting() }) { Icon(Icons.Outlined.Close, stringResource(R.string.close)) }
+            } else if (all.isNotEmpty() && !c.settings.settings.value.readOnly) {
+                IconButton(onClick = { selecting = true }) { Icon(Icons.Outlined.Checklist, stringResource(R.string.people_select)) }
+            }
+        }
         when (val s = people.state) {
             is Load.Loading -> LoadingView()
             is Load.Err -> ErrorView(s.message) { people.reload() }
             is Load.Ok -> {
-                val all = s.value.people
                 val shown = all.filter { it.isHidden == showHidden }
                     .sortedWith(compareByDescending<PersonDto> { it.isFavorite }.thenBy { it.name.isBlank() }.thenBy { it.name.lowercase() })
                 if (all.isEmpty()) {
@@ -120,19 +174,48 @@ fun PeopleScreen() {
                         modifier = Modifier.navigationBarsPadding(),
                     ) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilterChip(!showHidden, onClick = { showHidden = false }, label = { Text(stringResource(R.string.shown)) })
-                                FilterChip(showHidden, onClick = { showHidden = true }, label = { Text(stringResource(R.string.hidden, s.value.hidden)) })
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    // A selection belongs to the list it was made in.
+                                    FilterChip(!showHidden, onClick = { showHidden = false; picked.clear() }, label = { Text(stringResource(R.string.shown)) })
+                                    FilterChip(showHidden, onClick = { showHidden = true; picked.clear() }, label = { Text(stringResource(R.string.hidden, s.value.hidden)) })
+                                }
+                                if (selecting) {
+                                    Text(
+                                        stringResource(if (showHidden) R.string.people_select_hint_hidden else R.string.people_select_hint),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                         items(shown, key = { it.id }) { p ->
+                            val isPicked = p.id in picked
                             Column(
-                                Modifier.clip(MaterialTheme.shapes.medium).clickable { nav.person(p.id) },
+                                Modifier.clip(MaterialTheme.shapes.medium).combinedClickable(
+                                    onClick = {
+                                        if (selecting) { if (isPicked) picked.remove(p.id) else picked.add(p.id) } else nav.person(p.id)
+                                    },
+                                    onLongClick = {
+                                        if (!c.settings.settings.value.readOnly) {
+                                            selecting = true
+                                            if (!isPicked) picked.add(p.id)
+                                        }
+                                    },
+                                ),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                             ) {
                                 Box {
-                                    PersonFace(p.id, p.updatedAt, Modifier.fillMaxWidth().aspectRatio(1f))
+                                    PersonFace(p.id, p.updatedAt, Modifier.fillMaxWidth().aspectRatio(1f).alpha(if (selecting && !isPicked) 0.55f else 1f))
                                     if (p.isFavorite) Icon(Icons.Filled.Favorite, stringResource(R.string.favourite), Modifier.align(Alignment.BottomEnd).size(18.dp), tint = MaterialTheme.colorScheme.error)
+                                    if (isPicked) {
+                                        Icon(
+                                            Icons.Filled.CheckCircle,
+                                            stringResource(R.string.selected),
+                                            Modifier.align(Alignment.TopEnd).size(22.dp),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
                                 }
                                 Text(
                                     p.name.ifBlank { Strings.str(R.string.add_a_name) },
@@ -158,6 +241,56 @@ fun PeopleScreen() {
                     }
                 }
             }
+        }
+    }
+
+    if (mergingPicked) {
+        val chosen = all.filter { it.id in picked }
+        KeepWhichSheet(chosen, onDismiss = { mergingPicked = false }) { keep ->
+            mergingPicked = false
+            val others = chosen.filter { it.id != keep.id }.map { it.id }
+            stopSelecting()
+            c.runTask {
+                val failed = c.api.mergePeople(keep.id, others).count { !it.success }
+                people.reload(silent = true)
+                Sources.refreshAll()
+                c.toast(if (failed > 0) Strings.plural(R.plurals.people_couldnt_change, failed, failed) else Strings.str(R.string.merged))
+            }
+        }
+    }
+}
+
+/** Several people picked to become one: choose whose name, birthday and cover face stay. */
+@Composable
+private fun KeepWhichSheet(people: List<PersonDto>, onDismiss: () -> Unit, onPick: (PersonDto) -> Unit) {
+    var confirm by remember { mutableStateOf<PersonDto?>(null) }
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainer, shape = CtrlShapes.Sheet) {
+        SheetTitle(pluralStringResource(R.plurals.people_merge_title, people.size, people.size), stringResource(R.string.people_merge_keep_hint))
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(80.dp),
+            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 32.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.navigationBarsPadding(),
+        ) {
+            items(people, key = { it.id }) { p ->
+                Column(Modifier.clickable { confirm = p }, horizontalAlignment = Alignment.CenterHorizontally) {
+                    PersonFace(p.id, p.updatedAt, Modifier.size(64.dp))
+                    Text(p.name.ifBlank { Strings.str(R.string.unnamed) }, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+    confirm?.let { keep ->
+        ConfirmDialog(
+            pluralStringResource(R.plurals.people_merge_title, people.size, people.size),
+            stringResource(R.string.people_merge_confirm_body, keep.name.ifBlank { Strings.str(R.string.this_person) }),
+            stringResource(R.string.merge_2),
+            destructive = false,
+            onDismiss = { confirm = null },
+        ) {
+            confirm = null
+            onPick(keep)
         }
     }
 }

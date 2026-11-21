@@ -969,4 +969,67 @@
     <string name="notifications_empty_body">Messages from your server show up here: failed backups, album invitations and updates, and notes from the administrator.</string>
     <string name="notifications_unsupported_title">Not on this server</string>
     <string name="notifications_unsupported_body">This Immich version has no notification inbox. Update the server to use it.</string>
+    <!-- People: pick several -->
+    <string name="people_select">Select people</string>
+    <plurals name="people_selected">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="people_hide_selected">Hide the selected people</string>
+    <string name="people_show_selected">Show the selected people again</string>
+    <string name="people_merge_selected">Merge the selected people</string>
+    <string name="people_select_hint">Tap the people to hide, or two or more who are the same person to merge.</string>
+    <string name="people_select_hint_hidden">Tap the people to show again, or two or more who are the same person to merge.</string>
+    <plurals name="people_hidden_done">
+        <item quantity="one">%1$d person hidden</item>
+        <item quantity="other">%1$d people hidden</item>
+    </plurals>
+    <plurals name="people_shown_done">
+        <item quantity="one">%1$d person shown again</item>
+        <item quantity="other">%1$d people shown again</item>
+    </plurals>
+    <plurals name="people_couldnt_change">
+        <item quantity="one">%1$d person couldn\'t be changed</item>
+        <item quantity="other">%1$d people couldn\'t be changed</item>
+    </plurals>
+    <plurals name="people_merge_title">
+        <item quantity="one">Merge %1$d person</item>
+        <item quantity="other">Merge %1$d people into one</item>
+    </plurals>
+    <string name="people_merge_keep_hint">Tap the one to keep. The others\' photos move to that person.</string>
+    <string name="people_merge_confirm_body">All the selected people become %1$s, who keeps their name, birthday and cover face. This can\'t be undone.</string>
+    <!-- Backup rules -->
+    <string name="backup_rules">Rules</string>
+    <string name="backup_rules_footer">The rules apply to automatic backup and to Back up now. Photos you pick and upload yourself, and files shared to ImmichCtrl, are always sent. More uploads at once is faster on a quick connection and uses more battery and memory.</string>
+    <string name="backup_videos_wifi_only">Videos only on Wi-Fi</string>
+    <string name="backup_videos_wifi_only_subtitle">Photos may use mobile data; videos wait for a connection that isn\'t metered</string>
+    <string name="backup_skip_large_videos">Skip large videos</string>
+    <string name="backup_no_size_limit">No limit</string>
+    <string name="backup_larger_than_mb">Larger than %1$d MB</string>
+    <string name="backup_larger_than_gb">Larger than %1$d GB</string>
+    <string name="backup_since">Only what was taken since</string>
+    <string name="backup_since_everything">Everything, however old</string>
+    <string name="backup_since_value">From %1$s</string>
+    <string name="backup_since_hint">YYYY-MM-DD (leave empty for everything)</string>
+    <string name="backup_parallel">Uploads at the same time</string>
+    <string name="backup_parallel_one">1 (one after another)</string>
+    <string name="backup_parallel_n">%1$d at once</string>
+    <!-- Video trim -->
+    <string name="trim_title">Trim</string>
+    <string name="trim_loading">Loading the video…</string>
+    <string name="trim_range">%1$s – %2$s · %3$s</string>
+    <string name="trim_note">The piece is copied without re-encoding, so nothing is lost. It starts on the last key frame before the start you pick, which can be a second or two earlier. The original stays as it is.</string>
+    <string name="trim_save_immich">Save as a new video in Immich</string>
+    <string name="trim_save_phone">Save to this phone</string>
+    <string name="trim_preparing">Getting ready…</string>
+    <string name="trim_downloading">Downloading the original…</string>
+    <string name="trim_cutting">Cutting…</string>
+    <string name="trim_uploading">Uploading to Immich…</string>
+    <string name="trim_saving">Saving to this phone…</string>
+    <string name="trim_saved_immich">Trimmed video saved in Immich</string>
+    <string name="trim_already_there">Immich already has this exact video</string>
+    <string name="trim_saved_phone">Trimmed video saved in Movies/ImmichCtrl</string>
+    <string name="trim_unsupported">This video\'s format can\'t be trimmed on the phone</string>
+    <string name="trim_failed">Couldn\'t trim the video: %1$s</string>
+    <string name="trim_no_space">Couldn\'t make room for the trimmed video on the phone</string>
 </resources>
