@@ -62,6 +62,7 @@ import com.vknxworks.immichctrl.data.settings.AppSettings
 import com.vknxworks.immichctrl.ui.components.ConfirmDialog
 import com.vknxworks.immichctrl.ui.components.Group
 import com.vknxworks.immichctrl.ui.components.GroupRow
+import com.vknxworks.immichctrl.ui.components.GroupChoice
 import com.vknxworks.immichctrl.ui.components.GroupSwitch
 import com.vknxworks.immichctrl.ui.components.MessageView
 import com.vknxworks.immichctrl.ui.components.NotificationsBlockedRow
@@ -91,6 +92,7 @@ fun BackupScreen() {
     val hasAccess = remember(permissionTick) { LocalMedia.hasPermission(context) }
     val partial = remember(permissionTick) { LocalMedia.isPartialAccess(context) }
     var confirmReset by remember { mutableStateOf(false) }
+    var pickSince by remember { mutableStateOf(false) }
 
     val (notifyOk, setNotifyOk) = rememberNotificationsAllowed()
     val notify = rememberNotifyPermission { setNotifyOk(it) }
@@ -115,7 +117,7 @@ fun BackupScreen() {
 
     val albums = rememberLoader("local-albums:$permissionTick") { withContext(Dispatchers.IO) { if (hasAccess) LocalMedia.albums(context) else emptyList() } }
     val running = work.firstOrNull { it.state == WorkInfo.State.RUNNING }
-    val counts = rememberLoader("backup-counts:$permissionTick:${settings.backupAlbums.hashCode()}:${settings.backupVideos}:${settings.backupEverything}") { c.backup.counts() }
+    val counts = rememberLoader("backup-counts:$permissionTick:${settings.backupAlbums.hashCode()}:${settings.backupVideos}:${settings.backupEverything}:${settings.backupMaxVideoMb}:${settings.backupSince}") { c.backup.counts() }
     val nav = LocalNavigator.current
     // Refresh the counts when a run finishes.
     LaunchedEffect(running != null) { if (running == null) counts.reload(silent = true) }
@@ -238,6 +240,44 @@ fun BackupScreen() {
                 GroupSwitch(stringResource(R.string.include_videos), null, settings.backupVideos, Icons.Outlined.Videocam) { on -> update { it.copy(backupVideos = on) } }
             }
 
+            Group(stringResource(R.string.backup_rules), footer = stringResource(R.string.backup_rules_footer)) {
+                if (settings.backupVideos && !settings.backupWifiOnly) {
+                    GroupSwitch(stringResource(R.string.backup_videos_wifi_only), stringResource(R.string.backup_videos_wifi_only_subtitle), settings.backupVideosWifiOnly, Icons.Outlined.Wifi) { on ->
+                        update { it.copy(backupVideosWifiOnly = on) }
+                    }
+                }
+                if (settings.backupVideos) {
+                    GroupChoice(
+                        stringResource(R.string.backup_skip_large_videos),
+                        listOf(0, 100, 250, 500, 1024, 2048, 4096).map { mb ->
+                            mb to when {
+                                mb == 0 -> stringResource(R.string.backup_no_size_limit)
+                                mb < 1024 -> stringResource(R.string.backup_larger_than_mb, mb)
+                                else -> stringResource(R.string.backup_larger_than_gb, mb / 1024)
+                            }
+                        },
+                        settings.backupMaxVideoMb,
+                        Icons.Outlined.Videocam,
+                        fallbackLabel = stringResource(R.string.backup_larger_than_mb, settings.backupMaxVideoMb),
+                    ) { v -> update { it.copy(backupMaxVideoMb = v) } }
+                }
+                GroupRow(
+                    stringResource(R.string.backup_since),
+                    settings.backupSince?.let { stringResource(R.string.backup_since_value, com.vknxworks.immichctrl.ui.components.shortDate(it) ?: it) } ?: stringResource(R.string.backup_since_everything),
+                    icon = Icons.Outlined.Refresh,
+                    showChevron = true,
+                    onClick = { pickSince = true },
+                )
+                GroupChoice(
+                    stringResource(R.string.backup_parallel),
+                    (1..com.vknxworks.immichctrl.data.backup.BackupRules.MAX_PARALLEL).map { n ->
+                        n to if (n == 1) stringResource(R.string.backup_parallel_one) else stringResource(R.string.backup_parallel_n, n)
+                    },
+                    settings.backupParallel,
+                    Icons.Outlined.CloudSync,
+                ) { v -> update { it.copy(backupParallel = v) } }
+            }
+
             Group(stringResource(R.string.albums), footer = stringResource(R.string.album_sync_puts_backed_up_photos)) {
                 GroupSwitch(stringResource(R.string.sync_albums), stringResource(R.string.mirror_phone_albums_to_immich_albums), settings.albumSync, Icons.Outlined.PhotoAlbum) { on ->
                     update { it.copy(albumSync = on) }
@@ -297,6 +337,24 @@ fun BackupScreen() {
         }
     }
 
+    if (pickSince) {
+        com.vknxworks.immichctrl.ui.components.TextInputDialog(
+            stringResource(R.string.backup_since),
+            stringResource(R.string.backup_since_hint),
+            stringResource(R.string.save),
+            initial = settings.backupSince.orEmpty(),
+            allowEmpty = true,
+            onDismiss = { pickSince = false },
+        ) { text ->
+            pickSince = false
+            val date = text.trim()
+            if (date.isNotEmpty() && com.vknxworks.immichctrl.data.backup.BackupRules.sinceMs(date) == null) {
+                android.widget.Toast.makeText(context, Strings.str(R.string.use_the_format_yyyy_mm_dd_e_g_1990), android.widget.Toast.LENGTH_SHORT).show()
+            } else {
+                update { it.copy(backupSince = date.ifEmpty { null }) }
+            }
+        }
+    }
     if (confirmReset) {
         ConfirmDialog(
             stringResource(R.string.check_everything_again_2),

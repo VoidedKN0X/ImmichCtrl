@@ -96,6 +96,14 @@ data class AppSettings(
     val backupWifiOnly: Boolean = true,
     val backupChargingOnly: Boolean = false,
     val backupVideos: Boolean = true,
+    /** Uploads that run at the same time (1 to 4). */
+    val backupParallel: Int = 1,
+    /** Videos wait for Wi-Fi even when photos may use mobile data. */
+    val backupVideosWifiOnly: Boolean = false,
+    /** Videos bigger than this many MB stay on the phone; 0 = no limit. */
+    val backupMaxVideoMb: Int = 0,
+    /** Only back up what was taken on or after this day (YYYY-MM-DD); null = everything. */
+    val backupSince: String? = null,
     /** Mirror phone albums to server albums with the same names. */
     val albumSync: Boolean = false,
 )
@@ -142,6 +150,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val wifi = booleanPreferencesKey("backup_wifi_only")
         val charging = booleanPreferencesKey("backup_charging_only")
         val videos = booleanPreferencesKey("backup_videos")
+        val parallel = intPreferencesKey("backup_parallel")
+        val videosWifi = booleanPreferencesKey("backup_videos_wifi_only")
+        val maxVideoMb = intPreferencesKey("backup_max_video_mb")
+        val since = stringPreferencesKey("backup_since")
         val albumSync = booleanPreferencesKey("album_sync")
         /** Left over from the optional stats removed in 0.3.3; deleted on the next save and at start. */
         val legacy = listOf(booleanPreferencesKey("usage_stats"), booleanPreferencesKey("usage_stats_asked"))
@@ -199,6 +211,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         backupWifiOnly = this[K.wifi] ?: true,
         backupChargingOnly = this[K.charging] ?: false,
         backupVideos = this[K.videos] ?: true,
+        backupParallel = (this[K.parallel] ?: 1).coerceIn(1, 4),
+        backupVideosWifiOnly = this[K.videosWifi] ?: false,
+        backupMaxVideoMb = (this[K.maxVideoMb] ?: 0).coerceAtLeast(0),
+        backupSince = this[K.since]?.takeIf { it.isNotBlank() },
         albumSync = this[K.albumSync] ?: false,
     )
 
@@ -247,6 +263,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             p[K.wifi] = s.backupWifiOnly
             p[K.charging] = s.backupChargingOnly
             p[K.videos] = s.backupVideos
+            p[K.parallel] = s.backupParallel.coerceIn(1, 4)
+            p[K.videosWifi] = s.backupVideosWifiOnly
+            p[K.maxVideoMb] = s.backupMaxVideoMb.coerceAtLeast(0)
+            if (s.backupSince.isNullOrBlank()) p.remove(K.since) else p[K.since] = s.backupSince
             p[K.albumSync] = s.albumSync
             K.legacy.forEach { p.remove(it) }
         }

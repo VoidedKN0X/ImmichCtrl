@@ -206,7 +206,9 @@ class BackupManager(
         val s = settings.current()
         val account = sessions.active.value?.account?.key ?: return@withContext BackupCounts(0, 0)
         if (!LocalMedia.hasPermission(context)) return@withContext BackupCounts(0, 0)
+        val rules = BackupRules.of(s)
         val items = LocalMedia.items(context, if (s.backupEverything) null else s.backupAlbums, s.excludedAlbums, s.backupVideos)
+            .filter { rules.wants(it.isVideo, it.size, it.takenMs) }
         val done = db.uploaded(account)
         BackupCounts(items.size, items.count { db.isDone(done, it) })
     }

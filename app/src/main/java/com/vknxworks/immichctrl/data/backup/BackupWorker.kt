@@ -27,6 +27,13 @@ import com.vknxworks.immichctrl.data.api.serverVersion
 import com.vknxworks.immichctrl.data.api.uploadCheck
 import com.vknxworks.immichctrl.data.timeline.Sources
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -105,6 +112,9 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         }
         if (!LocalMedia.hasPermission(applicationContext)) return Result.failure(workDataOf(KEY_ERROR to Strings.str(R.string.photo_access_is_off)))
 
+        // The backup rules (video size, "taken since", videos on Wi-Fi only) don't apply to photos picked by hand.
+        val rules = BackupRules.of(settings)
+        val metered = isMetered()
         val items = withContext(Dispatchers.IO) {
             if (mode == MODE_ITEMS) {
                 // Specific photos picked in the app ("Upload" on phone-only photos).
@@ -115,20 +125,27 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                     if (settings.backupEverything) null else settings.backupAlbums,
                     settings.excludedAlbums,
                     settings.backupVideos,
-                )
+                ).filter { rules.wants(it.isVideo, it.size, it.takenMs) }
             }
         }
         val done = withContext(Dispatchers.IO) { c.backupDb.uploaded(accountKey) }
-        val todo = items.filterNot { c.backupDb.isDone(done, it) }
+        val pending = items.filterNot { c.backupDb.isDone(done, it) }
+        // Videos that have to wait for Wi-Fi stay pending; the next run on Wi-Fi sends them.
+        val todo = if (mode == MODE_ITEMS) pending else pending.filter { rules.allowedNow(it.isVideo, metered) }
+        if (todo.size < pending.size) AppLog.i("Backup", "${pending.size - todo.size} videos wait for Wi-Fi")
         if (todo.isEmpty()) return Result.success(workDataOf(KEY_UPLOADED to 0))
 
         startForeground(0, todo.size, null)
-        AppLog.i("Backup", "Backing up ${todo.size} items")
+        val parallel = settings.backupParallel.coerceIn(1, BackupRules.MAX_PARALLEL)
+        AppLog.i("Backup", "Backing up ${todo.size} items, $parallel at a time")
         val synced = HashMap<String, MutableList<String>>() // phone album name -> server ids, for album sync
         var uploaded = 0
         var skipped = 0
         var failed = 0
-        var processed = 0
+        val processed = AtomicInteger(0)
+        // Set by the first upload that loses the connection, so the ones still waiting don't each time out too.
+        val lost = AtomicBoolean(false)
+        val gate = Semaphore(parallel)
         for (batch in todo.chunked(BATCH)) {
             if (isStopped) break
             val hashes = withContext(Dispatchers.IO) {
@@ -141,46 +158,88 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 return Result.retry()
             }
             val results = check.results.associateBy { it.id }
+            val toUpload = ArrayList<Pair<LocalItem, String>>()
             for (item in batch) {
-                if (isStopped) break
-                processed++
                 val sha = hashes[item]
                 if (sha == null) {
+                    processed.incrementAndGet()
                     failed++
                     continue
                 }
                 val r = results[item.id.toString()]
                 if (r != null && r.action == "reject") {
                     // Already on the server (maybe in the trash); remember it so it isn't checked every run.
+                    processed.incrementAndGet()
                     c.backupDb.markUploaded(accountKey, item, r.assetId)
                     r.assetId?.let { synced.getOrPut(item.bucketName) { ArrayList() } += it }
                     skipped++
                     continue
                 }
-                setProgressAsync(workDataOf(KEY_DONE to processed, KEY_TOTAL to todo.size, KEY_CURRENT to item.name))
-                notifyProgress(processed, todo.size, item.name)
-                try {
-                    val result = upload(client, item.name, item.mime, item.size, item.takenMs, item.modifiedMs, item.isFavorite,
-                        item.durationMs, sha, deviceAssetId = "${item.id}-${item.size}") { LocalMedia.open(applicationContext, item.uri) }
-                    c.backupDb.markUploaded(accountKey, item, result.id)
-                    synced.getOrPut(item.bucketName) { ArrayList() } += result.id
-                    uploaded++
-                } catch (e: ApiException) {
-                    AppLog.e("Backup", "Couldn't upload ${item.name}", e)
-                    failed++
-                } catch (e: IOException) {
-                    // Lost the connection: try again later, keeping what's done.
-                    AppLog.w("Backup", "Connection lost, will retry: ${e.message}")
-                    if (settings.albumSync) syncAlbums(client, accountKey, synced)
-                    finish(uploaded, skipped, failed)
-                    return Result.retry()
+                toUpload += item to sha
+            }
+            // Up to [parallel] uploads at once; each reports how it ended and the results are recorded afterwards.
+            val outcomes: List<Outcome> = coroutineScope {
+                toUpload.map { (item, sha) ->
+                    async {
+                        gate.withPermit {
+                            if (isStopped || lost.get()) {
+                                Outcome.NotTried
+                            } else {
+                                val n = processed.incrementAndGet()
+                                setProgressAsync(workDataOf(KEY_DONE to n, KEY_TOTAL to todo.size, KEY_CURRENT to item.name))
+                                notifyProgress(n, todo.size, item.name)
+                                try {
+                                    val result = upload(client, item.name, item.mime, item.size, item.takenMs, item.modifiedMs, item.isFavorite,
+                                        item.durationMs, sha, deviceAssetId = "${item.id}-${item.size}") { LocalMedia.open(applicationContext, item.uri) }
+                                    Outcome.Done(item, result.id)
+                                } catch (e: ApiException) {
+                                    AppLog.e("Backup", "Couldn't upload ${item.name}", e)
+                                    Outcome.Failed
+                                } catch (e: IOException) {
+                                    // Lost the connection: try again later, keeping what's done.
+                                    AppLog.w("Backup", "Connection lost, will retry: ${e.message}")
+                                    lost.set(true)
+                                    Outcome.Lost
+                                }
+                            }
+                        }
+                    }
+                }.awaitAll()
+            }
+            for (o in outcomes) {
+                when (o) {
+                    is Outcome.Done -> {
+                        c.backupDb.markUploaded(accountKey, o.item, o.id)
+                        synced.getOrPut(o.item.bucketName) { ArrayList() } += o.id
+                        uploaded++
+                    }
+                    Outcome.Failed -> failed++
+                    Outcome.Lost, Outcome.NotTried -> Unit
                 }
+            }
+            if (lost.get()) {
+                if (settings.albumSync) syncAlbums(client, accountKey, synced)
+                finish(uploaded, skipped, failed)
+                return Result.retry()
             }
         }
         if (settings.albumSync) syncAlbums(client, accountKey, synced)
         finish(uploaded, skipped, failed)
         return Result.success(workDataOf(KEY_UPLOADED to uploaded, KEY_FAILED to failed))
     }
+
+    /** How one upload ended. */
+    private sealed interface Outcome {
+        data class Done(val item: LocalItem, val id: String) : Outcome
+        data object Failed : Outcome
+        data object Lost : Outcome
+        data object NotTried : Outcome
+    }
+
+    /** True on mobile data and other connections Android counts as metered. */
+    private fun isMetered(): Boolean = runCatching {
+        applicationContext.getSystemService(android.net.ConnectivityManager::class.java)?.isActiveNetworkMetered == true
+    }.getOrDefault(false)
 
     // ---------------- Album sync ----------------
 

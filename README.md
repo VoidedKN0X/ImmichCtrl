@@ -46,6 +46,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 
 **Backup**
 - **Automatic backup** of the albums you choose, or everything on the phone, with Wi-Fi-only and charging-only options and no duplicate uploads
+- **Backup rules**: 1 to 4 uploads at the same time, videos only on Wi-Fi, skip videos over a size you choose, and only back up what was taken since a date
 - **Album sync**: phone albums become matching Immich albums
 - **Free up space**: remove photos from the phone once they're safely on the server (they go to the phone's trash first)
 - Picks up where it left off after an interruption, and warns you if battery saving could stop it
