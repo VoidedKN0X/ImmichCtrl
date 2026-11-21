@@ -26,6 +26,9 @@ object VideoTrimmer {
         val lengthUs: Long get() = (endUs - startUs).coerceAtLeast(0L)
     }
 
+    /** No single frame of a phone or camera video comes near this; anything bigger isn't a video we can copy. */
+    private const val MAX_SAMPLE_BYTES = 256L * 1024 * 1024
+
     /** Shortest piece the screen lets you choose. */
     const val MIN_LENGTH_MS = 1_000L
 
@@ -122,14 +125,13 @@ object VideoTrimmer {
                     if (!extractor.advance()) break
                     continue
                 }
-                val size = try {
-                    extractor.readSampleData(buffer, 0)
-                } catch (e: IllegalArgumentException) {
-                    // A sample bigger than the track said it could be: take a bigger buffer and read it again.
-                    if (buffer.capacity() >= (64 shl 20)) throw IOException("sample too large")
-                    buffer = ByteBuffer.allocate(buffer.capacity() * 2)
-                    continue
+                // Make sure the sample fits before reading it: a buffer that is too small would cut the video short.
+                val need = extractor.sampleSize
+                if (need > buffer.capacity()) {
+                    if (need > MAX_SAMPLE_BYTES) throw IOException("sample too large")
+                    buffer = ByteBuffer.allocate(need.toInt())
                 }
+                val size = extractor.readSampleData(buffer, 0)
                 if (size < 0) break
                 info.set(
                     0,

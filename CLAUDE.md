@@ -36,3 +36,13 @@ Every library and plugin download is checked against `gradle/verification-metada
 - Never give the `build` job a secret, and never run Gradle or check out the repo in `sign`. New build checks (tests, lint, APK checks) go in `build`.
 - `EXPECTED_CERT_SHA256` in `build.yml` must match the fingerprint in `SECURITY.md` and `README.md`; the build fails if it doesn't.
 - No Gradle cache in any workflow (`cache-disabled: true`): a cache saved by a failed run used to break every later build.
+
+## Language
+
+- The app follows the phone's language: English (`res/values/strings.xml`) and Dutch (`res/values-nl/strings.xml`, Belgian Dutch, informal "je"). No in-app language picker.
+- Every user-visible text comes from resources, and every new string goes in both files with the same placeholders. Technical names, units and the app name stay untranslated.
+- Don't resolve a string once at start (top-level `val`, enum constructor, companion object): keep the resource id and look it up when shown (`Strings.str`, `stringResource`), and use `LocalFormat` for date patterns, so the text follows a language change without a restart.
+
+## Settings file
+
+`data/settings/SettingsBackups` is the single table of what Settings → Back up and restore writes and reads. A new preference gets a row there. Never add accounts, anything used to sign in, the app lock, read-only mode, or whether automatic backup is on; protections are `onlyOn` (a file can switch them on, never off). `SettingsBackupTest` covers these rules.
