@@ -584,3 +584,54 @@ data class PersonFullDto(
     val updatedAt: String? = null,
     val sharedBy: List<SharedPersonUserDto>? = null,
 )
+
+// ---------------------------------------------------------------------------------------------
+// Signed-in devices, API keys, notifications
+// ---------------------------------------------------------------------------------------------
+
+/** One signed-in device (GET /sessions). */
+@Serializable
+data class SessionDto(
+    val id: String,
+    val current: Boolean = false,
+    val deviceType: String = "",
+    val deviceOS: String = "",
+    val appVersion: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val expiresAt: String? = null,
+)
+
+@Serializable
+data class ApiKeyDto(
+    val id: String,
+    val name: String = "",
+    val permissions: List<String> = emptyList(),
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+)
+
+/** A new API key. [secret] is only ever sent in this answer. */
+@Serializable
+data class ApiKeyCreatedDto(val secret: String = "", val id: String? = null, val name: String? = null)
+
+/** One entry of the server's notification inbox (GET /notifications). */
+@Serializable
+data class NotificationDto(
+    val id: String,
+    val title: String = "",
+    val description: String? = null,
+    /** success, error, warning, info */
+    val level: String = "info",
+    /** JobFailed, BackupFailed, SystemMessage, AlbumInvite, AlbumUpdate, Custom, ... */
+    val type: String = "",
+    val createdAt: String? = null,
+    val readAt: String? = null,
+    val data: JsonElement? = null,
+) {
+    val unread: Boolean get() = readAt == null
+
+    /** The album an album invitation or update is about, when the server says which. */
+    val albumId: String?
+        get() = ((data as? kotlinx.serialization.json.JsonObject)?.get("albumId") as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+}

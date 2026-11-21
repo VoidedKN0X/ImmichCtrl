@@ -899,4 +899,74 @@
     <string name="sign_in_to_immich">Sign in to an Immich server</string>
     <string name="phone_only_access_body">ImmichCtrl needs access to the photos and videos on this phone to show them. Nothing is uploaded until you sign in to a server and turn on backup.</string>
     <string name="no_photos_on_this_phone">No photos or videos on this phone yet</string>
+    <!-- Signed-in devices -->
+    <string name="signed_in_devices">Signed-in devices</string>
+    <string name="signed_in_devices_subtitle">Where your account is signed in; sign out other devices</string>
+    <string name="session_this_device">This device</string>
+    <string name="session_unknown_device">Unknown device</string>
+    <string name="session_last_active">Last active %1$s</string>
+    <string name="session_app_version">App %1$s</string>
+    <string name="session_signed_in_on">Signed in %1$s</string>
+    <string name="session_expires">Expires %1$s</string>
+    <string name="session_sign_out_device">Sign out this device</string>
+    <string name="session_sign_out_title">Sign out %1$s?</string>
+    <string name="session_sign_out_body">That device has to sign in again before it can use your account.</string>
+    <string name="session_sign_out_others">Sign out all other devices</string>
+    <string name="session_sign_out_others_title">Sign out all other devices?</string>
+    <string name="session_sign_out_others_body">Every device except this one is signed out and has to sign in again. API keys keep working.</string>
+    <string name="session_sign_out_all">Sign out all devices</string>
+    <string name="session_sign_out_all_title">Sign out all devices?</string>
+    <string name="session_sign_out_all_body">Every device in this list is signed out and has to sign in again. ImmichCtrl stays signed in here because it uses an API key.</string>
+    <string name="session_signed_out">Signed out</string>
+    <string name="sessions_others_signed_out">Devices signed out</string>
+    <string name="sessions_none">No devices are signed in</string>
+    <string name="sessions_footer">Devices signed in to your Immich account with a password or OAuth. Apps that use an API key are under API keys.</string>
+    <string name="sessions_footer_api_key">Devices signed in to your Immich account with a password or OAuth. ImmichCtrl signs in with an API key here, so it isn\'t in this list.</string>
+    <!-- API keys -->
+    <string name="api_keys">API keys</string>
+    <string name="api_keys_subtitle">Keys that other apps and scripts use to reach your account</string>
+    <string name="api_keys_empty_title">No API keys</string>
+    <string name="api_keys_empty_body">An API key lets another app or a script use your Immich account without your password.</string>
+    <string name="api_keys_footer">Tap a key to rename it, change what it may do, or delete it. Immich never shows a key\'s secret again after it is made.</string>
+    <string name="api_key_new">New API key</string>
+    <string name="api_key_create">Create key</string>
+    <string name="api_key_unnamed">Unnamed key</string>
+    <string name="api_key_in_use">ImmichCtrl signs in with this key</string>
+    <string name="api_key_all_permissions">All permissions</string>
+    <plurals name="api_key_permissions">
+        <item quantity="one">%1$d permission</item>
+        <item quantity="other">%1$d permissions</item>
+    </plurals>
+    <string name="api_key_created_on">Created %1$s</string>
+    <string name="api_key_change_permissions">Change permissions</string>
+    <string name="api_key_delete">Delete key</string>
+    <string name="api_key_delete_title">Delete %1$s?</string>
+    <string name="api_key_delete_body">Anything that signs in with this key stops working straight away. This can\'t be undone.</string>
+    <string name="api_key_delete_own_body">ImmichCtrl signs in with this key. If you delete it, this app can\'t reach your server any more until you sign in again. This can\'t be undone.</string>
+    <string name="api_key_allow_everything">Allow everything</string>
+    <string name="api_key_allow_everything_subtitle">The key can do anything your account can</string>
+    <string name="api_key_pick_one">Tick at least one permission</string>
+    <string name="api_key_secret_title">Your new API key</string>
+    <string name="api_key_secret_body">Copy it now. Immich shows it only this once, and ImmichCtrl doesn\'t keep it.</string>
+    <string name="api_key_copy">Copy key</string>
+    <string name="api_key_created">API key created</string>
+    <string name="api_key_saved">API key saved</string>
+    <string name="api_key_deleted">API key deleted</string>
+    <!-- Notifications inbox -->
+    <string name="notifications_subtitle_none">Nothing new</string>
+    <plurals name="notifications_unread">
+        <item quantity="one">%1$d unread</item>
+        <item quantity="other">%1$d unread</item>
+    </plurals>
+    <string name="notifications_mark_all_read">Mark all as read</string>
+    <string name="notifications_all_read">All marked as read</string>
+    <string name="notifications_delete_all">Delete all</string>
+    <string name="notifications_delete_one">Delete this notification</string>
+    <string name="notifications_delete_all_title">Delete all notifications?</string>
+    <string name="notifications_delete_all_body">They are removed from the server for good, on all your devices.</string>
+    <string name="notifications_deleted">Notifications deleted</string>
+    <string name="notifications_empty_title">No notifications</string>
+    <string name="notifications_empty_body">Messages from your server show up here: failed backups, album invitations and updates, and notes from the administrator.</string>
+    <string name="notifications_unsupported_title">Not on this server</string>
+    <string name="notifications_unsupported_body">This Immich version has no notification inbox. Update the server to use it.</string>
 </resources>

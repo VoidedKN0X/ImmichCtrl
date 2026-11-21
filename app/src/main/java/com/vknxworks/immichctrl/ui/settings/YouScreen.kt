@@ -23,6 +23,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Devices
+import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.ui.draw.clip
@@ -117,6 +120,10 @@ fun YouScreen() {
     val me = rememberLoader("you-me") { c.api.me() }
     val stats = rememberLoader("you-stats") { c.api.assetStats(visibility = "timeline") }
     val storage = rememberLoader("you-storage") { c.api.serverStorage() }
+    // The server's inbox; null on Immich versions without one (the row is left out then).
+    val inbox = rememberLoader("you-notifications") { loadNotifications(c) }
+    // Coming back from the inbox: the unread count may have changed.
+    androidx.compose.runtime.LaunchedEffect(Unit) { inbox.reload(silent = true) }
     var confirmSignOut by remember { mutableStateOf(false) }
     var changingPassword by remember { mutableStateOf(false) }
     var newPassword by remember { mutableStateOf<String?>(null) }
@@ -237,6 +244,25 @@ fun YouScreen() {
                 )
             }
 
+            // Hidden only when the server is known not to have an inbox.
+            if (inbox.state !is com.vknxworks.immichctrl.ui.components.Load.Ok || inbox.value != null) {
+                Group {
+                    val unread = inbox.value?.count { it.unread }
+                    GroupRow(
+                        stringResource(R.string.notifications),
+                        when {
+                            unread == null -> null
+                            unread == 0 -> stringResource(R.string.notifications_subtitle_none)
+                            else -> androidx.compose.ui.res.pluralStringResource(R.plurals.notifications_unread, unread, unread)
+                        },
+                        icon = androidx.compose.material.icons.Icons.Outlined.Notifications,
+                        iconTint = if ((unread ?: 0) > 0) CtrlColors.AccentText else CtrlColors.Muted,
+                        showChevron = true,
+                        onClick = { nav.navigate(com.vknxworks.immichctrl.ui.nav.NotificationsRoute) },
+                    )
+                }
+            }
+
             Group(stringResource(R.string.server)) {
                 GroupRow(
                     acc.serverUrl,
@@ -281,6 +307,8 @@ fun YouScreen() {
             Group {
                 GroupRow(stringResource(R.string.settings), icon = Icons.Outlined.Settings, showChevron = true, onClick = { nav.navigate(SettingsRoute) })
                 GroupRow(stringResource(R.string.servers_and_accounts), icon = Icons.Outlined.SwapHoriz, showChevron = true, onClick = { nav.navigate(AccountsRoute) })
+                GroupRow(stringResource(R.string.signed_in_devices), stringResource(R.string.signed_in_devices_subtitle), icon = androidx.compose.material.icons.Icons.Outlined.Devices, showChevron = true, onClick = { nav.navigate(com.vknxworks.immichctrl.ui.nav.SessionsRoute) })
+                GroupRow(stringResource(R.string.api_keys), stringResource(R.string.api_keys_subtitle), icon = androidx.compose.material.icons.Icons.Outlined.Key, showChevron = true, onClick = { nav.navigate(com.vknxworks.immichctrl.ui.nav.ApiKeysRoute) })
                 if (acc.authType == AuthType.PASSWORD) {
                     GroupRow(stringResource(R.string.change_password), icon = Icons.Outlined.Password, onClick = { changingPassword = true })
                 }

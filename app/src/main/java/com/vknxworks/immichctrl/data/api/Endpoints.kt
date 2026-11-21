@@ -409,3 +409,38 @@ suspend fun ImmichClient.setProfileImage(bytes: ByteArray, mime: String, fileNam
         .build()
     execute(request(url("/users/profile-image")).post(body).build()).close()
 }
+
+// ---------- Signed-in devices ----------
+
+suspend fun ImmichClient.sessions(): List<SessionDto> = get("/sessions")
+suspend fun ImmichClient.deleteSession(id: String) = sendUnit("DELETE", "/sessions/$id")
+
+/** Signs out every device except the one making the request. */
+suspend fun ImmichClient.deleteOtherSessions() = sendUnit("DELETE", "/sessions")
+
+// ---------- API keys ----------
+
+suspend fun ImmichClient.apiKeys(): List<ApiKeyDto> = get("/api-keys")
+
+/** The key this request was signed with; only works when signed in with an API key. */
+suspend fun ImmichClient.currentApiKey(): ApiKeyDto = get("/api-keys/me")
+
+suspend fun ImmichClient.createApiKey(name: String, permissions: Collection<String>): ApiKeyCreatedDto =
+    send("POST", "/api-keys", obj("name" to name, "permissions" to permissions.toList()))
+
+/** Changes the name, the permissions, or both; null leaves a field as it is. */
+suspend fun ImmichClient.updateApiKey(id: String, name: String? = null, permissions: Collection<String>? = null): ApiKeyDto =
+    send("PUT", "/api-keys/$id", obj("name" to name, "permissions" to permissions?.toList()))
+
+suspend fun ImmichClient.deleteApiKey(id: String) = sendUnit("DELETE", "/api-keys/$id")
+
+// ---------- Notifications (the server's inbox) ----------
+
+suspend fun ImmichClient.notifications(): List<NotificationDto> = get("/notifications")
+
+/** Marks as read (or, with [read] false, as unread again). */
+suspend fun ImmichClient.markNotifications(ids: Collection<String>, read: Boolean = true) =
+    sendUnit("PUT", "/notifications", obj("ids" to ids.toList(), "readAt" to if (read) java.time.Instant.now().toString() else Null))
+
+suspend fun ImmichClient.deleteNotifications(ids: Collection<String>) =
+    sendUnit("DELETE", "/notifications", obj("ids" to ids.toList()))

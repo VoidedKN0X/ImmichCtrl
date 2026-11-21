@@ -64,6 +64,9 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Admin alerts** (admin accounts only): failed jobs, low disk space, new Immich releases
 - Admins can see storage use, manage users and run jobs
 - Several servers and accounts; change your profile picture and password
+- **Signed-in devices**: see where your account is signed in and sign out one device or all the others
+- **API keys**: make, rename and delete keys for other apps and scripts, and choose exactly what each may do
+- **Notifications inbox**: your server's messages (failed backups, album invitations, notes from the admin), with mark as read and delete
 - Sign in with email and password, OAuth or an API key; tablet and foldable layout
 - Built-in log viewer, and a warning when the server's Immich version isn't supported
 

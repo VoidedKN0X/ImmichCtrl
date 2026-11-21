@@ -460,6 +460,9 @@ private fun AppNavHost(navController: NavHostController) {
         composable<OfflineAlbumRoute> { OfflineAlbumScreen(it.toRoute<OfflineAlbumRoute>().albumId) }
         composable<NetworkingRoute> { NetworkingScreen() }
         composable<LogsRoute> { LogsScreen() }
+        composable<SessionsRoute> { com.vknxworks.immichctrl.ui.settings.SessionsScreen() }
+        composable<ApiKeysRoute> { com.vknxworks.immichctrl.ui.settings.ApiKeysScreen() }
+        composable<NotificationsRoute> { com.vknxworks.immichctrl.ui.settings.NotificationsScreen() }
         composable<AddAccountRoute> {
             SignInScreen(onDone = { navController.popBackStack(PhotosRoute, false) }, onCancel = { navController.popBackStack() })
         }
