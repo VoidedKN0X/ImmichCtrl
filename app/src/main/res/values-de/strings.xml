@@ -73,7 +73,10 @@
     <string name="lock_prompt_failed">Fingerabdruck-Abfrage konnte nicht angezeigt werden</string>
     <string name="lock_fingerprint_title">ImmichCtrl entsperren</string>
     <string name="lock_fingerprint_subtitle">Bestätige deine Identität, um deine Fotos zu sehen</string>
-    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden, da sie deine Anmeldung verschlüsselt. ImmichCtrl meldet sich von allen Konten ab und entfernt seine Offline-Alben, zwischengespeicherten Fotos und den Sicherungsverlauf von diesem Handy. Deine Fotos auf dem Immich-Server und die Fotos auf diesem Handy bleiben.</string>
+    <string name="lock_forgot_body">Die PIN kann nicht wiederhergestellt werden, da sie deine Anmeldung verschlüsselt. ImmichCtrl meldet sich von allen Konten ab und entfernt seine Offline-Alben, zwischengespeicherten Fotos und den Sicherungsverlauf von diesem Handy. Deine Fotos auf dem Immich-Server und die Fotos auf diesem Handy bleiben. Wenn dein Handy eine Displaysperre hat, bestätigst du zuerst damit.</string>
+    <string name="lock_reset_prompt_title">App-Sperre von ImmichCtrl zurücksetzen</string>
+    <string name="lock_reset_prompt_subtitle">Bestätige mit der Displaysperre deines Handys, dass du es bist</string>
+    <string name="lock_reset_prompt_failed">Displaysperre konnte nicht angezeigt werden</string>
     <string name="lock_forgot_confirm">Abmelden und zurücksetzen</string>
     <string name="lock_choose_intro">Mindestens %1$d Ziffern, anders als die PIN deines Handys. Wenn du sie vergisst, musst du dich abmelden und erneut anmelden.</string>
     <string name="lock_migrate_intro">Die App-Sperre von ImmichCtrl hat jetzt eine eigene PIN, getrennt von der deines Handys. Deine Anmeldung wird damit verschlüsselt, solange die App gesperrt ist.</string>
@@ -123,7 +126,6 @@
     <string name="already_on_the_server">%1$s bereits auf dem Server</string>
     <string name="couldn_t_be_uploaded">%1$s konnten nicht hochgeladen werden</string>
     <string name="backup_finished">Sicherung abgeschlossen</string>
-    <string name="can_t_read">%1$s kann nicht gelesen werden</string>
     <string name="backing_up_of">%1$s von %2$s werden gesichert</string>
     <string name="checking_what_s_new">Suche nach Neuem</string>
     <string name="backing_up_photos">Fotos werden gesichert</string>
@@ -709,7 +711,7 @@
     <string name="a_cloud_badge_on_photos_that_are">Ein Wolkensymbol auf Fotos, die nur auf dem Handy oder auf beiden sind</string>
     <string name="share_size">Größe beim Teilen</string>
     <string name="remove_location_when_sharing">Standort beim Teilen entfernen</string>
-    <string name="takes_the_gps_position_out_of_jpeg">Entfernt die GPS-Position aus JPEG-, PNG- und WebP-Fotos, die du an andere Apps sendest. Videos und HEIC-Fotos behalten ihre.</string>
+    <string name="takes_the_gps_position_out_of_jpeg">Entfernt die GPS-Position aus Fotos, die du an andere Apps sendest. HEIC- und andere Fotos, die sich nicht bearbeiten lassen, werden als JPEG-Kopie ohne Position gesendet. Videos behalten ihre.</string>
     <string name="slideshow">Diashow</string>
     <string name="each_photo_shows_for">Jedes Foto wird angezeigt für</string>
     <string name="seconds">%1$s Sekunden</string>

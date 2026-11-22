@@ -4,9 +4,12 @@ import android.content.ClipData
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import com.vknxworks.immichctrl.data.api.ImmichClient
@@ -152,8 +155,21 @@ object Exporter {
             }.awaitAll()
         }
         if (files.isEmpty() && phoneUris.isEmpty()) return
-        val uris = files.map { FileProvider.getUriForFile(context, "${context.packageName}.files", it.first) } + phoneUris
-        val types = files.map { it.second } + phoneUris.map { context.contentResolver.getType(it) ?: "*/*" }
+        // Photos only on this phone get the same treatment: with "Remove location when sharing" on, a copy without
+        // the position is sent instead of the phone's own file. Videos are sent as they are, as for server videos.
+        val phone: List<Pair<Uri, String>> = withContext(Dispatchers.IO) {
+            phoneUris.mapIndexed { i, uri ->
+                val mime = context.contentResolver.getType(uri) ?: "*/*"
+                if (!stripLocation || !mime.startsWith("image/")) {
+                    uri to mime
+                } else {
+                    val (copy, copyMime) = phoneCopyWithoutLocation(context, dir, i, uri, mime)
+                    FileProvider.getUriForFile(context, "${context.packageName}.files", copy) to copyMime
+                }
+            }
+        }
+        val uris = files.map { FileProvider.getUriForFile(context, "${context.packageName}.files", it.first) } + phone.map { it.first }
+        val types = files.map { it.second } + phone.map { it.second }
         val type = types.distinct().singleOrNull() ?: if (types.all { it.startsWith("image/") }) "image/*" else "*/*"
         val intent = if (uris.size == 1) {
             Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_STREAM, uris.first())
@@ -196,16 +212,88 @@ object Exporter {
     }
 
     /**
+     * Copies a photo that's only on this phone into [dir] without its position: the file itself when
+     * ExifInterface can take the position out (JPEG, PNG, WebP), otherwise (HEIC, HEIF, AVIF, DNG...) a JPEG
+     * made from the picture, which carries no metadata at all. Both are checked afterwards; if the position
+     * can't be removed for sure, nothing is sent and an error is shown.
+     */
+    private fun phoneCopyWithoutLocation(context: Context, dir: File, index: Int, uri: Uri, mime: String): Pair<File, String> {
+        val name = safeFileName(displayName(context, uri), "photo-$index.jpg")
+        val sub = File(dir, "phone-$index").apply { mkdirs() }
+        val copy = File(sub, name)
+        val failed = { IOException(Strings.str(R.string.couldn_t_remove_the_location_from, name)) }
+        try {
+            (context.contentResolver.openInputStream(uri) ?: throw failed()).use { input ->
+                copy.outputStream().use { input.copyTo(it) }
+            }
+        } catch (e: IOException) {
+            copy.delete()
+            throw e
+        } catch (e: SecurityException) {
+            copy.delete()
+            throw failed()
+        }
+        if (removeLocation(copy, mime)) return copy to mime
+        copy.delete()
+        val jpeg = File(sub, name.substringBeforeLast('.') + ".jpg")
+        if (reencodeAsJpeg(copySource = { ImageDecoder.createSource(context.contentResolver, uri) }, target = jpeg) &&
+            runCatching { hasNoLocation(jpeg) }.getOrDefault(false)
+        ) {
+            return jpeg to "image/jpeg"
+        }
+        jpeg.delete()
+        throw failed()
+    }
+
+    /** The phone file's own name, or null when Android doesn't say. */
+    private fun displayName(context: Context, uri: Uri): String? = runCatching {
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        }
+    }.getOrNull()
+
+    /**
+     * Decodes the picture (turned the right way up, at most [MAX_REENCODE_SIDE] pixels on its long side) and writes
+     * it as a new JPEG, which has no EXIF or XMP at all. False when it can't be decoded or written.
+     */
+    private fun reencodeAsJpeg(copySource: () -> ImageDecoder.Source, target: File): Boolean = runCatching {
+        val bitmap = ImageDecoder.decodeBitmap(copySource()) { decoder, info, _ ->
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            val w = info.size.width
+            val h = info.size.height
+            val long = maxOf(w, h)
+            if (long > MAX_REENCODE_SIDE) {
+                val scale = MAX_REENCODE_SIDE.toDouble() / long
+                decoder.setTargetSize(maxOf(1, (w * scale).toInt()), maxOf(1, (h * scale).toInt()))
+            }
+        }
+        try {
+            target.outputStream().use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out) }
+        } finally {
+            bitmap.recycle()
+        }
+    }.getOrElse { false }
+
+    private const val MAX_REENCODE_SIDE = 4096
+
+    /**
      * Takes the GPS position out of a shared copy, in formats ExifInterface can rewrite (JPEG, PNG,
-     * WebP; others such as HEIC are sent as they are, as the setting says). True only when the file was
-     * checked afterwards and has no position left, in its EXIF or its XMP; false when that can't be
-     * guaranteed (unreadable file, a failed rewrite, a position that stayed), so it isn't sent.
+     * WebP). True only when the file was checked afterwards and has no position left, in its EXIF or its
+     * XMP; false when that can't be guaranteed (unreadable file, a failed rewrite, a position that stayed,
+     * or a format such as HEIC that can't be rewritten), so the file isn't sent as it is: a copy without
+     * metadata goes instead.
      */
     private fun removeLocation(file: File, mime: String): Boolean {
         val m = mime.lowercase()
+        val ext = file.extension.lowercase()
         val writable = m == "image/jpeg" || m == "image/jpg" || m == "image/png" || m == "image/webp" ||
-            file.extension.lowercase() in setOf("jpg", "jpeg", "png", "webp")
-        if (!writable) return true
+            ext in setOf("jpg", "jpeg", "png", "webp")
+        if (!writable) {
+            // GIF and BMP have no EXIF block to rewrite; they may go as they are when nothing in them gives a position.
+            // Everything else (HEIC, HEIF, AVIF, DNG and other camera formats) can hold one that can't be taken out.
+            val plain = m == "image/gif" || m == "image/bmp" || ext in setOf("gif", "bmp")
+            return plain && runCatching { hasNoLocation(file) }.getOrElse { false }
+        }
         return runCatching {
             val exif = ExifInterface(file)
             var changed = false

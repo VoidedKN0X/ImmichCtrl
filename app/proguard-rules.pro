@@ -12,7 +12,9 @@
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
 -dontwarn org.maplibre.**
--keep class org.maplibre.android.** { *; }
+# No blanket keep for MapLibre: the library ships its own consumer rules for the classes its native code
+# calls. If a release build's map screen ever crashes with a missing class or method, add a narrow keep for
+# exactly that class here instead of keeping all of org.maplibre.android.
 
 # No logging at all in release builds (ImmichCtrl itself doesn't log; this also silences libraries).
 -assumenosideeffects class android.util.Log {

@@ -74,7 +74,10 @@
     <string name="lock_prompt_failed">Couldn\'t show the fingerprint prompt</string>
     <string name="lock_fingerprint_title">Unlock ImmichCtrl</string>
     <string name="lock_fingerprint_subtitle">Confirm it\'s you to see your photos</string>
-    <string name="lock_forgot_body">The PIN can\'t be recovered, because it encrypts your login. ImmichCtrl will sign out of every account and remove its offline albums, cached photos and backup history from this phone. Your photos on the Immich server and the photos on this phone stay.</string>
+    <string name="lock_forgot_body">The PIN can\'t be recovered, because it encrypts your login. ImmichCtrl will sign out of every account and remove its offline albums, cached photos and backup history from this phone. Your photos on the Immich server and the photos on this phone stay. If your phone has a screen lock, you\'ll confirm with it first.</string>
+    <string name="lock_reset_prompt_title">Reset ImmichCtrl\'s app lock</string>
+    <string name="lock_reset_prompt_subtitle">Use your phone\'s screen lock to confirm it\'s you</string>
+    <string name="lock_reset_prompt_failed">Couldn\'t show the screen lock prompt</string>
     <string name="lock_forgot_confirm">Sign out and reset</string>
     <string name="lock_choose_intro">At least %1$d digits, different from your phone\'s PIN. If you forget it, the only way back in is to sign out and sign in again.</string>
     <string name="lock_migrate_intro">ImmichCtrl\'s app lock now has its own PIN, separate from your phone\'s. Your login is encrypted with it while the app is locked.</string>
@@ -126,7 +129,6 @@
     <string name="already_on_the_server">%1$s already on the server</string>
     <string name="couldn_t_be_uploaded">%1$s couldn\'t be uploaded</string>
     <string name="backup_finished">Backup finished</string>
-    <string name="can_t_read">Can\'t read %1$s</string>
     <string name="backing_up_of">Backing up %1$s of %2$s</string>
     <string name="checking_what_s_new">Checking what\'s new</string>
     <string name="backing_up_photos">Backing up photos</string>
@@ -712,7 +714,7 @@
     <string name="a_cloud_badge_on_photos_that_are">A cloud badge on photos that are only on the phone, or on both</string>
     <string name="share_size">Share size</string>
     <string name="remove_location_when_sharing">Remove location when sharing</string>
-    <string name="takes_the_gps_position_out_of_jpeg">Takes the GPS position out of JPEG, PNG and WebP photos you send to other apps. Videos and HEIC photos keep theirs.</string>
+    <string name="takes_the_gps_position_out_of_jpeg">Takes the GPS position out of photos you send to other apps. HEIC and other photos that can\'t be edited are sent as a JPEG copy without it. Videos keep theirs.</string>
     <string name="slideshow">Slideshow</string>
     <string name="each_photo_shows_for">Each photo shows for</string>
     <string name="seconds">%1$s seconds</string>

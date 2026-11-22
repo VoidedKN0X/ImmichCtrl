@@ -1,5 +1,7 @@
 package com.vknxworks.immichctrl.data.security
 
+import android.app.Activity
+import android.app.KeyguardManager
 import android.content.Context
 import com.vknxworks.immichctrl.R
 import com.vknxworks.immichctrl.data.lock.LockVault
@@ -262,6 +264,41 @@ class AppLock(private val context: Context, private val settings: SettingsReposi
             )
         } catch (e: Exception) {
             if (finish()) onError(e.message ?: activity.getString(R.string.lock_prompt_failed))
+        }
+    }
+
+    /** The phone has a screen lock (PIN, pattern or password) that can confirm it's the owner. */
+    fun screenLockSet(): Boolean = runCatching {
+        context.getSystemService(KeyguardManager::class.java)?.isDeviceSecure == true
+    }.getOrDefault(true)
+
+    /**
+     * The phone's own screen lock (or a strong fingerprint). Only used for "Forgot PIN?", so that resetting the
+     * app lock isn't open to anyone who picks up the unlocked phone. [onResult] gets null when confirmed, or an
+     * error message; cancelling calls [onCancel] instead. Doesn't unlock anything by itself.
+     */
+    fun screenLockAuthenticate(activity: Activity, onCancel: () -> Unit, onResult: (String?) -> Unit) {
+        // It may open the phone's screen-lock page, which isn't leaving the app.
+        val (signal, finish) = openPrompt(mayLeave = true)
+        try {
+            val prompt = PlatformPrompt.Builder(activity)
+                .setTitle(activity.getString(R.string.lock_reset_prompt_title))
+                .setSubtitle(activity.getString(R.string.lock_reset_prompt_subtitle))
+                .setAllowedAuthenticators(PlatformAuthenticators.BIOMETRIC_STRONG or PlatformAuthenticators.DEVICE_CREDENTIAL)
+                .build()
+            prompt.authenticate(signal, activity.mainExecutor, object : PlatformPrompt.AuthenticationCallback() {
+                override fun onAuthenticationSucceeded(result: PlatformPrompt.AuthenticationResult) {
+                    if (finish()) onResult(null)
+                }
+                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    if (!finish()) return
+                    val cancelled = errorCode == PlatformPrompt.BIOMETRIC_ERROR_USER_CANCELED ||
+                        errorCode == PlatformPrompt.BIOMETRIC_ERROR_CANCELED
+                    if (cancelled) onCancel() else onResult(errString.toString())
+                }
+            })
+        } catch (e: Exception) {
+            if (finish()) onResult(activity.getString(R.string.lock_reset_prompt_failed))
         }
     }
 

@@ -4,6 +4,24 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+Not yet tried on a phone: built and checked by CI only.
+
+### Security
+
+- **"Forgot PIN?" now asks for your phone's screen lock.** Before, anyone holding your unlocked phone could tap "Forgot PIN?" on ImmichCtrl's lock screen and reset it, which signs out every account and removes the offline albums, cached photos and backup history. Now the reset first asks for your phone's own PIN, pattern, password or fingerprint. If you cancel or it fails, nothing is removed. If your phone has no screen lock at all, the reset works as before. The warning about what gets removed is unchanged.
+
+### Fixed
+
+- **"Remove location when sharing" now also covers HEIC photos.** Phones that take HEIC photos (many do by default) shared the original with the location still inside, even with the switch on. Now such a photo is sent as Immich's JPEG preview without any location, the same way a photo whose location couldn't be removed already was. JPEG, PNG and WebP photos are sent as before, with only the location taken out. The switch's description in Settings says this now.
+- **Photos only on this phone lose their location too.** With "Remove location when sharing" on, photos that weren't backed up yet were shared exactly as they are, location included. Now a copy without the location is sent: JPEG, PNG and WebP photos have it taken out, and HEIC and other photos are sent as a JPEG copy made on the phone (at most 4096 pixels on the long side). If the location can't be removed for sure, the photo isn't shared and you see an error. Videos are still sent as they are.
+- **One unreadable photo no longer stalls the backup.** If a photo or video on the phone couldn't be read while it was being backed up (deleted or moved in the meantime, no longer readable, or its size changed), the backup treated that as a lost connection: it stopped and tried again later, and stopped at the same file every time, so newer photos were never backed up. Now that file counts as "couldn't be uploaded" and the backup carries on with the rest. The same goes for a shared photo that can't be read: it's counted as failed instead of being retried forever.
+
+### Changed
+
+- **Smaller app.** The release build no longer keeps all of the map library's code untouched, so unused parts of it are left out of the APK. The mini map and the Map screen should work as before; this needs a check on a phone.
+
 ## v0.13.1 (2026-11-22)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

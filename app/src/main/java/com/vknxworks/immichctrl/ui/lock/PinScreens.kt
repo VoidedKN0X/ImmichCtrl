@@ -255,8 +255,17 @@ fun PinLockScreen() {
             onDismiss = { forgetting = false },
         ) {
             forgetting = false
-            // App-wide: the lock screen goes away while this runs, and every account must still be signed out.
-            c.appScope.launch { c.forgetEverything() }
+            val a = activity
+            if (!lock.screenLockSet()) {
+                // No screen lock on the phone to confirm with: reset as before.
+                // App-wide: the lock screen goes away while this runs, and every account must still be signed out.
+                c.appScope.launch { c.forgetEverything() }
+            } else if (a != null && !a.isFinishing && !a.isDestroyed) {
+                // Only the phone's owner may reset it: confirm with the phone's own screen lock first.
+                lock.screenLockAuthenticate(a, onCancel = {}) { error ->
+                    if (error == null) c.appScope.launch { c.forgetEverything() } else message = error
+                }
+            }
         }
     }
 }

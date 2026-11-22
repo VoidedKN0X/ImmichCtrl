@@ -73,7 +73,10 @@
     <string name="lock_prompt_failed">Impossible d\'afficher la demande d\'empreinte</string>
     <string name="lock_fingerprint_title">Déverrouiller ImmichCtrl</string>
     <string name="lock_fingerprint_subtitle">Confirmez votre identité pour voir vos photos</string>
-    <string name="lock_forgot_body">Le code PIN ne peut pas être récupéré, car il chiffre votre connexion. ImmichCtrl se déconnectera de tous les comptes et supprimera de ce téléphone ses albums hors ligne, ses photos en cache et son historique de sauvegarde. Vos photos sur le serveur Immich et celles de ce téléphone restent.</string>
+    <string name="lock_forgot_body">Le code PIN ne peut pas être récupéré, car il chiffre votre connexion. ImmichCtrl se déconnectera de tous les comptes et supprimera de ce téléphone ses albums hors ligne, ses photos en cache et son historique de sauvegarde. Vos photos sur le serveur Immich et celles de ce téléphone restent. Si votre téléphone a un verrouillage d\'écran, vous le confirmerez d\'abord avec celui-ci.</string>
+    <string name="lock_reset_prompt_title">Réinitialiser le verrouillage d\'ImmichCtrl</string>
+    <string name="lock_reset_prompt_subtitle">Utilisez le verrouillage d\'écran de votre téléphone pour confirmer votre identité</string>
+    <string name="lock_reset_prompt_failed">Impossible d\'afficher le verrouillage d\'écran</string>
     <string name="lock_forgot_confirm">Se déconnecter et réinitialiser</string>
     <string name="lock_choose_intro">Au moins %1$d chiffres, différent du code PIN du téléphone. Si vous l\'oubliez, la seule solution est de vous déconnecter puis de vous reconnecter.</string>
     <string name="lock_migrate_intro">Le verrouillage de ImmichCtrl a désormais son propre code PIN, distinct de celui du téléphone. Votre connexion est chiffrée avec celui-ci tant que l\'app est verrouillée.</string>
@@ -123,7 +126,6 @@
     <string name="already_on_the_server">Déjà sur le serveur : %1$s</string>
     <string name="couldn_t_be_uploaded">Envoi impossible : %1$s</string>
     <string name="backup_finished">Sauvegarde terminée</string>
-    <string name="can_t_read">Impossible de lire %1$s</string>
     <string name="backing_up_of">Sauvegarde de %1$s sur %2$s</string>
     <string name="checking_what_s_new">Recherche des nouveautés</string>
     <string name="backing_up_photos">Sauvegarde des photos</string>
@@ -709,7 +711,7 @@
     <string name="a_cloud_badge_on_photos_that_are">Un badge nuage sur les photos qui sont uniquement sur le téléphone, ou sur les deux</string>
     <string name="share_size">Taille de partage</string>
     <string name="remove_location_when_sharing">Supprimer la position lors du partage</string>
-    <string name="takes_the_gps_position_out_of_jpeg">Retire la position GPS des photos JPEG, PNG et WebP que vous envoyez à d\'autres apps. Les vidéos et photos HEIC gardent la leur.</string>
+    <string name="takes_the_gps_position_out_of_jpeg">Retire la position GPS des photos que vous envoyez à d\'autres apps. Les photos HEIC et celles qui ne peuvent pas être modifiées sont envoyées en copie JPEG sans position. Les vidéos gardent la leur.</string>
     <string name="slideshow">Diaporama</string>
     <string name="each_photo_shows_for">Chaque photo s\'affiche pendant</string>
     <string name="seconds">%1$s secondes</string>

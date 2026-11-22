@@ -42,7 +42,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.BufferedSink
-import okio.source
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -190,6 +189,11 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                                 } catch (e: ApiException) {
                                     Outcome.Failed
                                 } catch (e: IOException) {
+                                    if (LocalReadException.isCause(e)) {
+                                        // The file on the phone couldn't be read (deleted, moved, changed size):
+                                        // this one fails, the rest of the backup goes on.
+                                        return@withPermit Outcome.Failed
+                                    }
                                     // Lost the connection: try again later, keeping what's done.
                                     lost.set(true)
                                     Outcome.Lost
@@ -330,7 +334,11 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 f.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
                 failed++
             } catch (e: IOException) {
-                return Result.retry()
+                if (!LocalReadException.isCause(e)) return Result.retry()
+                // The copy can't be read: retrying won't help, so it counts as failed and is removed.
+                f.delete()
+                f.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
+                failed++
             }
         }
         if (albumId != null && ids.isNotEmpty()) runCatching { client.addToAlbum(albumId, ids) }
@@ -356,9 +364,7 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val file = object : RequestBody() {
             override fun contentType(): MediaType? = mime.toMediaTypeOrNull()
             override fun contentLength(): Long = size
-            override fun writeTo(sink: BufferedSink) {
-                (open() ?: throw IOException(Strings.str(R.string.can_t_read, name))).source().use { sink.writeAll(it) }
-            }
+            override fun writeTo(sink: BufferedSink) = writeLocalFile(sink, size, name, open)
         }
         val form = MultipartBody.Builder().setType(MultipartBody.FORM)
         if (client.serverMajor < 3) {

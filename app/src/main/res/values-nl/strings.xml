@@ -74,7 +74,10 @@
     <string name="lock_prompt_failed">Het vingerafdrukvenster kon niet worden getoond</string>
     <string name="lock_fingerprint_title">ImmichCtrl ontgrendelen</string>
     <string name="lock_fingerprint_subtitle">Bevestig dat jij het bent om je foto\'s te zien</string>
-    <string name="lock_forgot_body">De pincode kan niet worden hersteld, omdat ze je aanmelding versleutelt. ImmichCtrl meldt zich af bij elk account en verwijdert zijn offline albums, foto\'s in de cache en back-upgeschiedenis van deze telefoon. Je foto\'s op de Immich-server en de foto\'s op deze telefoon blijven.</string>
+    <string name="lock_forgot_body">De pincode kan niet worden hersteld, omdat ze je aanmelding versleutelt. ImmichCtrl meldt zich af bij elk account en verwijdert zijn offline albums, foto\'s in de cache en back-upgeschiedenis van deze telefoon. Je foto\'s op de Immich-server en de foto\'s op deze telefoon blijven. Heeft je telefoon een schermvergrendeling, dan bevestig je eerst daarmee.</string>
+    <string name="lock_reset_prompt_title">App-vergrendeling van ImmichCtrl resetten</string>
+    <string name="lock_reset_prompt_subtitle">Bevestig met de schermvergrendeling van je telefoon dat jij het bent</string>
+    <string name="lock_reset_prompt_failed">De schermvergrendeling kon niet getoond worden</string>
     <string name="lock_forgot_confirm">Afmelden en resetten</string>
     <string name="lock_choose_intro">Minstens %1$d cijfers, anders dan de pincode van je telefoon. Als je ze vergeet, kun je er alleen nog in door je af te melden en opnieuw aan te melden.</string>
     <string name="lock_migrate_intro">De app-vergrendeling van ImmichCtrl heeft nu een eigen pincode, los van die van je telefoon. Je aanmelding is ermee versleuteld terwijl de app vergrendeld is.</string>
@@ -126,7 +129,6 @@
     <string name="already_on_the_server">%1$s al op de server</string>
     <string name="couldn_t_be_uploaded">%1$s konden niet worden geüpload</string>
     <string name="backup_finished">Back-up klaar</string>
-    <string name="can_t_read">Kan %1$s niet lezen</string>
     <string name="backing_up_of">Back-up van %1$s van %2$s</string>
     <string name="checking_what_s_new">Kijken wat er nieuw is</string>
     <string name="backing_up_photos">Foto\'s worden geback-upt</string>
@@ -712,7 +714,7 @@
     <string name="a_cloud_badge_on_photos_that_are">Een wolkje op foto\'s die alleen op de telefoon staan, of op beide</string>
     <string name="share_size">Grootte bij delen</string>
     <string name="remove_location_when_sharing">Locatie verwijderen bij delen</string>
-    <string name="takes_the_gps_position_out_of_jpeg">Haalt de gps-positie uit JPEG-, PNG- en WebP-foto\'s die je naar andere apps stuurt. Video\'s en HEIC-foto\'s houden die van hen.</string>
+    <string name="takes_the_gps_position_out_of_jpeg">Haalt de gps-positie uit foto\'s die je naar andere apps stuurt. HEIC- en andere foto\'s die niet aangepast kunnen worden, gaan als JPEG-kopie zonder positie. Video\'s houden die van hen.</string>
     <string name="slideshow">Diavoorstelling</string>
     <string name="each_photo_shows_for">Elke foto blijft staan</string>
     <string name="seconds">%1$s seconden</string>
