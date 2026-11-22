@@ -58,7 +58,6 @@ import com.vknxworks.immichctrl.data.api.asset
 import com.vknxworks.immichctrl.data.api.parseInstantMs
 import com.vknxworks.immichctrl.data.api.updateAsset
 import com.vknxworks.immichctrl.data.api.uploadFile
-import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.media.VideoTrimmer
 import com.vknxworks.immichctrl.data.share.Exporter
 import com.vknxworks.immichctrl.data.timeline.Sources
@@ -157,7 +156,6 @@ fun TrimScreen(assetId: String, localUri: String?, name: String?, takenMs: Long)
                 throw e
             } catch (e: Throwable) {
                 work = null
-                AppLog.e("Trim", "Couldn't trim the video", e)
                 c.toast(
                     if (e is VideoTrimmer.UnsupportedVideo) Strings.str(R.string.trim_unsupported)
                     else Strings.str(R.string.trim_failed, e.friendlyMessage()),
@@ -300,7 +298,6 @@ private suspend fun trimAndSave(
                     throw e
                 } catch (e: Throwable) {
                     if (assetId.isEmpty()) throw e
-                    AppLog.w("Trim", "Couldn't use the copy on the phone, downloading the original: ${e.message}")
                 }
             }
             val downloaded = File(dir, "original")
@@ -342,7 +339,7 @@ private suspend fun trimAndSave(
                     "latitude" to exif?.latitude,
                     "longitude" to exif?.longitude,
                 )
-            }.onFailure { AppLog.w("Trim", "Uploaded, but couldn't set the date: ${it.message}") }
+            }
             withContext(Dispatchers.Main) { Sources.refreshAll() }
             return Strings.str(if (result.status == "duplicate") R.string.trim_already_there else R.string.trim_saved_immich)
         } else {

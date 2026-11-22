@@ -9,7 +9,6 @@ import com.vknxworks.immichctrl.data.api.TimelineQuery
 import com.vknxworks.immichctrl.data.api.obj
 import com.vknxworks.immichctrl.data.api.serverVersion
 import com.vknxworks.immichctrl.data.auth.ActiveSession
-import com.vknxworks.immichctrl.data.log.AppLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -115,7 +114,6 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
                 throw e
             } catch (e: Throwable) {
                 // A copy that can't be opened or read (storage full, damaged file): timelines load from the server.
-                AppLog.w("Sync", "Couldn't open the timeline copy: ${e.message ?: e::class.simpleName}")
             }
         }.also { track(s.account.key, it) }
     }
@@ -205,7 +203,6 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
                 // Closed meanwhile (account switch, sign-out): nothing left to reset.
                 return@launch
             }
-            AppLog.i("Sync", "Sync reset; downloading the timeline again")
             notifyChanged()
             do {
                 again = false
@@ -281,14 +278,12 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
             val now = System.currentTimeMillis()
             withContext(Dispatchers.IO) { d.setMeta(SyncDb.SYNCED_AT, now.toString()) }
             post(d, Status.Ready(total, now))
-            if (!wasComplete) AppLog.i("Sync", "Timeline synced: $total items")
             // Always redraw (it's read from the phone): settings such as "show photos from this phone" wait for this too.
             notifyChanged()
         } catch (e: CancellationException) {
             throw e
         } catch (e: ApiException) {
             if (e.code in setOf(400, 403, 404, 405, 501)) {
-                AppLog.w("Sync", "The server refused the sync stream (${e.code}); loading the timeline month by month")
                 val refused = synchronized(this) {
                     if (db === d) {
                         db = null
@@ -303,14 +298,12 @@ class SyncEngine(private val context: Context, private val scope: CoroutineScope
                     notifyChanged()
                 }
             } else {
-                AppLog.w("Sync", "Sync failed: ${e.message}")
                 post(d, Status.Failed(e.message ?: "", items))
             }
         } catch (e: Throwable) {
             // Stopped on purpose (account switch, sign-out, app locked): the closed stream isn't a failure.
             currentCoroutineContext().ensureActive()
             if (db !== d) return
-            AppLog.w("Sync", "Sync failed: ${e.message ?: e::class.simpleName}")
             post(d, Status.Failed(e.message ?: e::class.simpleName.orEmpty(), items))
         }
     }

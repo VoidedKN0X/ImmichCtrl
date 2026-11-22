@@ -2,7 +2,6 @@ package com.vknxworks.immichctrl.data.net
 
 import android.content.Context
 import android.security.KeyChain
-import com.vknxworks.immichctrl.data.log.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,9 +55,6 @@ class NetworkRouter(private val context: Context) {
         val home = useLocal && loc != null
         config = Config(ext, loc, home, headers.filterKeys { it.isNotBlank() }, certAlias?.ifBlank { null })
         keyManager.reset()
-        if (_usingLocal.value != home && ext != null) {
-            AppLog.i("Network", if (home) "Using the home address ${loc!!.host}" else "Using the public address")
-        }
         _usingLocal.value = home
     }
 
@@ -145,7 +141,6 @@ class NetworkRouter(private val context: Context) {
             chain = runCatching { KeyChain.getCertificateChain(context, alias) }.getOrNull()
             key = runCatching { KeyChain.getPrivateKey(context, alias) }.getOrNull()
             cachedAlias = alias
-            if (key == null) AppLog.e("Network", "Client certificate \"$alias\" isn't available")
         }
 
         override fun chooseClientAlias(keyType: Array<out String>?, issuers: Array<out Principal>?, socket: Socket?): String? = config.certAlias

@@ -23,7 +23,6 @@ import com.vknxworks.immichctrl.data.api.serverConfig
 import com.vknxworks.immichctrl.data.api.serverFeatures
 import com.vknxworks.immichctrl.data.api.serverVersion
 import com.vknxworks.immichctrl.data.appDataStore
-import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.net.CleartextPolicy
 import com.vknxworks.immichctrl.data.lock.LockVault
 import kotlinx.coroutines.CoroutineScope
@@ -324,10 +323,7 @@ class SessionManager(
     fun completeOAuth(callback: Uri) {
         val pending = pendingOAuth ?: return
         // Must answer the sign-in this app started (another app could send a made-up redirect).
-        if (callback.getQueryParameter("state") != pending.state) {
-            AppLog.w("Auth", "Ignored an OAuth redirect that didn't match the sign-in in progress")
-            return
-        }
+        if (callback.getQueryParameter("state") != pending.state) return
         pendingOAuth = null
         scope.launch {
             try {

@@ -60,7 +60,6 @@ import kotlinx.serialization.Serializable
 
 // Settings
 @Serializable data object NetworkingRoute
-@Serializable data object LogsRoute
 
 // Account
 @Serializable data object SessionsRoute

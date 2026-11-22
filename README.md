@@ -71,7 +71,7 @@ Part of the [Ctrl series](#the-ctrl-series) by VKNXWorks.
 - **Notifications inbox**: your server's messages (failed backups, album invitations, notes from the admin), with mark as read and delete
 - Sign in with email and password, OAuth or an API key; tablet and foldable layout
 - **Back up and restore settings** to a file you keep: preferences only, never sign-in details or the app lock, and a restore shows what it would change first
-- Built-in log viewer, and a warning when the server's Immich version isn't supported
+- A warning when the server's Immich version isn't supported
 - **English, Dutch, French and German**, following the phone's language (no language setting in the app; Android's own per-app language setting works)
 
 ## Requirements
@@ -151,7 +151,6 @@ Your account, backup, **Settings** and sign out are all on that same page behind
 - **Backup stops in the background?** Open **Backup** and follow the battery warning to let ImmichCtrl run without restrictions.
 - **Read-only mode** is in **Settings → Privacy and security**, or long-press your profile picture on the Photos tab. To leave it, long-press the picture again and unlock with your phone's fingerprint, face or screen lock (if the phone has one).
 - **Duplicate review** needs Immich's duplicate detection, which needs smart search (machine learning) on the server.
-- **Something not working?** **Settings → Logs** shows what the app has been doing; copy or share it when reporting a bug.
 - See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
 ## App lock

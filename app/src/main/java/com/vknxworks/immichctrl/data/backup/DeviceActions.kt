@@ -6,7 +6,6 @@ import android.net.Uri
 import android.provider.MediaStore
 import com.vknxworks.immichctrl.data.api.ImmichClient
 import com.vknxworks.immichctrl.data.api.uploadCheck
-import com.vknxworks.immichctrl.data.log.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -35,10 +34,7 @@ class DeviceActions(private val context: Context) {
     suspend fun delete(uris: List<Uri>): Boolean = ask { MediaStore.createDeleteRequest(context.contentResolver, uris).intentSender }
 
     private suspend fun ask(make: () -> IntentSender): Boolean {
-        val sender = runCatching { make() }.getOrElse {
-            AppLog.e("Device", "Couldn't ask to change photos on the phone", it)
-            return false
-        }
+        val sender = runCatching { make() }.getOrElse { return false }
         return suspendCancellableCoroutine { cont ->
             if (!_requests.tryEmit(Request(sender) { ok -> if (cont.isActive) cont.resume(ok) })) cont.resume(false)
         }
@@ -89,7 +85,6 @@ object FreeUpSpace {
                 .mapTo(HashSet()) { it.id }
             safe += batch.filter { it.id.toString() in onServer }
         }
-        AppLog.i("FreeUp", "${safe.size} of ${candidates.size} candidates confirmed on the server")
         FreeUpPlan(safe, safe.sumOf { it.size })
     }
 

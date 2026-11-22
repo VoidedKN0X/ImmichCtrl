@@ -78,7 +78,6 @@ import com.vknxworks.immichctrl.ui.library.OfflineAlbumScreen
 import com.vknxworks.immichctrl.ui.local.FreeUpSpaceScreen
 import com.vknxworks.immichctrl.ui.local.LocalAlbumScreen
 import com.vknxworks.immichctrl.ui.local.LocalAlbumsScreen
-import com.vknxworks.immichctrl.ui.settings.LogsScreen
 import com.vknxworks.immichctrl.ui.settings.NetworkingScreen
 import com.vknxworks.immichctrl.ui.viewer.EditorScreen
 import com.vknxworks.immichctrl.ui.viewer.ExternalViewScreen
@@ -176,7 +175,7 @@ fun AppRoot() {
 private fun androidx.navigation.NavDestination.blockedInReadOnly(): Boolean =
     hasRoute(YouRoute::class) || hasRoute(SettingsRoute::class) || hasRoute(AccountsRoute::class) ||
         hasRoute(AddAccountRoute::class) || hasRoute(AdminRoute::class) || hasRoute(BackupRoute::class) ||
-        hasRoute(NetworkingRoute::class) || hasRoute(LogsRoute::class) || hasRoute(LockedRoute::class) ||
+        hasRoute(NetworkingRoute::class) || hasRoute(LockedRoute::class) ||
         hasRoute(SharedLinksRoute::class) || hasRoute(FreeUpSpaceRoute::class) || hasRoute(PickAssetsRoute::class) ||
         hasRoute(EditorRoute::class) || hasRoute(DuplicatesRoute::class) || hasRoute(TrimRoute::class) ||
         hasRoute(SessionsRoute::class) || hasRoute(ApiKeysRoute::class) || hasRoute(NotificationsRoute::class)
@@ -469,7 +468,6 @@ private fun AppNavHost(navController: NavHostController) {
         composable<DuplicatesRoute> { DuplicatesScreen() }
         composable<OfflineAlbumRoute> { OfflineAlbumScreen(it.toRoute<OfflineAlbumRoute>().albumId) }
         composable<NetworkingRoute> { NetworkingScreen() }
-        composable<LogsRoute> { LogsScreen() }
         composable<SessionsRoute> { com.vknxworks.immichctrl.ui.settings.SessionsScreen() }
         composable<ApiKeysRoute> { com.vknxworks.immichctrl.ui.settings.ApiKeysScreen() }
         composable<NotificationsRoute> { com.vknxworks.immichctrl.ui.settings.NotificationsScreen() }

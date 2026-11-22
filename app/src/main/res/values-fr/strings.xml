@@ -677,13 +677,8 @@
     <string name="don_t_use_a_certificate">Ne pas utiliser de certificat</string>
     <string name="saved">Enregistré</string>
     <string name="use_an_unencrypted_home_address">Utiliser une adresse domestique non chiffrée ?</string>
-    <string name="logs">Journaux</string>
-    <string name="immichctrl_log">Journal ImmichCtrl</string>
     <string name="copied">Copié</string>
     <string name="copy">Copier</string>
-    <string name="share_log">Partager le journal</string>
-    <string name="nothing_logged_yet">Rien dans le journal pour l\'instant</string>
-    <string name="backup_sync_and_connection_events">Les évènements de sauvegarde, de synchronisation et de connexion apparaissent ici.</string>
     <string name="settings">Paramètres</string>
     <string name="server_alerts_are_checked_about_once">Les alertes du serveur sont vérifiées environ une fois par heure. Uniquement sur les comptes administrateur.</string>
     <string name="notify_me_about_the_server">M\'avertir à propos du serveur</string>
@@ -720,9 +715,8 @@
     <string name="seconds">%1$s secondes</string>
     <string name="shuffle">Aléatoire</string>
     <string name="start_again_at_the_end">Recommencer à la fin</string>
-    <string name="connection_and_help">Connexion et aide</string>
+    <string name="connection_group">Connexion</string>
     <string name="public_or_home_address_custom">Adresse publique ou domestique, en-têtes personnalisés, certificat client</string>
-    <string name="what_the_app_has_been_doing_to_help">Ce que l\'app a fait, pour aider à trouver les problèmes</string>
     <string name="storage_on_this_phone">Stockage sur ce téléphone</string>
     <string name="thumbnails_and_previews_are_kept_so">Les miniatures et aperçus sont conservés pour que la grille défile vite hors ligne. Prend effet au prochain démarrage de l\'app.</string>
     <string name="image_cache">Cache des images</string>

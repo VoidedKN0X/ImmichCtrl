@@ -4,6 +4,15 @@ All notable changes to ImmichCtrl. Builds 0.2.5 and earlier were numbered by Git
 
 To publish a new version: bump `versionCode` and `versionName` in `app/build.gradle.kts`, add a section here, and push to `main`. Pushes without a version bump only build; they don't make a release.
 
+## Unreleased
+
+### Removed
+
+- **The app's own log.** Settings → Connection and help → Logs is gone, with its Copy, Share ("ImmichCtrl log") and Clear buttons. Behind it, ImmichCtrl no longer keeps a running list in memory of what it does (connections, sync, backups, offline albums, trimming, sharing, failed server requests, admin alerts), and test builds no longer copy those lines to Android's system log. The settings group that held it is now called **Connection** and only has Networking.
+- **All logging in release builds.** The release build now also strips warning, error and other log lines (until now only verbose, debug and info lines were stripped), including any from libraries.
+
+Errors you see in the app (messages, notifications, failed backups) are shown exactly as before. Nothing else changes.
+
 ## v0.13.0 (2026-11-21)
 
 Built and checked by CI only: nothing in this release had been run on a phone when it was published.

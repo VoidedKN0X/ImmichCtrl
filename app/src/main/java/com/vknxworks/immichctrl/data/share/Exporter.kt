@@ -11,7 +11,6 @@ import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import com.vknxworks.immichctrl.data.api.ImmichClient
 import com.vknxworks.immichctrl.data.api.asset
-import com.vknxworks.immichctrl.data.log.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -42,7 +41,7 @@ object Exporter {
             async(Dispatchers.IO) {
                 gate.withPermit {
                     runCatching { saveOriginal(context, client, id) }
-                        .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it; AppLog.e("Save", "Couldn't save a photo to the phone", it) }
+                        .onFailure { if (it is kotlinx.coroutines.CancellationException) throw it }
                         .isSuccess
                 }
             }
@@ -147,7 +146,6 @@ object Exporter {
                             fallback.delete()
                             throw IOException(Strings.str(R.string.couldn_t_remove_the_location_from, original))
                         }
-                        AppLog.i("Share", "Sent a preview of a photo whose location couldn't be removed from the original")
                         fallback to "image/jpeg"
                     }
                 }
@@ -222,10 +220,7 @@ object Exporter {
             }
             if (changed) exif.saveAttributes()
             hasNoLocation(file)
-        }.getOrElse {
-            AppLog.w("Share", "Couldn't remove the location from a shared photo: ${it.message}")
-            false
-        }
+        }.getOrElse { false }
     }
 
     /** Reads the file again: no EXIF position, no GPS tags, and no GPS fields anywhere in its bytes (XMP is text). */

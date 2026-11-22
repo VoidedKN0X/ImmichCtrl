@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.BugReport
 import androidx.compose.material.icons.outlined.ChildCare
 import androidx.compose.material.icons.outlined.CloudDone
 import androidx.compose.material.icons.outlined.Fingerprint
@@ -28,7 +27,6 @@ import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Wifi
 import com.vknxworks.immichctrl.data.settings.ShareSize
 import com.vknxworks.immichctrl.ui.components.findActivity
-import com.vknxworks.immichctrl.ui.nav.LogsRoute
 import com.vknxworks.immichctrl.ui.nav.NetworkingRoute
 import androidx.compose.material.icons.outlined.CalendarViewDay
 import androidx.compose.material.icons.outlined.DeleteOutline
@@ -247,9 +245,8 @@ fun SettingsScreen() {
             // Without a server (photos on this phone only) there is no sync or connection to set up.
             if (session != null) {
                 TimelineSyncGroup()
-                Group(stringResource(R.string.connection_and_help)) {
+                Group(stringResource(R.string.connection_group)) {
                     GroupRow(stringResource(R.string.networking), stringResource(R.string.public_or_home_address_custom), icon = Icons.Outlined.Wifi, showChevron = true, onClick = { nav.navigate(NetworkingRoute) })
-                    GroupRow(stringResource(R.string.logs), stringResource(R.string.what_the_app_has_been_doing_to_help), icon = Icons.Outlined.BugReport, showChevron = true, onClick = { nav.navigate(LogsRoute) })
                 }
             }
             Group(stringResource(R.string.storage_on_this_phone), footer = stringResource(R.string.thumbnails_and_previews_are_kept_so)) {

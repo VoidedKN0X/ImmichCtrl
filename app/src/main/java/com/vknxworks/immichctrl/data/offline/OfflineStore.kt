@@ -24,7 +24,6 @@ import com.vknxworks.immichctrl.data.api.timeBucket
 import com.vknxworks.immichctrl.data.api.timeBuckets
 import com.vknxworks.immichctrl.data.crypto.DataKeyStore
 import com.vknxworks.immichctrl.data.crypto.SealedFile
-import com.vknxworks.immichctrl.data.log.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -266,7 +265,6 @@ class OfflineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                         }
                     } catch (e: com.vknxworks.immichctrl.data.api.ApiException) {
                         // One item the server can't give (e.g. a video not transcoded yet) shouldn't stop the album.
-                        AppLog.w("Offline", "Skipped ${a.id}: ${e.message}")
                         return@forEachIndexed
                     }
                 }
@@ -277,12 +275,10 @@ class OfflineWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             dir.listFiles()?.filter { it.name !in keep }?.forEach { it.delete() }
             store.write(OfflineAlbum(albumId, album.albumName, System.currentTimeMillis(), kept, complete = true))
             done()
-            AppLog.i("Offline", "${album.albumName}: ${kept.size} items available offline")
             Result.success()
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Throwable) {
-            AppLog.e("Offline", "Couldn't download album for offline use", e)
             done()
             Result.retry()
         }

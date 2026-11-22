@@ -2,7 +2,6 @@ package com.vknxworks.immichctrl.ui.settings
 
 import com.vknxworks.immichctrl.ui.components.ctrlFieldColors
 import com.vknxworks.immichctrl.ui.theme.CtrlShapes
-import android.content.Intent
 import android.security.KeyChain
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,18 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -31,7 +25,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,21 +32,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vknxworks.immichctrl.container
-import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.net.formatHeaders
 import com.vknxworks.immichctrl.data.net.parseHeaders
 import com.vknxworks.immichctrl.ui.components.ConfirmDialog
 import com.vknxworks.immichctrl.ui.components.Group
 import com.vknxworks.immichctrl.ui.components.GroupRow
-import com.vknxworks.immichctrl.ui.components.MessageView
 import com.vknxworks.immichctrl.ui.components.PillButton
 import com.vknxworks.immichctrl.ui.components.ScreenTopBar
 import com.vknxworks.immichctrl.ui.components.findActivity
@@ -169,7 +158,6 @@ fun NetworkingScreen() {
                 val parsed = parseHeaders(headers)
                 scope.launch {
                     c.sessions.updateNetworking(acc.key, localUrl, parsed, cert)
-                    AppLog.i("Network", "Connection settings changed")
                     c.toast(Strings.str(R.string.saved))
                 }
             }
@@ -193,47 +181,6 @@ fun NetworkingScreen() {
                 ) {
                     confirmHttp = false
                     save()
-                }
-            }
-        }
-    }
-}
-
-/** What the app has logged since it started: backup, sync, network and errors. */
-@Composable
-fun LogsScreen() {
-    val c = LocalContext.current.container
-    val entries by AppLog.entries.collectAsStateWithLifecycle()
-    val state = rememberLazyListState()
-    LaunchedEffect(entries.size) { if (entries.isNotEmpty()) state.scrollToItem(entries.lastIndex) }
-
-    Column(Modifier.fillMaxSize()) {
-        ScreenTopBar(stringResource(R.string.logs)) {
-            IconButton(onClick = { com.vknxworks.immichctrl.data.security.copySensitive(c.context, AppLog.text(), Strings.str(R.string.immichctrl_log)); c.toast(Strings.str(R.string.copied)) }) { Icon(Icons.Outlined.ContentCopy, stringResource(R.string.copy)) }
-            IconButton(onClick = {
-                val send = Intent(Intent.ACTION_SEND).setType("text/plain")
-                    .putExtra(Intent.EXTRA_SUBJECT, Strings.str(R.string.immichctrl_log))
-                    .putExtra(Intent.EXTRA_TEXT, AppLog.text())
-                com.vknxworks.immichctrl.data.security.expectAppReturn(c.context)
-                runCatching { c.context.startActivity(Intent.createChooser(send, Strings.str(R.string.share_log)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            }) { Icon(Icons.Outlined.Share, stringResource(R.string.share)) }
-            IconButton(onClick = { AppLog.clear() }) { Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.clear)) }
-        }
-        if (entries.isEmpty()) {
-            MessageView(Icons.Outlined.VerifiedUser, stringResource(R.string.nothing_logged_yet), stringResource(R.string.backup_sync_and_connection_events))
-        } else {
-            LazyColumn(state = state, modifier = Modifier.navigationBarsPadding()) {
-                items(entries) { e ->
-                    Text(
-                        e.toString(),
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
-                        color = when (e.level) {
-                            AppLog.Level.ERROR -> MaterialTheme.colorScheme.error
-                            AppLog.Level.WARN -> MaterialTheme.colorScheme.tertiary
-                            AppLog.Level.INFO -> MaterialTheme.colorScheme.onSurface
-                        },
-                        modifier = Modifier.padding(horizontal = Gutter, vertical = 3.dp),
-                    )
                 }
             }
         }

@@ -20,7 +20,6 @@ import com.vknxworks.immichctrl.data.api.UploadResultDto
 import com.vknxworks.immichctrl.data.api.addToAlbum
 import com.vknxworks.immichctrl.data.api.albums
 import com.vknxworks.immichctrl.data.api.createAlbum
-import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.api.formatUploadDuration
 import com.vknxworks.immichctrl.data.api.majorVersion
 import com.vknxworks.immichctrl.data.api.serverVersion
@@ -68,7 +67,6 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         // active by now, or that one was signed out, upload nothing rather than send them elsewhere.
         val queuedFor = inputData.getString(KEY_ACCOUNT)
         if (queuedFor != null && queuedFor != session.account.key) {
-            AppLog.w("Backup", "Skipped an upload queued for another account")
             if (mode == MODE_SHARED) deleteSharedCopies()
             return Result.success()
         }
@@ -106,7 +104,6 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 // Set up before backups remembered their account: it was the account in use then.
                 c.settings.update { it.copy(backupAccount = accountKey) }
             } else if (owner != accountKey) {
-                AppLog.w("Backup", "Automatic backup is set up for another account; skipped")
                 return Result.success()
             }
         }
@@ -132,12 +129,10 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val pending = items.filterNot { c.backupDb.isDone(done, it) }
         // Videos that have to wait for Wi-Fi stay pending; the next run on Wi-Fi sends them.
         val todo = if (mode == MODE_ITEMS) pending else pending.filter { rules.allowedNow(it.isVideo, metered) }
-        if (todo.size < pending.size) AppLog.i("Backup", "${pending.size - todo.size} videos wait for Wi-Fi")
         if (todo.isEmpty()) return Result.success(workDataOf(KEY_UPLOADED to 0))
 
         startForeground(0, todo.size, null)
         val parallel = settings.backupParallel.coerceIn(1, BackupRules.MAX_PARALLEL)
-        AppLog.i("Backup", "Backing up ${todo.size} items, $parallel at a time")
         val synced = HashMap<String, MutableList<String>>() // phone album name -> server ids, for album sync
         var uploaded = 0
         var skipped = 0
@@ -193,11 +188,9 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                                         item.durationMs, sha, deviceAssetId = "${item.id}-${item.size}") { LocalMedia.open(applicationContext, item.uri) }
                                     Outcome.Done(item, result.id)
                                 } catch (e: ApiException) {
-                                    AppLog.e("Backup", "Couldn't upload ${item.name}", e)
                                     Outcome.Failed
                                 } catch (e: IOException) {
                                     // Lost the connection: try again later, keeping what's done.
-                                    AppLog.w("Backup", "Connection lost, will retry: ${e.message}")
                                     lost.set(true)
                                     Outcome.Lost
                                 }
@@ -265,11 +258,10 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 val album = existing[name] ?: client.createAlbum(name)
                 ids.chunked(500).forEach { client.addToAlbum(album.id, it) }
             }
-            AppLog.i("Backup", "Album sync: ${byAlbum.size} albums updated")
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Throwable) {
-            AppLog.e("Backup", "Album sync failed", e)
+            // Album sync is a bonus: the photos themselves are already uploaded.
         }
     }
 
@@ -277,7 +269,6 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val c = applicationContext.container
         c.local.changed()
         if (uploaded > 0) withContext(Dispatchers.Main) { Sources.refreshAll() }
-        AppLog.i("Backup", "Done: $uploaded uploaded, $skipped already there, $failed failed")
         val nm = applicationContext.getSystemService(NotificationManager::class.java)
         nm.cancel(NOTIFICATION_ID)
         if (uploaded == 0 && failed == 0) return
@@ -335,7 +326,6 @@ class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 f.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
             } catch (e: ApiException) {
                 // Won't be retried: don't leave the copy of the photo behind in the app's cache.
-                AppLog.e("Backup", "Couldn't upload a shared item", e)
                 f.delete()
                 f.parentFile?.takeIf { it.listFiles().isNullOrEmpty() }?.delete()
                 failed++

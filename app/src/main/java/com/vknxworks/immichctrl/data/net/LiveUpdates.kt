@@ -2,7 +2,6 @@ package com.vknxworks.immichctrl.data.net
 
 import com.vknxworks.immichctrl.data.api.ApiJson
 import com.vknxworks.immichctrl.data.api.ImmichClient
-import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.timeline.Sources
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -105,7 +104,6 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
             when {
                 text.startsWith("0") -> webSocket.send("40") // engine.io open: join the default namespace
                 text == "2" -> webSocket.send("3") // ping -> pong
-                text.startsWith("40") -> AppLog.i("Live", "Connected to live updates")
                 text.startsWith("42") -> handle(text.substring(2))
                 text.startsWith("41") -> webSocket.close(1000, null)
             }
@@ -114,7 +112,6 @@ class LiveUpdates(private val http: OkHttpClient, private val scope: CoroutineSc
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             synchronized(this@LiveUpdates) {
                 if (socket === webSocket) {
-                    if (attempt == 0) AppLog.w("Live", "Live updates disconnected: ${t.message ?: t::class.simpleName}")
                     socket = null
                     scheduleReconnect()
                 }

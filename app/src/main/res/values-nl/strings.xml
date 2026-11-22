@@ -680,13 +680,8 @@
     <string name="don_t_use_a_certificate">Geen certificaat gebruiken</string>
     <string name="saved">Opgeslagen</string>
     <string name="use_an_unencrypted_home_address">Een onversleuteld thuisadres gebruiken?</string>
-    <string name="logs">Logboek</string>
-    <string name="immichctrl_log">Logboek van ImmichCtrl</string>
     <string name="copied">Gekopieerd</string>
     <string name="copy">Kopiëren</string>
-    <string name="share_log">Logboek delen</string>
-    <string name="nothing_logged_yet">Nog niets in het logboek</string>
-    <string name="backup_sync_and_connection_events">Gebeurtenissen van back-up, synchronisatie en verbinding verschijnen hier.</string>
     <string name="settings">Instellingen</string>
     <string name="server_alerts_are_checked_about_once">Serverwaarschuwingen worden ongeveer één keer per uur gecontroleerd. Alleen te zien op beheerdersaccounts.</string>
     <string name="notify_me_about_the_server">Meld me dingen over de server</string>
@@ -723,9 +718,8 @@
     <string name="seconds">%1$s seconden</string>
     <string name="shuffle">Willekeurige volgorde</string>
     <string name="start_again_at_the_end">Opnieuw beginnen aan het einde</string>
-    <string name="connection_and_help">Verbinding en hulp</string>
+    <string name="connection_group">Verbinding</string>
     <string name="public_or_home_address_custom">Publiek adres of thuisadres, eigen headers, clientcertificaat</string>
-    <string name="what_the_app_has_been_doing_to_help">Wat de app heeft gedaan, om problemen op te sporen</string>
     <string name="storage_on_this_phone">Opslag op deze telefoon</string>
     <string name="thumbnails_and_previews_are_kept_so">Miniaturen en voorbeelden worden bewaard, zodat het raster offline vlot scrolt. Gaat in wanneer de app de volgende keer start.</string>
     <string name="image_cache">Afbeeldingscache</string>

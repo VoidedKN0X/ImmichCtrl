@@ -677,13 +677,8 @@
     <string name="don_t_use_a_certificate">Kein Zertifikat verwenden</string>
     <string name="saved">Gespeichert</string>
     <string name="use_an_unencrypted_home_address">Unverschlüsselte Heimadresse verwenden?</string>
-    <string name="logs">Protokolle</string>
-    <string name="immichctrl_log">ImmichCtrl-Protokoll</string>
     <string name="copied">Kopiert</string>
     <string name="copy">Kopieren</string>
-    <string name="share_log">Protokoll teilen</string>
-    <string name="nothing_logged_yet">Noch nichts protokolliert</string>
-    <string name="backup_sync_and_connection_events">Ereignisse zu Sicherung, Synchronisierung und Verbindung erscheinen hier.</string>
     <string name="settings">Einstellungen</string>
     <string name="server_alerts_are_checked_about_once">Serverwarnungen werden etwa einmal pro Stunde geprüft. Nur bei Admin-Konten angezeigt.</string>
     <string name="notify_me_about_the_server">Über den Server benachrichtigen</string>
@@ -720,9 +715,8 @@
     <string name="seconds">%1$s Sekunden</string>
     <string name="shuffle">Zufällig</string>
     <string name="start_again_at_the_end">Am Ende neu beginnen</string>
-    <string name="connection_and_help">Verbindung und Hilfe</string>
+    <string name="connection_group">Verbindung</string>
     <string name="public_or_home_address_custom">Öffentliche oder Heimadresse, eigene Header, Client-Zertifikat</string>
-    <string name="what_the_app_has_been_doing_to_help">Was die App getan hat, um Problemen auf die Spur zu kommen</string>
     <string name="storage_on_this_phone">Speicher auf diesem Handy</string>
     <string name="thumbnails_and_previews_are_kept_so">Miniaturansichten und Vorschauen werden behalten, damit das Raster offline schnell scrollt. Gilt ab dem nächsten App-Start.</string>
     <string name="image_cache">Bildcache</string>

@@ -23,7 +23,6 @@ import com.vknxworks.immichctrl.data.api.serverStorage
 import com.vknxworks.immichctrl.data.api.serverVersion
 import com.vknxworks.immichctrl.data.api.versionCheck
 import com.vknxworks.immichctrl.data.appDataStore
-import com.vknxworks.immichctrl.data.log.AppLog
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 import com.vknxworks.immichctrl.Strings
@@ -55,7 +54,7 @@ class AdminAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
                 notify(nm, 1, Strings.plural(R.plurals.background_jobs_failed, (total - last).toInt(), total - last), Strings.str(R.string.on, s.account.serverName, which))
             }
             prefs.edit { it[lastKey] = total }
-        }.onFailure { AppLog.w("Admin", "Couldn't check job queues: ${it.message}") }
+        }
 
         // Disk space: alert once each time usage crosses into a new 5% step above the threshold.
         runCatching {
@@ -118,7 +117,6 @@ class AdminAlertsWorker(context: Context, params: WorkerParameters) : CoroutineW
                 )
                 .build(),
         )
-        AppLog.i("Admin", title)
     }
 
     companion object {

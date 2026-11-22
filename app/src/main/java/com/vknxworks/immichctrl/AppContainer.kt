@@ -20,7 +20,6 @@ import com.vknxworks.immichctrl.data.backup.BackupManager
 import com.vknxworks.immichctrl.data.backup.BackupWorker
 import com.vknxworks.immichctrl.data.backup.DeviceActions
 import com.vknxworks.immichctrl.data.backup.LocalLibrary
-import com.vknxworks.immichctrl.data.log.AppLog
 import com.vknxworks.immichctrl.data.net.CleartextPolicy
 import com.vknxworks.immichctrl.data.net.LiveUpdates
 import com.vknxworks.immichctrl.data.net.NetworkRouter
@@ -49,19 +48,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /** Manual dependency container; one per process. */
 class AppContainer(val context: Context) {
     /**
-     * Work that outlives screens (sync, live updates, sign-out clean-up). A failure in one job is logged
+     * Work that outlives screens (sync, live updates, sign-out clean-up). A failure in one job is ignored
      * instead of taking the whole app down, which would otherwise happen on the way out or in the background.
      */
     val appScope = CoroutineScope(
-        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e ->
-            AppLog.e("App", "Background task failed", e)
-        },
+        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> },
     )
 
     /** Address in use (public or home), extra headers and client certificate for the signed-in account. */
@@ -96,17 +92,6 @@ class AppContainer(val context: Context) {
                 chain.proceed(req.newBuilder().header(h, v).build())
             } else {
                 chain.proceed(req)
-            }
-        }
-        // Failed requests go to the in-app log (without query strings, which may carry keys).
-        .addInterceptor { chain ->
-            val req = chain.request()
-            val path = req.url.encodedPath
-            try {
-                chain.proceed(req).also { if (it.code >= 400 && it.code != 404) AppLog.w("HTTP", "${req.method} $path -> ${it.code}") }
-            } catch (e: IOException) {
-                if (!path.contains("socket.io")) AppLog.w("HTTP", "${req.method} $path failed: ${e.message ?: e::class.simpleName}")
-                throw e
             }
         }
         // Plain HTTP only to the user's own server (after they chose it), never via a redirect from HTTPS.
@@ -247,7 +232,6 @@ class AppContainer(val context: Context) {
                         )
                     }
                 }
-                AppLog.i("Account", "Signed out of ${acc.serverName}; removed its offline albums and cached photos")
             }
         }
         local.watchGallery()
